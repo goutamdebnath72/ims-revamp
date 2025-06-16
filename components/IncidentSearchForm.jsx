@@ -1,8 +1,9 @@
 // File: components/IncidentSearchForm.jsx
-// This component encapsulates the entire search form.
+// This version adds the missing import for the Box component.
 'use client';
 
 import * as React from 'react';
+import Box from '@mui/material/Box'; // <-- THE MISSING IMPORT IS ADDED HERE
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
