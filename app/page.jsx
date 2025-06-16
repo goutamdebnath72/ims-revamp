@@ -1,5 +1,5 @@
 // File: app/page.jsx
-// This is the final, corrected version with all syntax and reference errors fixed.
+// This version removes all "Mui" naming from functions and the header text.
 "use client";
 
 import * as React from 'react';
@@ -16,9 +16,9 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import AssignmentIcon from '@mui/icons-material/Assignment';
+import SearchIcon from '@mui/icons-material/Search';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import Grid from '@mui/material/Grid'; // Using the standard Grid import
+import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import { Chip } from '@mui/material';
@@ -27,7 +27,7 @@ const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, href: '/' },
-  { text: 'All Incidents', icon: <AssignmentIcon />, href: '/incidents' },
+  { text: 'Search & Archive', icon: <SearchIcon />, href: '/search' },
   { text: 'Raise Incident', icon: <BugReportIcon />, href: '/raise' },
 ];
 
@@ -42,12 +42,12 @@ const recentIncidentsData = [
   { id: '10001', title: 'Network Down in Admin Building', priority: 'High', status: 'Processed' },
   { id: '10002', title: 'Email Not Working for Mr. Debnath', priority: 'High', status: 'Processed' },
   { id: '10003', title: 'Software Install Request: VS Code', priority: 'Medium', status: 'Pending' },
-  { id: '10004', 'title': 'SAP Login Issue', priority: 'Medium', status: 'Pending' },
+  { id: '10004', title: 'SAP Login Issue', priority: 'Medium', status: 'Pending' },
 ];
 
-
-export default function MuiDashboardPage() {
-    const getPriorityChipColor = (priorityValue) => { // Use a different name to avoid confusion
+// CORRECTED: Renamed function
+export default function DashboardPage() {
+    const getPriorityChipColor = (priorityValue) => {
         if (priorityValue === 'High') return 'error';
         if (priorityValue === 'Medium') return 'warning';
         return 'default';
@@ -59,8 +59,9 @@ export default function MuiDashboardPage() {
         sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}
       >
         <Toolbar>
+          {/* CORRECTED: Removed "MUI" from header text */}
           <Typography variant="h6" noWrap component="div">
-            MUI Incident Management System
+            Incident Management System - DSP
           </Typography>
         </Toolbar>
       </AppBar>
@@ -102,7 +103,6 @@ export default function MuiDashboardPage() {
             Dashboard
         </Typography>
         
-        {/* Correct Grid v2 Syntax */}
         <Grid container spacing={3}>
             {statCardsData.map((card, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}> 
@@ -130,8 +130,7 @@ export default function MuiDashboardPage() {
                     key={incident.id}
                     divider
                     secondaryAction={
-                      // CORRECTED: Pass incident.priority to the function
-                      <Chip label={incident.priority} color={getPriorityChipColor(incident.priority)} size="small" />
+                    <Chip label={incident.priority} color={getPriorityChipColor(incident.priority)} size="small" />
                     }
                 >
                     <ListItemText
