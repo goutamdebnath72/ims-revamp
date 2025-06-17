@@ -1,43 +1,31 @@
 // File: app/search/page.jsx
-// This final version uses a custom scroll listener for instantaneous performance.
+// This final version uses a stable, performant "elevation on scroll" effect and corrects all layout issues.
 'use client';
 
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import * as React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
+import useScrollTrigger from '@mui/material/useScrollTrigger';
 import IncidentSearchForm from '@/components/IncidentSearchForm';
 import IncidentDataGrid from '@/components/IncidentDataGrid';
 import { mockIncidents } from '@/lib/mock-data';
-import { LayoutContext } from '@/components/LayoutContext'; // Import our context
 
 export default function SearchPage() {
-  const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [searchResults, setSearchResults] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [hasSearched, setHasSearched] = React.useState(false);
 
-  // Consume the context to get the AppBar height
-  const { appBarHeight } = useContext(LayoutContext);
+  // This hook is simple and reliable for detecting if the page is scrolled.
+  const isScrolled = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 0, // Fire as soon as scrolling starts
+  });
 
-  // This is our new, high-performance scroll listener.
-  useEffect(() => {
-    const handleScroll = () => {
-      // Set state to true if scrolled more than 10px, false otherwise.
-      setIsScrolled(window.scrollY > 10);
-    };
-    // Add the listener when the component mounts
-    window.addEventListener('scroll', handleScroll);
-    // Remove the listener when the component unmounts to prevent memory leaks
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []); // The empty array ensures this effect runs only once.
-
-  const handleSearch = useCallback((criteria) => {
+  const handleSearch = React.useCallback((criteria) => {
     setLoading(true);
-    setHasSearched(true);
+    setHasSearched(true); 
     setTimeout(() => {
       let results = mockIncidents.filter(incident => (
         (criteria.incidentId ? incident.id.toString().includes(criteria.incidentId) : true) &&
@@ -52,19 +40,23 @@ export default function SearchPage() {
 
   return (
     <Stack spacing={2}>
-      {/* This header is now positioned correctly and animates instantly */}
+      {/* This Paper component is our sticky header.
+        It does NOT change height or position.
+        Only its shadow (elevation) changes, which is extremely fast.
+      */}
       <Paper 
         elevation={isScrolled ? 4 : 2} 
         sx={{ 
           p: 2, 
           position: 'sticky', 
-          top: `${appBarHeight}px`, // Position it perfectly below the main AppBar
+          top: 64, // Positioned 64px from the top to be below the main AppBar
           zIndex: 10, 
           backgroundColor: 'background.default',
-          transition: 'box-shadow 150ms ease-out', // Fast, smooth shadow transition
+          transition: 'box-shadow 0.2s ease-in-out', // A fast, subtle shadow animation
         }}
       >
-        <Typography variant="h4" sx={{ mb: 2 }}>
+        {/* The content inside is now correctly aligned */}
+        <Typography variant="h4" sx={{ mb: 2, textAlign: 'left' }}>
             Search & Archive
         </Typography>
         <IncidentSearchForm onSearch={handleSearch} isLoading={loading} />
@@ -78,6 +70,7 @@ export default function SearchPage() {
                   Search Results
               </Typography>
             </Box>
+            
             {!loading && searchResults.length === 0 ? (
                 <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
                     No results found for your search criteria.
