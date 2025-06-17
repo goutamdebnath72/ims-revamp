@@ -1,33 +1,43 @@
 // File: app/search/page.jsx
-// This version replaces the slow slide animation with a highly performant "elevation on scroll" effect.
+// This final version uses a custom scroll listener for instantaneous performance.
 'use client';
 
-import * as React from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import useScrollTrigger from '@mui/material/useScrollTrigger';
 import IncidentSearchForm from '@/components/IncidentSearchForm';
 import IncidentDataGrid from '@/components/IncidentDataGrid';
 import { mockIncidents } from '@/lib/mock-data';
+import { LayoutContext } from '@/components/LayoutContext'; // Import our context
 
 export default function SearchPage() {
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [hasSearched, setHasSearched] = React.useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  // This hook will now only be used to change the elevation (shadow) of the header.
-  const trigger = useScrollTrigger({
-    disableHysteresis: true,
-    threshold: 0, // Fire immediately
-  });
+  // Consume the context to get the AppBar height
+  const { appBarHeight } = useContext(LayoutContext);
 
-  const handleSearch = React.useCallback((criteria) => {
-    console.log("Searching with criteria:", criteria);
+  // This is our new, high-performance scroll listener.
+  useEffect(() => {
+    const handleScroll = () => {
+      // Set state to true if scrolled more than 10px, false otherwise.
+      setIsScrolled(window.scrollY > 10);
+    };
+    // Add the listener when the component mounts
+    window.addEventListener('scroll', handleScroll);
+    // Remove the listener when the component unmounts to prevent memory leaks
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []); // The empty array ensures this effect runs only once.
+
+  const handleSearch = useCallback((criteria) => {
     setLoading(true);
-    setHasSearched(true); 
-
+    setHasSearched(true);
     setTimeout(() => {
       let results = mockIncidents.filter(incident => (
         (criteria.incidentId ? incident.id.toString().includes(criteria.incidentId) : true) &&
@@ -42,19 +52,16 @@ export default function SearchPage() {
 
   return (
     <Stack spacing={2}>
-      {/* This Paper component now acts as our sticky header.
-        Instead of sliding, its 'elevation' prop changes on scroll.
-        This is extremely performant.
-      */}
+      {/* This header is now positioned correctly and animates instantly */}
       <Paper 
-        elevation={trigger ? 4 : 2} 
+        elevation={isScrolled ? 4 : 2} 
         sx={{ 
           p: 2, 
           position: 'sticky', 
-          top: -1, // A small offset to ensure shadow is visible
+          top: `${appBarHeight}px`, // Position it perfectly below the main AppBar
           zIndex: 10, 
           backgroundColor: 'background.default',
-          transition: 'box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms', // Smooth transition for the shadow
+          transition: 'box-shadow 150ms ease-out', // Fast, smooth shadow transition
         }}
       >
         <Typography variant="h4" sx={{ mb: 2 }}>
@@ -63,7 +70,7 @@ export default function SearchPage() {
         <IncidentSearchForm onSearch={handleSearch} isLoading={loading} />
       </Paper>
 
-      {/* Results Section - no changes needed here */}
+      {/* Results Section */}
       {hasSearched && (
          <Paper elevation={2}>
             <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
@@ -71,7 +78,6 @@ export default function SearchPage() {
                   Search Results
               </Typography>
             </Box>
-            
             {!loading && searchResults.length === 0 ? (
                 <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
                     No results found for your search criteria.
