@@ -1,8 +1,8 @@
 // File: app/search/page.jsx
-// Implements the "Hide on Scroll" feature for the search form.
+// Optimized with useCallback and a faster animation.
 'use client';
 
-import * as React from 'react';
+import React, { useCallback, useState } from 'react'; // Import useCallback and useState
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -17,18 +17,21 @@ import { mockIncidents } from '@/lib/mock-data';
 function HideOnScroll({ children }) {
   const trigger = useScrollTrigger();
   return (
-    <Slide appear={false} direction="down" in={!trigger}>
+    // We've reduced the timeout to make the animation much snappier
+    <Slide appear={false} direction="down" in={!trigger} timeout={150}>
       {children}
     </Slide>
   );
 }
 
 export default function SearchPage() {
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [hasSearched, setHasSearched] = React.useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = (criteria) => {
+  // By wrapping this function in useCallback, we ensure it's not recreated on every render.
+  // This helps prevent child components from re-rendering unnecessarily.
+  const handleSearch = useCallback((criteria) => {
     console.log("Searching with criteria:", criteria);
     setLoading(true);
     setHasSearched(true); 
@@ -43,13 +46,12 @@ export default function SearchPage() {
       setSearchResults(results);
       setLoading(false);
     }, 1000);
-  };
+  }, []); // The empty dependency array [] means this function is created only once.
 
   return (
     <Stack spacing={2}>
-      {/* The Search Form is now wrapped in our HideOnScroll component */}
       <HideOnScroll>
-        <Paper elevation={2} sx={{ p: 2, position: 'sticky', top: 0, zIndex: 10 }}>
+        <Paper elevation={2} sx={{ p: 2, position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'background.default' }}>
             <Typography variant="h4" sx={{ mb: 2 }}>
                 Search & Archive
             </Typography>
@@ -57,7 +59,6 @@ export default function SearchPage() {
         </Paper>
       </HideOnScroll>
 
-      {/* Results Section */}
       {hasSearched && (
          <Paper elevation={2}>
             <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>

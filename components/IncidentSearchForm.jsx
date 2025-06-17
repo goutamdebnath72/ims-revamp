@@ -1,8 +1,8 @@
 // File: components/IncidentSearchForm.jsx
-// This version improves the styling and layout of the search button.
+// Optimized with React.memo.
 'use client';
 
-import * as React from 'react';
+import React, { memo } from 'react'; // Import memo
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
@@ -10,11 +10,10 @@ import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import SearchIcon from '@mui/icons-material/Search';
 
-// Mock data for dropdowns
 const statuses = ['Any', 'New', 'Processed', 'Resolved', 'Closed'];
 const priorities = ['Any', 'Low', 'Medium', 'High'];
 
-export default function IncidentSearchForm({ onSearch, isLoading }) {
+function IncidentSearchForm({ onSearch, isLoading }) {
   const [criteria, setCriteria] = React.useState({
     incidentId: '',
     requestor: '',
@@ -36,69 +35,23 @@ export default function IncidentSearchForm({ onSearch, isLoading }) {
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Grid container spacing={2} alignItems="center">
         <Grid item xs={12} sm={6} md={3}>
-          <TextField
-            fullWidth
-            label="Incident ID"
-            name="incidentId"
-            value={criteria.incidentId}
-            onChange={handleChange}
-            size="small"
-          />
+          <TextField fullWidth label="Incident ID" name="incidentId" value={criteria.incidentId} onChange={handleChange} size="small" />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <TextField
-            fullWidth
-            label="Requestor Name/ID"
-            name="requestor"
-            value={criteria.requestor}
-            onChange={handleChange}
-            size="small"
-          />
+          <TextField fullWidth label="Requestor Name/ID" name="requestor" value={criteria.requestor} onChange={handleChange} size="small" />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <TextField
-            select
-            fullWidth
-            label="Status"
-            name="status"
-            value={criteria.status}
-            onChange={handleChange}
-            size="small"
-          >
-            {statuses.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
+          <TextField select fullWidth label="Status" name="status" value={criteria.status} onChange={handleChange} size="small">
+            {statuses.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
           </TextField>
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
-          <TextField
-            select
-            fullWidth
-            label="Priority"
-            name="priority"
-            value={criteria.priority}
-            onChange={handleChange}
-            size="small"
-          >
-            {priorities.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
+          <TextField select fullWidth label="Priority" name="priority" value={criteria.priority} onChange={handleChange} size="small">
+            {priorities.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
           </TextField>
         </Grid>
         <Grid item xs={12} md={2}>
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            startIcon={<SearchIcon />}
-            size="large" // Made the button larger
-            disabled={isLoading} // Disable button while searching
-            sx={{ height: '40px' }} // Match height of small text fields
-          >
+          <Button type="submit" variant="contained" fullWidth startIcon={<SearchIcon />} size="large" disabled={isLoading} sx={{ height: '40px' }}>
             {isLoading ? 'Searching...' : 'Search'}
           </Button>
         </Grid>
@@ -106,3 +59,6 @@ export default function IncidentSearchForm({ onSearch, isLoading }) {
     </Box>
   );
 }
+
+// Export the memoized version
+export default memo(IncidentSearchForm);
