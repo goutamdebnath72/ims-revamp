@@ -1,9 +1,9 @@
 // File: components/IncidentSearchForm.jsx
-// This version adds the missing import for the Box component.
+// This version improves the styling and layout of the search button.
 'use client';
 
 import * as React from 'react';
-import Box from '@mui/material/Box'; // <-- THE MISSING IMPORT IS ADDED HERE
+import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -14,8 +14,7 @@ import SearchIcon from '@mui/icons-material/Search';
 const statuses = ['Any', 'New', 'Processed', 'Resolved', 'Closed'];
 const priorities = ['Any', 'Low', 'Medium', 'High'];
 
-export default function IncidentSearchForm({ onSearch }) {
-  // We use state to hold the values of the form fields
+export default function IncidentSearchForm({ onSearch, isLoading }) {
   const [criteria, setCriteria] = React.useState({
     incidentId: '',
     requestor: '',
@@ -29,8 +28,8 @@ export default function IncidentSearchForm({ onSearch }) {
   };
 
   const handleSubmit = (event) => {
-    event.preventDefault(); // Prevent default form submission
-    onSearch(criteria); // Pass the criteria up to the parent page
+    event.preventDefault();
+    onSearch(criteria);
   };
 
   return (
@@ -96,8 +95,11 @@ export default function IncidentSearchForm({ onSearch }) {
             variant="contained"
             fullWidth
             startIcon={<SearchIcon />}
+            size="large" // Made the button larger
+            disabled={isLoading} // Disable button while searching
+            sx={{ height: '40px' }} // Match height of small text fields
           >
-            Search
+            {isLoading ? 'Searching...' : 'Search'}
           </Button>
         </Grid>
       </Grid>

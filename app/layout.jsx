@@ -1,10 +1,12 @@
-// File: app/layout.js (The ROOT layout)
+// File: app/layout.jsx
+// This file now uses our new AppLayout to wrap every page.
 import * as React from 'react';
 import ThemeRegistry from './ThemeRegistry';
+import AppLayout from '@/components/AppLayout'; // Import our new layout
 
 export const metadata = {
   title: 'IMS Dashboard',
-  description: 'Incident Management System',
+  description: 'Incident Management System - DSP',
 };
 
 export default function RootLayout({ children }) {
@@ -12,7 +14,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <ThemeRegistry>
-          {children}
+          <AppLayout>
+            {children}
+          </AppLayout>
         </ThemeRegistry>
       </body>
     </html>
