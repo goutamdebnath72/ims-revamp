@@ -1,6 +1,6 @@
 // File: components/RaiseIncidentForm.jsx
-// Version: FINAL - 19 June 2025, 8:30 PM
-// This version is a complete rewrite using a robust Flexbox layout as per user specification.
+// Version: FINAL - 19 June 2025, 9:20 PM
+// This version adds letter-spacing to the submit button for a more refined look.
 'use client';
 
 import * as React from 'react';
@@ -13,7 +13,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import FormHelperText from '@mui/material/FormHelperText';
-import Stack from '@mui/material/Stack'; // Using Stack (Flexbox) for layout
+import Stack from '@mui/material/Stack'; // Using Stack (which is Flexbox) for layout
 import { departments } from '@/lib/departments';
 import { incidentTypes } from '@/lib/incident-types';
 
@@ -63,7 +63,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      {/* A parent Stack manages the vertical layout of each row */}
       <Stack spacing={3}>
 
         {/* --- ROW 1: Four side-by-side fields --- */}
@@ -93,7 +92,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
         {/* --- ROW 2: Four side-by-side fields --- */}
         <Stack direction="row" spacing={2}>
-          <TextField required fullWidth name="contactNumber" label="Contact Number" value={formData.contactNumber} onChange={handleChange} error={!!errors.contactNumber} helperText={errors.contactNumber || " "}/>
+          <TextField required fullWidth name="contactNumber" label="Contact Number / PAX" value={formData.contactNumber} onChange={handleChange} error={!!errors.contactNumber} helperText={errors.contactNumber || " "}/>
           <TextField required fullWidth name="jobTitle" label="Job Title" value={formData.jobTitle} onChange={handleChange} error={!!errors.jobTitle} helperText={errors.jobTitle || " "}/>
           <TextField fullWidth disabled label="Ticket No." defaultValue={userDetails.ticketNo} />
           <TextField fullWidth disabled label="Requestor Name" defaultValue={userDetails.name} />
@@ -104,7 +103,18 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
         {/* --- ROW 4: Submit Button --- */}
         <Box sx={{ position: 'relative' }}>
-          <Button variant="contained" size="large" type="submit" disabled={isSubmitting} fullWidth sx={{ py: 1.5, fontSize: '1.1rem' }}>
+          <Button
+            variant="contained"
+            size="large"
+            type="submit"
+            disabled={isSubmitting}
+            fullWidth
+            sx={{ 
+              py: 1.5, 
+              fontSize: '1.1rem',
+              letterSpacing: '1.5px' // <-- THE ADDED STYLE
+            }}
+          >
             {isSubmitting ? 'Submitting...' : 'Submit Incident'}
           </Button>
           {isSubmitting && (

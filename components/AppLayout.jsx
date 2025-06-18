@@ -1,5 +1,6 @@
 // File: components/AppLayout.jsx
-// This version uses the professional "add document" icon for "Raise Incident".
+// Version: FINAL - 18 June 2025, 9:45 PM
+// This version restores the user welcome message in the top header.
 'use client';
 
 import * as React from 'react';
@@ -17,15 +18,22 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SearchIcon from '@mui/icons-material/Search';
-import PostAddIcon from '@mui/icons-material/PostAdd'; // The new, correct icon
+import PostAddIcon from '@mui/icons-material/PostAdd';
+import Avatar from '@mui/material/Avatar'; // For the user initial
 
 const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, href: '/' },
   { text: 'Search & Archive', icon: <SearchIcon />, href: '/search' },
-  { text: 'Raise Incident', icon: <PostAddIcon />, href: '/raise' }, // Using the new icon
+  { text: 'Raise Incident', icon: <PostAddIcon />, href: '/raise' },
 ];
+
+// Hardcoded user details for the placeholder
+const loggedInUser = {
+  name: 'Goutam Debnath',
+  initials: 'GD'
+};
 
 export default function AppLayout({ children }) {
   return (
@@ -35,9 +43,17 @@ export default function AppLayout({ children }) {
         sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}
       >
         <Toolbar>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Incident Management System - DSP
           </Typography>
+          
+          {/* --- User Welcome Message Section --- */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography sx={{ mr: 2 }}>
+              Welcome {loggedInUser.name.toUpperCase()}
+            </Typography>
+            <Avatar sx={{ bgcolor: 'secondary.main' }}>{loggedInUser.initials}</Avatar>
+          </Box>
         </Toolbar>
       </AppBar>
       <Drawer
