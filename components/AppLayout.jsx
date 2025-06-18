@@ -1,5 +1,5 @@
 // File: components/AppLayout.jsx
-// This is the reverted, simpler version of the main layout.
+// This version uses the professional "add document" icon for "Raise Incident".
 'use client';
 
 import * as React from 'react';
@@ -17,14 +17,14 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SearchIcon from '@mui/icons-material/Search';
-import BugReportIcon from '@mui/icons-material/BugReport';
+import PostAddIcon from '@mui/icons-material/PostAdd'; // The new, correct icon
 
 const drawerWidth = 240;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, href: '/' },
   { text: 'Search & Archive', icon: <SearchIcon />, href: '/search' },
-  { text: 'Raise Incident', icon: <BugReportIcon />, href: '/raise' },
+  { text: 'Raise Incident', icon: <PostAddIcon />, href: '/raise' }, // Using the new icon
 ];
 
 export default function AppLayout({ children }) {
