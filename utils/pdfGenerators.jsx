@@ -1,9 +1,9 @@
 // utils/pdfGenerators.js
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export function generateIncidentPdf(incident, auditTrail) {
-  const doc = new jsPDF({ orientation: 'portrait' });
+  const doc = new jsPDF({ orientation: "portrait" });
   const margin = 14;
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -12,40 +12,47 @@ export function generateIncidentPdf(incident, auditTrail) {
 
   // Title
   doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Incident Audit Report', margin, currentY);
+  doc.setFont("helvetica", "bold");
+  doc.text("Incident Audit Report", margin, currentY);
 
   // Timestamp
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Generated on: ${timestamp}`, pageWidth - margin, currentY, { align: 'right' });
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated on: ${timestamp}`, pageWidth - margin, currentY, {
+    align: "right",
+  });
 
   currentY += 2;
   doc.setLineWidth(0.5);
   doc.line(margin, currentY, pageWidth - margin, currentY); // underline
   currentY += 6;
-  
+
   // Incident Details Table
   const detailRows = [
-    ['Incident No.', incident.incidentNumber || '1000029878'],
-    ['Incident Type', incident.incidentType],
-    ['Job Title', incident.jobTitle],
-    ['Description', formatDescription(incident.description)],
-    ['Requestor', incident.requestor],
-    ['Department', incident.department],
-    ['Contact', incident.contactNumber],
+    ["Incident No.", incident.incidentNumber || "1000029878"],
+    ["Incident Type", incident.incidentType],
+    ["Job Title", incident.jobTitle],
+    ["Description", formatDescription(incident.description)],
+    ["Requestor", incident.requestor],
+    ["Department", incident.department],
+    ["Contact", incident.contactNumber],
   ];
 
   autoTable(doc, {
     startY: currentY,
-    head: [['Field', 'Value']],
+    head: [["Field", "Value"]],
     body: detailRows,
-    theme: 'grid',
+    theme: "grid",
     styles: { fontSize: 12 },
-    headStyles: { fillColor: [240, 240, 240] },
+    // ... inside the first autoTable call
+    headStyles: {
+      fillColor: [0, 82, 155], // blue
+      textColor: 255, // white
+      fontStyle: "bold",
+    },
     columnStyles: {
       0: { cellWidth: 40 },
-      1: { cellWidth: pageWidth - 2 * margin - 40 }
+      1: { cellWidth: pageWidth - 2 * margin - 40 },
     },
     didDrawCell: (data) => {
       currentY = data.cursor.y;
@@ -58,25 +65,25 @@ export function generateIncidentPdf(incident, auditTrail) {
   // Audit Trail Table
   autoTable(doc, {
     startY: currentY,
-    head: [['Timestamp', 'Author', 'Action', 'Comment']],
+    head: [["Timestamp", "Author", "Action", "Comment"]],
     body: auditTrail.map((entry) => [
       formatDate(entry.timestamp),
       entry.author,
       entry.action,
-      formatComment(entry.comment)
+      formatComment(entry.comment),
     ]),
-    theme: 'grid',
+    theme: "grid",
     styles: { fontSize: 12 },
     headStyles: {
       fillColor: [0, 82, 155], // blue
       textColor: 255,
-      fontStyle: 'bold',
+      fontStyle: "bold",
     },
     columnStyles: {
       0: { cellWidth: 35 },
       1: { cellWidth: 40 },
-      2: { fontStyle: 'normal', cellWidth: 35 },
-      3: { cellWidth: pageWidth - 2 * margin - 110 }
+      2: { fontStyle: "normal", cellWidth: 35 },
+      3: { cellWidth: pageWidth - 2 * margin - 110 },
     },
     didDrawCell: (data) => {
       currentY = data.cursor.y;
@@ -88,33 +95,36 @@ export function generateIncidentPdf(incident, auditTrail) {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(10);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, doc.internal.pageSize.getHeight() - 10, {
-      align: 'right',
-    });
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageWidth - margin,
+      doc.internal.pageSize.getHeight() - 10,
+      {
+        align: "right",
+      }
+    );
   }
 
-  doc.save(`Incident_${incident.incidentNumber || '1000029878'}.pdf`);
-
+  doc.save(`Incident_${incident.incidentNumber || "1000029878"}.pdf`);
 
   // --- Helper Functions ---
   // These are nested inside generateIncidentPdf to have access to its scope if needed in the future.
-  
+
   function formatDate(timestamp) {
     const date = new Date(timestamp);
     return date.toLocaleString();
   }
 
   function formatComment(comment) {
-    return comment.replace('Password:\n', 'Password: ')
-                  .replace(/\.+$/, '');
+    return comment.replace("Password:\n", "Password: ").replace(/\.+$/, "");
   }
 
   function formatDescription(desc) {
     return desc
-      .replace(/(KALU BOURI)(?!,)/, '$1,')
-      .replace(/(Ticket No:[^\s]+)/, '$1,')
-      .replace(/(SAIL PNo:[^\s]+)/, '$1,')
-      .replace(/Department:/, 'Department:,');
+      .replace(/(KALU BOURI)(?!,)/, "$1,")
+      .replace(/(Ticket No:[^\s]+)/, "$1,")
+      .replace(/(SAIL PNo:[^\s]+)/, "$1,")
+      .replace(/Department:/, "Department:,");
   }
 }
 
