@@ -115,17 +115,31 @@ export function generateIncidentPdf(incident, auditTrail) {
     return date.toLocaleString();
   }
 
+  // This is the new, dynamic function
   function formatComment(comment) {
-    return comment.replace("Password:\n", "Password: ").replace(/\.+$/, "");
+    // Dynamically replace any newline characters with a space, ensuring any
+    // comment from the database will be formatted correctly on one line.
+    // Then, remove any trailing periods for clean formatting.
+    return comment.replace(/\r?\n/g, " ").replace(/\.+$/, "");
   }
 
+  // This is the new, dynamic function
   function formatDescription(desc) {
-    return desc
-      .replace(/(KALU BOURI)(?!,)/, "$1,")
-      .replace(/(Ticket No:[^\s]+)/, "$1,")
-      .replace(/(SAIL PNo:[^\s]+)/, "$1,")
-      .replace(/Department:/, "Department:,");
+    let formattedDesc = desc;
+
+    // --- Step 1: Normalize separators between discrete data fragments ---
+    // This ensures that keywords are always preceded by a single comma and a space,
+    // correcting any missing commas or incorrect spacing between the data fragments.
+    formattedDesc = formattedDesc.replace(/\s*Ticket No:/g, ", Ticket No:");
+    formattedDesc = formattedDesc.replace(/\s*SAIL PNo:/g, ", SAIL PNo:");
+    formattedDesc = formattedDesc.replace(/\s*Department:/g, ", Department:");
+
+    // --- Step 2: Ensure a single space follows every colon ---
+    // This handles the spacing within a fragment, like "Ticket No:223379".
+    // The regex finds a colon (:) followed by any non-space character (\S)
+    // and replaces it with the colon, a space, and the character that was found.
+    formattedDesc = formattedDesc.replace(/:(\S)/g, ": $1");
+
+    return formattedDesc;
   }
 }
-
-// NOTE: The second extra closing brace at the very end of the file has also been removed.
