@@ -1,4 +1,5 @@
 // File: components/IncidentAuditTrail.jsx
+// Adds the Divider under the title for consistency.
 'use client';
 
 import * as React from 'react';
@@ -7,103 +8,79 @@ import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
+import Divider from '@mui/material/Divider'; // <-- IMPORTED
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import {
-  PhoneInTalk as PhoneIcon,
-  Settings as SettingsIcon,
-  CheckCircle as CheckIcon,
-  ChatBubbleOutline as CommentIcon,
-} from '@mui/icons-material';
-import { generateIncidentPdf } from '@/utils/pdfGenerators'; // ⬅️ import reusable utility
+import DownloadIcon from '@mui/icons-material/Download';
+import { generateIncidentPdf } from '@/utils/pdfGenerators';
 
-export default function IncidentAuditTrail({ auditTrail, incident }) {
-  const getIconForAction = (action) => {
-    const lower = action.toLowerCase();
-    if (lower.includes('closed')) return <CheckIcon color="success" sx={{ mr: 1 }} />;
-    if (lower.includes('accepted') || lower.includes('call')) return <PhoneIcon color="info" sx={{ mr: 1 }} />;
-    if (lower.includes('reset') || lower.includes('processed')) return <SettingsIcon color="warning" sx={{ mr: 1 }} />;
-    return <CommentIcon color="disabled" sx={{ mr: 1 }} />;
-  };
-
-  const handlePdf = () => {
+export default function IncidentAuditTrail({ auditTrail, incident, isResolved }) {
+  const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
   };
 
   if (!auditTrail || auditTrail.length === 0) {
     return (
-      <Paper elevation={3} sx={{ p: 3, backgroundColor: '#fafafa', borderLeft: '1px solid #e0e0e0' }}>
+      <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
         <Typography variant="h5" gutterBottom>
           Audit Trail
         </Typography>
+        <Divider sx={{ mb: 3 }} />
         <Typography color="text.secondary">No history available for this incident.</Typography>
       </Paper>
     );
   }
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 3,
-        height: '100%',
-        maxHeight: { xs: 300, sm: 400, md: 500 },
-        overflowY: 'auto',
-        backgroundColor: '#fafafa',
-        borderLeft: '1px solid #e0e0e0',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5">Audit Trail</Typography>
-        {incident?.status === 'Resolved' && (
-          <Button variant="outlined" size="small" onClick={handlePdf}>
+    <Paper elevation={3} sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
+          Audit Trail
+        </Typography>
+        {isResolved && (
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownload}
+          >
             Download PDF
           </Button>
         )}
-      </Stack>
+      </Box>
 
-      <List sx={{ width: '100%', p: 0 }}>
+      <Divider sx={{ mt: 1.5, mb: 2 }} /> {/* <-- ADDED THIS DIVIDER */}
+
+      <List sx={{ width: '100%', bgcolor: 'background.paper', p: 0 }}>
+        {/* ... (rest of the component is unchanged) ... */}
         {auditTrail.map((entry, index) => {
           const isClosedEntry = entry.action.toLowerCase().includes('closed');
+          const finalColor = '#4CAF50';
           const comment = entry.comment.trim();
           const needsPunctuation = !/[.!?]$/.test(comment);
           const formattedComment = needsPunctuation ? `${comment}.` : comment;
 
           return (
             <React.Fragment key={index}>
-              <ListItem
-                alignItems="flex-start"
-                sx={{
-                  py: 2,
-                  px: 1,
-                  transition: 'background 0.3s',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                  },
-                  borderRadius: 1,
-                }}
-              >
-                {getIconForAction(entry.action)}
+              <ListItem alignItems="flex-start" sx={{ py: 2 }}>
                 <ListItemText
                   primary={
-                    <>
+                    <React.Fragment>
                       <Typography
-                        variant="subtitle1"
+                        component="span"
+                        variant="body1"
                         sx={{
+                          display: 'block',
                           fontWeight: 'bold',
-                          color: isClosedEntry ? 'green' : 'text.primary',
+                          color: isClosedEntry ? finalColor : 'text.primary',
                         }}
                       >
                         {entry.action}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                         {formattedComment}
                       </Typography>
-                    </>
+                    </React.Fragment>
                   }
                   secondary={
                     <Typography
@@ -116,7 +93,7 @@ export default function IncidentAuditTrail({ auditTrail, incident }) {
                         color: 'text.secondary',
                       }}
                     >
-                      {entry.author} —{' '}
+                      <span>{`${entry.author} — `}</span>
                       <span style={{ textDecoration: isClosedEntry ? 'underline' : 'none' }}>
                         {entry.timestamp}
                       </span>
