@@ -1,5 +1,5 @@
 // File: components/IncidentAuditTrail.jsx
-// Adds the Divider under the title for consistency.
+// UPDATED: Prevents auto-scrolling on initial page load.
 "use client";
 
 import * as React from "react";
@@ -8,7 +8,7 @@ import Typography from "@mui/material/Typography";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import Divider from "@mui/material/Divider"; // <-- IMPORTED
+import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -19,6 +19,24 @@ export default function IncidentAuditTrail({
   incident,
   isResolved,
 }) {
+  const scrollRef = React.useRef(null);
+  
+  // --- FINAL FIX: This ref acts as a flag for the initial render ---
+  const isInitialRender = React.useRef(true);
+
+  React.useEffect(() => {
+    // If it's the first render, set the flag to false and do nothing.
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      return;
+    }
+
+    // On all subsequent renders (i.e., when a comment is added), scroll to the bottom.
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [auditTrail]); // The effect still depends on the auditTrail array
+
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
   };
@@ -39,6 +57,7 @@ export default function IncidentAuditTrail({
 
   return (
     <Paper
+      ref={scrollRef} 
       elevation={3}
       sx={{
         p: 3,
@@ -67,16 +86,14 @@ export default function IncidentAuditTrail({
           </Button>
         )}
       </Box>
-      <Divider sx={{ mt: 1.5, mb: 2 }} /> {/* <-- ADDED THIS DIVIDER */}
-      <List sx={{ width: "100%", bgcolor: "background.paper", p: 0 }}>
-        {/* ... (rest of the component is unchanged) ... */}
+      <Divider sx={{ mt: 1.5, mb: 2 }} />
+      <List sx={{ width: "100%", bgcolor: "background.paper", p: 0, py: 1.5 }}>
         {auditTrail.map((entry, index) => {
           const isClosedEntry = entry.action.toLowerCase().includes("closed");
           const finalColor = "#4CAF50";
           const comment = entry.comment.trim();
           const needsPunctuation = !/[.!?]$/.test(comment);
           const formattedComment = needsPunctuation ? `${comment}.` : comment;
-
           return (
             <React.Fragment key={index}>
               <ListItem alignItems="flex-start" sx={{ py: 2 }}>
@@ -98,7 +115,11 @@ export default function IncidentAuditTrail({
                         component="span"
                         variant="body2"
                         color="text.secondary"
-                        sx={{ display: "block", mt: 0.5 }}
+                        sx={{ 
+                          display: "block", 
+                          mt: 0.5,
+                          whiteSpace: 'pre-wrap'
+                        }}
                       >
                         {formattedComment}
                       </Typography>

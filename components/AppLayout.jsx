@@ -1,10 +1,12 @@
 // File: components/AppLayout.jsx
-// Version: FINAL - 18 June 2025, 11:55 PM
-// This version adds a functional, clickable user menu with a logout option.
+// CORRECTED: Restored all necessary Material UI component imports.
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
+import { UserContext } from "@/context/UserContext";
+
+// --- All MUI imports are now correctly included ---
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import AppBar from "@mui/material/AppBar";
@@ -20,10 +22,10 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import Avatar from "@mui/material/Avatar";
-import IconButton from "@mui/material/IconButton"; // To make the avatar clickable
+import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import LogoutIcon from "@mui/icons-material/Logout"; // Logout icon
+import LogoutIcon from "@mui/icons-material/Logout";
 
 const drawerWidth = 240;
 
@@ -33,32 +35,28 @@ const menuItems = [
   { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise" },
 ];
 
-const loggedInUser = {
-  name: "Goutam Debnath",
-  initials: "GD",
-};
-
 export default function AppLayout({ children }) {
-  // State to manage the user menu anchor
+  const { user } = React.useContext(UserContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
-  // Function to open the menu
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
-  // Function to close the menu
   const handleClose = () => {
     setAnchorEl(null);
   };
 
-  // Placeholder function for logout
   const handleLogout = () => {
     console.log("Logout clicked!");
     handleClose();
-    // Later, this will redirect to the login page
   };
+  
+  // Render nothing or a loading spinner until user data is available
+  if (!user) {
+    return null; 
+  }
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -73,11 +71,11 @@ export default function AppLayout({ children }) {
 
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
-              Welcome {loggedInUser.name.toUpperCase()}
+              Welcome {user.name.toUpperCase()}
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
               <Avatar sx={{ bgcolor: "secondary.main" }}>
-                {loggedInUser.initials}
+                {user.initials}
               </Avatar>
             </IconButton>
             <Menu

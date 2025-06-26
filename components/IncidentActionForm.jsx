@@ -1,5 +1,5 @@
 // File: components/IncidentActionForm.jsx
-// UPDATED: Corrected title variant and button layout.
+// UPDATED: "Resolve Incident" button now opens the resolution dialog.
 "use client";
 
 import * as React from "react";
@@ -10,24 +10,23 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
 
-export default function IncidentActionForm() {
+// It now receives an `onOpenResolveDialog` prop
+export default function IncidentActionForm({ onUpdate, onOpenResolveDialog }) {
   const [comment, setComment] = React.useState("");
 
   const handleSubmitUpdate = () => {
-    console.log("Submitting Update:", comment);
-    setComment("");
+    onUpdate(comment);
+    setComment(""); 
   };
-
-  const handleResolve = () => {
-    console.log("Resolving Incident with comment:", comment);
-    setComment("");
+  
+  // This button now just triggers the dialog to open
+  const handleResolveClick = () => {
+    onOpenResolveDialog();
   };
 
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
-        {" "}
-        {/* CORRECTED: Changed to h5 */}
         Take Action
       </Typography>
       <Divider sx={{ mb: 2 }} />
@@ -42,12 +41,11 @@ export default function IncidentActionForm() {
           variant="outlined"
           fullWidth
         />
-        {/* CORRECTED: Button layout is now full-width */}
         <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
           <Button
             variant="outlined"
             color="success"
-            onClick={handleResolve}
+            onClick={handleResolveClick} // Changed from handleResolve
             sx={{ flex: 1, letterSpacing: "1px" }}
           >
             Resolve Incident
@@ -56,6 +54,7 @@ export default function IncidentActionForm() {
             variant="contained"
             onClick={handleSubmitUpdate}
             sx={{ flex: 1, letterSpacing: "1px" }}
+            disabled={!comment.trim()}
           >
             Submit Update
           </Button>
