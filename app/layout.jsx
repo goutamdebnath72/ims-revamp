@@ -1,9 +1,10 @@
 // File: app/layout.jsx
-// UPDATED: Wrapped the application in the new UserProvider.
+// UPDATED: Wrapped the application in the new NotificationProvider.
 import * as React from 'react';
 import ThemeRegistry from './ThemeRegistry';
 import AppLayout from '@/components/AppLayout';
-import UserProvider from '@/context/UserContext'; // <-- Import the new provider
+import UserProvider from '@/context/UserContext';
+import NotificationProvider from '@/context/NotificationContext'; // <-- Import the new provider
 
 export const metadata = {
   title: 'IMS Dashboard',
@@ -19,11 +20,13 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <ThemeRegistry>
-          {/* The UserProvider now wraps AppLayout, making user data available everywhere */}
           <UserProvider>
-            <AppLayout>
-              {children}
-            </AppLayout>
+            {/* NotificationProvider wraps AppLayout to provide snackbar functionality */}
+            <NotificationProvider>
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </NotificationProvider>
           </UserProvider>
         </ThemeRegistry>
       </body>

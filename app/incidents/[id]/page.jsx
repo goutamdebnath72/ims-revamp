@@ -1,9 +1,8 @@
-// File: app/incidents/[id]/page.jsx
-// CORRECTED: Restored the missing 'initialData' definition logic.
 'use client';
 
-import * as React from 'react';
+import * as React from 'react'; // <-- THIS LINE WAS MISSING
 import { UserContext } from '@/context/UserContext';
+import { NotificationContext } from '@/context/NotificationContext';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import IncidentDetailsCard from '@/components/IncidentDetailsCard';
@@ -11,7 +10,6 @@ import IncidentAuditTrail from '@/components/IncidentAuditTrail';
 import IncidentActionForm from '@/components/IncidentActionForm';
 import ResolutionDialog from '@/components/ResolutionDialog';
 
-// --- Mock Data ---
 const longOpenIncidentData = {
   id: '1000031588',
   status: 'Awaiting User Response',
@@ -47,20 +45,20 @@ const longResolvedIncidentData = {
       timestamp: 'Wed Jun 25, 2025 01:30 pm',
       author: 'DEBASHISH GHOSH',
       action: '(Closed By DEBASHISH GHOSH)',
-      comment: 'Disabled conflicting extension via remote session. Application now launches correctly. User confirmed resolution.'
+      comment: 'Disabled conflicting extension via remote session. Application now launches correctly. User confirmed resolution.',
+      rating: 5
     }
   ]
 };
 
 export default function IncidentDetailsPage({ params }) {
-  // --- THIS BLOCK WAS MISSING - IT IS NOW RESTORED ---
-  // To test different initial views, comment and uncomment the lines below.
-  const initialData = longOpenIncidentData; // Use this for the OPEN view
-  // const initialData = longResolvedIncidentData; // Use this for the CLOSED view
+  const initialData = longOpenIncidentData;
+  // const initialData = longResolvedIncidentData;
 
   const [incident, setIncident] = React.useState(initialData);
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const { user } = React.useContext(UserContext);
+  const { showNotification } = React.useContext(NotificationContext);
 
   const handleUpdate = (comment) => {
     if (!comment || !user) return; 
@@ -76,6 +74,8 @@ export default function IncidentDetailsPage({ params }) {
       ...prevIncident,
       auditTrail: [...prevIncident.auditTrail, newAuditEntry],
     }));
+    
+    showNotification('Incident updated successfully!', 'success');
   };
 
   const handleConfirmResolve = (comment, rating) => {
@@ -85,7 +85,8 @@ export default function IncidentDetailsPage({ params }) {
       timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
       author: user.name,
       action: `(Closed By ${user.name})`,
-      comment: `${comment} (Satisfaction Rating: ${rating} / 5)`,
+      comment: comment,
+      rating: rating,
     };
 
     setIncident(prevIncident => ({
@@ -93,11 +94,12 @@ export default function IncidentDetailsPage({ params }) {
       status: 'Resolved',
       auditTrail: [...prevIncident.auditTrail, finalAuditEntry],
     }));
+
+    showNotification('Incident resolved successfully!', 'success');
   };
 
   const isResolved = incident.status === 'Resolved';
   
-  // A check to prevent rendering before user context is available.
   if (!user) {
     return null;
   }

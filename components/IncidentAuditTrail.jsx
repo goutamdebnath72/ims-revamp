@@ -1,5 +1,5 @@
 // File: components/IncidentAuditTrail.jsx
-// UPDATED: Prevents auto-scrolling on initial page load.
+// CORRECTED: Restored the missing JSX for the 'secondary' prop.
 "use client";
 
 import * as React from "react";
@@ -12,6 +12,7 @@ import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import DownloadIcon from "@mui/icons-material/Download";
+import Rating from '@mui/material/Rating';
 import { generateIncidentPdf } from "@/utils/pdfGenerators";
 
 export default function IncidentAuditTrail({
@@ -20,22 +21,17 @@ export default function IncidentAuditTrail({
   isResolved,
 }) {
   const scrollRef = React.useRef(null);
-  
-  // --- FINAL FIX: This ref acts as a flag for the initial render ---
   const isInitialRender = React.useRef(true);
 
   React.useEffect(() => {
-    // If it's the first render, set the flag to false and do nothing.
     if (isInitialRender.current) {
       isInitialRender.current = false;
       return;
     }
-
-    // On all subsequent renders (i.e., when a comment is added), scroll to the bottom.
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [auditTrail]); // The effect still depends on the auditTrail array
+  }, [auditTrail]);
 
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
@@ -57,7 +53,7 @@ export default function IncidentAuditTrail({
 
   return (
     <Paper
-      ref={scrollRef} 
+      ref={scrollRef}
       elevation={3}
       sx={{
         p: 3,
@@ -94,6 +90,8 @@ export default function IncidentAuditTrail({
           const comment = entry.comment.trim();
           const needsPunctuation = !/[.!?]$/.test(comment);
           const formattedComment = needsPunctuation ? `${comment}.` : comment;
+          const hasRating = entry.rating !== undefined && entry.rating !== null;
+
           return (
             <React.Fragment key={index}>
               <ListItem alignItems="flex-start" sx={{ py: 2 }}>
@@ -115,16 +113,25 @@ export default function IncidentAuditTrail({
                         component="span"
                         variant="body2"
                         color="text.secondary"
-                        sx={{ 
-                          display: "block", 
+                        sx={{
+                          display: "block",
                           mt: 0.5,
                           whiteSpace: 'pre-wrap'
                         }}
                       >
                         {formattedComment}
                       </Typography>
+                      {hasRating && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                            Final Rating:
+                          </Typography>
+                          <Rating name="read-only-rating" value={entry.rating} readOnly />
+                        </Box>
+                      )}
                     </React.Fragment>
                   }
+                  // --- THIS SECTION IS NOW RESTORED ---
                   secondary={
                     <Typography
                       variant="caption"
