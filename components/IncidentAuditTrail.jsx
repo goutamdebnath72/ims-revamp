@@ -1,5 +1,5 @@
 // File: components/IncidentAuditTrail.jsx
-// CORRECTED: Restored the missing JSX for the 'secondary' prop.
+// UPDATED: Made the auto-scrolling logic more robust for production environments.
 "use client";
 
 import * as React from "react";
@@ -28,11 +28,20 @@ export default function IncidentAuditTrail({
       isInitialRender.current = false;
       return;
     }
+
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      // --- THIS IS THE CHANGE ---
+      // Wrap the scroll logic in a setTimeout to ensure it runs after the DOM has fully painted.
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 0);
+      // --- END OF CHANGE ---
     }
   }, [auditTrail]);
 
+  // ... (The rest of the component remains exactly the same) ...
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
   };
@@ -131,7 +140,6 @@ export default function IncidentAuditTrail({
                       )}
                     </React.Fragment>
                   }
-                  // --- THIS SECTION IS NOW RESTORED ---
                   secondary={
                     <Typography
                       variant="caption"
