@@ -1,39 +1,58 @@
 // File: components/IncidentAuditTrail.jsx
 // Adds the Divider under the title for consistency.
-'use client';
+"use client";
 
-import * as React from 'react';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider'; // <-- IMPORTED
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import DownloadIcon from '@mui/icons-material/Download';
-import { generateIncidentPdf } from '@/utils/pdfGenerators';
+import * as React from "react";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Divider from "@mui/material/Divider"; // <-- IMPORTED
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import DownloadIcon from "@mui/icons-material/Download";
+import { generateIncidentPdf } from "@/utils/pdfGenerators";
 
-export default function IncidentAuditTrail({ auditTrail, incident, isResolved }) {
+export default function IncidentAuditTrail({
+  auditTrail,
+  incident,
+  isResolved,
+}) {
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
   };
 
   if (!auditTrail || auditTrail.length === 0) {
     return (
-      <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+      <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
         <Typography variant="h5" gutterBottom>
           Audit Trail
         </Typography>
         <Divider sx={{ mb: 3 }} />
-        <Typography color="text.secondary">No history available for this incident.</Typography>
+        <Typography color="text.secondary">
+          No history available for this incident.
+        </Typography>
       </Paper>
     );
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 3, height: '100%', overflowY: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        height: isResolved ? "calc(100vh - 320px)" : "100%",
+        overflowY: "auto",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
           Audit Trail
         </Typography>
@@ -48,14 +67,12 @@ export default function IncidentAuditTrail({ auditTrail, incident, isResolved })
           </Button>
         )}
       </Box>
-
       <Divider sx={{ mt: 1.5, mb: 2 }} /> {/* <-- ADDED THIS DIVIDER */}
-
-      <List sx={{ width: '100%', bgcolor: 'background.paper', p: 0 }}>
+      <List sx={{ width: "100%", bgcolor: "background.paper", p: 0 }}>
         {/* ... (rest of the component is unchanged) ... */}
         {auditTrail.map((entry, index) => {
-          const isClosedEntry = entry.action.toLowerCase().includes('closed');
-          const finalColor = '#4CAF50';
+          const isClosedEntry = entry.action.toLowerCase().includes("closed");
+          const finalColor = "#4CAF50";
           const comment = entry.comment.trim();
           const needsPunctuation = !/[.!?]$/.test(comment);
           const formattedComment = needsPunctuation ? `${comment}.` : comment;
@@ -70,14 +87,19 @@ export default function IncidentAuditTrail({ auditTrail, incident, isResolved })
                         component="span"
                         variant="body1"
                         sx={{
-                          display: 'block',
-                          fontWeight: 'bold',
-                          color: isClosedEntry ? finalColor : 'text.primary',
+                          display: "block",
+                          fontWeight: "bold",
+                          color: isClosedEntry ? finalColor : "text.primary",
                         }}
                       >
                         {entry.action}
                       </Typography>
-                      <Typography component="span" variant="body2" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ display: "block", mt: 0.5 }}
+                      >
                         {formattedComment}
                       </Typography>
                     </React.Fragment>
@@ -86,15 +108,19 @@ export default function IncidentAuditTrail({ auditTrail, incident, isResolved })
                     <Typography
                       variant="caption"
                       sx={{
-                        display: 'block',
-                        textAlign: 'right',
+                        display: "block",
+                        textAlign: "right",
                         mt: 1,
-                        fontWeight: isClosedEntry ? 'bold' : 'normal',
-                        color: 'text.secondary',
+                        fontWeight: isClosedEntry ? "bold" : "normal",
+                        color: "text.secondary",
                       }}
                     >
                       <span>{`${entry.author} — `}</span>
-                      <span style={{ textDecoration: isClosedEntry ? 'underline' : 'none' }}>
+                      <span
+                        style={{
+                          textDecoration: isClosedEntry ? "underline" : "none",
+                        }}
+                      >
                         {entry.timestamp}
                       </span>
                     </Typography>

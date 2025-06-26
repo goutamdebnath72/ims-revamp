@@ -58,8 +58,8 @@ export default function IncidentDetailsPage({ params }) {
   // --- Data Selection Logic ---
   // To test different views, comment and uncomment the lines below.
   
-   // const incident = longResolvedIncidentData; // Use this for the CLOSED view
-    const incident = longOpenIncidentData;      // Use this for the OPEN view
+    // const incident = longResolvedIncidentData; // Use this for the CLOSED view
+     const incident = longOpenIncidentData;      // Use this for the OPEN view
   
   const isResolved = incident.status === 'Resolved';
 
