@@ -1,5 +1,5 @@
 // File: components/IncidentAuditTrail.jsx
-// UPDATED: Made the auto-scrolling logic more robust for production environments.
+// UPDATED: Using requestAnimationFrame for a more reliable scroll on production.
 "use client";
 
 import * as React from "react";
@@ -29,16 +29,18 @@ export default function IncidentAuditTrail({
       return;
     }
 
+    // --- THIS IS THE NEW, MORE ROBUST LOGIC ---
+    // We use requestAnimationFrame to ensure the scroll happens
+    // right before the browser's next paint cycle.
     if (scrollRef.current) {
-      // --- THIS IS THE CHANGE ---
-      // Wrap the scroll logic in a setTimeout to ensure it runs after the DOM has fully painted.
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
-      }, 0);
-      // --- END OF CHANGE ---
+      });
     }
+    // --- END OF NEW LOGIC ---
+
   }, [auditTrail]);
 
   // ... (The rest of the component remains exactly the same) ...
