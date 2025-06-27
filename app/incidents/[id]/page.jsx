@@ -1,6 +1,8 @@
+// File: app/incidents/[id]/page.jsx
+// FINAL VERSION: The parent page now controls the scrolling of the child component.
 'use client';
 
-import * as React from 'react'; // <-- THIS LINE WAS MISSING
+import * as React from 'react';
 import { UserContext } from '@/context/UserContext';
 import { NotificationContext } from '@/context/NotificationContext';
 import Box from '@mui/material/Box';
@@ -10,6 +12,7 @@ import IncidentAuditTrail from '@/components/IncidentAuditTrail';
 import IncidentActionForm from '@/components/IncidentActionForm';
 import ResolutionDialog from '@/components/ResolutionDialog';
 
+// --- Mock Data ---
 const longOpenIncidentData = {
   id: '1000031588',
   status: 'Awaiting User Response',
@@ -59,6 +62,21 @@ export default function IncidentDetailsPage({ params }) {
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const { user } = React.useContext(UserContext);
   const { showNotification } = React.useContext(NotificationContext);
+
+  const auditTrailRef = React.useRef(null);
+  const isInitialPageLoad = React.useRef(true);
+
+  React.useEffect(() => {
+    if (isInitialPageLoad.current) {
+      isInitialPageLoad.current = false;
+      return;
+    }
+    
+    setTimeout(() => {
+      auditTrailRef.current?.scrollToBottom();
+    }, 0);
+
+  }, [incident.auditTrail]);
 
   const handleUpdate = (comment) => {
     if (!comment || !user) return; 
@@ -113,6 +131,7 @@ export default function IncidentDetailsPage({ params }) {
         {isResolved ? (
           <Box sx={{ flex: 5, minWidth: 0, display: 'flex' }}>
             <IncidentAuditTrail
+              ref={auditTrailRef}
               auditTrail={incident.auditTrail}
               incident={incident}
               isResolved={isResolved}
@@ -122,6 +141,7 @@ export default function IncidentDetailsPage({ params }) {
           <Stack spacing={3} sx={{ flex: 5, minWidth: 0 }}>
             <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex', maxHeight: '50vh' }}>
                <IncidentAuditTrail
+                  ref={auditTrailRef}
                   auditTrail={incident.auditTrail}
                   incident={incident}
                   isResolved={isResolved}

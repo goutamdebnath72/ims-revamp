@@ -1,5 +1,5 @@
 // File: components/IncidentAuditTrail.jsx
-// UPDATED: Using requestAnimationFrame for a more reliable scroll on production.
+// FINAL VERSION: Exposes a `scrollToBottom` function for the parent to call.
 "use client";
 
 import * as React from "react";
@@ -15,35 +15,25 @@ import DownloadIcon from "@mui/icons-material/Download";
 import Rating from '@mui/material/Rating';
 import { generateIncidentPdf } from "@/utils/pdfGenerators";
 
-export default function IncidentAuditTrail({
+// 1. Wrap the entire component in React.forwardRef to receive a ref from the parent.
+const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
   auditTrail,
   incident,
   isResolved,
-}) {
-  const scrollRef = React.useRef(null);
-  const isInitialRender = React.useRef(true);
+}, ref) { // The 'ref' is the second argument.
 
-  React.useEffect(() => {
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      return;
+  // 2. Create an internal ref for the scrollable Paper element.
+  const scrollContainerRef = React.useRef(null);
+
+  // 3. Expose a custom function to the parent through the ref.
+  React.useImperativeHandle(ref, () => ({
+    scrollToBottom() {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
     }
+  }), []); // The empty dependency array means this function is created once.
 
-    // --- THIS IS THE NEW, MORE ROBUST LOGIC ---
-    // We use requestAnimationFrame to ensure the scroll happens
-    // right before the browser's next paint cycle.
-    if (scrollRef.current) {
-      requestAnimationFrame(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      });
-    }
-    // --- END OF NEW LOGIC ---
-
-  }, [auditTrail]);
-
-  // ... (The rest of the component remains exactly the same) ...
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
   };
@@ -62,9 +52,10 @@ export default function IncidentAuditTrail({
     );
   }
 
+  // 4. The full, unabridged return statement.
   return (
     <Paper
-      ref={scrollRef}
+      ref={scrollContainerRef} // <-- Attach the internal ref here.
       elevation={3}
       sx={{
         p: 3,
@@ -172,4 +163,6 @@ export default function IncidentAuditTrail({
       </List>
     </Paper>
   );
-}
+});
+
+export default IncidentAuditTrail;
