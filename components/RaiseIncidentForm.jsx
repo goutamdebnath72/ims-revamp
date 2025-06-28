@@ -1,9 +1,9 @@
-// File: components/RaiseIncidentForm.jsx
-// Version: FINAL - 19 June 2025, 9:20 PM
-// This version adds letter-spacing to the submit button for a more refined look.
 'use client';
 
 import * as React from 'react';
+import { UserContext } from '@/context/UserContext';
+import { NotificationContext } from '@/context/NotificationContext'; // <-- Import NotificationContext
+import InfoTooltip from './InfoTooltip';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
@@ -13,17 +13,33 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import FormHelperText from '@mui/material/FormHelperText';
-import Stack from '@mui/material/Stack'; // Using Stack (which is Flexbox) for layout
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { departments } from '@/lib/departments';
 import { incidentTypes } from '@/lib/incident-types';
 
 const priorities = ['Low', 'Medium', 'High'];
 
+const contactTooltipText = (
+    <Box>
+        <Typography color="inherit" sx={{ fontWeight: 'bold' }}>Input Instructions</Typography>
+        <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
+            <li>For **Non-Executives**, please provide the 5-digit Department PAX No.</li>
+            <li>For **Executives**, please provide your 10-digit CUG mobile number.</li>
+        </ul>
+    </Box>
+);
+
 export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
+  const { user } = React.useContext(UserContext);
+  const { showNotification } = React.useContext(NotificationContext); // <-- Use NotificationContext
+  
+  const isExecutive = user && user.ticketNo.startsWith('4');
+
   const [formData, setFormData] = React.useState({
     incidentType: '',
     priority: 'Medium',
-    department: 98540,
+    department: user ? user.departmentCode : '',
     location: '',
     contactNumber: '',
     jobTitle: '',
@@ -31,33 +47,70 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   });
   const [errors, setErrors] = React.useState({});
 
-  const userDetails = {
-      ticketNo: '342461',
-      name: 'Goutam Debnath'
+  const validateField = (name, value) => {
+    let error = "";
+    switch (name) {
+        case 'contactNumber':
+            if (!value) {
+                error = "Required.";
+            } else if (isExecutive) {
+                if (!/^943479\d{4}$/.test(value)) {
+                    error = "Please enter a valid 10-digit CUG No. starting with 943479.";
+                }
+            } else {
+                if (!/^\d{5}$/.test(value)) {
+                    error = "Please enter a valid 5-digit PAX No.";
+                }
+            }
+            break;
+        case 'incidentType':
+        case 'location':
+        case 'description':
+        case 'jobTitle':
+        case 'department':
+            if (!value) error = "Required.";
+            break;
+        default:
+            break;
+    }
+    return error;
   };
 
-  const validate = () => {
-    let tempErrors = {};
-    if (!formData.incidentType) tempErrors.incidentType = "Required.";
-    if (!formData.location) tempErrors.location = "Required.";
-    if (!formData.contactNumber) tempErrors.contactNumber = "Required.";
-    if (!formData.description) tempErrors.description = "Required.";
-    if (!formData.jobTitle) tempErrors.jobTitle = "Required.";
-    if (!formData.department) tempErrors.department = "Required.";
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
+  const handleBlur = (event) => {
+      const { name, value } = event.target;
+      const error = validateField(name, value);
+      setErrors(prev => ({...prev, [name]: error}));
   };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData(prev => ({...prev, [name]: value}));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+        setErrors(prev => ({...prev, [name]: ""}));
+    }
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (validate()) {
-      const finalData = { ...formData, ...userDetails };
-      onSubmit(finalData);
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+        const error = validateField(key, formData[key]);
+        if (error) {
+            newErrors[key] = error;
+        }
+    });
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length === 0) {
+      onSubmit(formData);
+    } else {
+      // --- THIS IS THE NEW LOGIC ---
+      // If there are errors, show a pop-up notification.
+      showNotification({
+          title: "Validation Error",
+          message: "Please review the form and correct all highlighted errors before submitting."
+      }, "error");
+      // --- END OF NEW LOGIC ---
     }
   };
 
@@ -65,11 +118,11 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={3}>
 
-        {/* --- ROW 1: Four side-by-side fields --- */}
+        {/* --- ROW 1 --- */}
         <Stack direction="row" spacing={2}>
           <FormControl fullWidth required error={!!errors.incidentType}>
             <InputLabel>Incident Type</InputLabel>
-            <Select name="incidentType" value={formData.incidentType} label="Incident Type" onChange={handleChange}>
+            <Select name="incidentType" value={formData.incidentType} label="Incident Type" onChange={handleChange} onBlur={handleBlur}>
               {incidentTypes.map((type) => (<MenuItem key={type} value={type}>{type}</MenuItem>))}
             </Select>
             {errors.incidentType && <FormHelperText>{errors.incidentType}</FormHelperText>}
@@ -82,26 +135,38 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
           </FormControl>
            <FormControl fullWidth required error={!!errors.department}>
             <InputLabel>Department</InputLabel>
-            <Select name="department" value={formData.department} label="Department" onChange={handleChange}>
+            <Select name="department" value={formData.department} label="Department" onChange={handleChange} onBlur={handleBlur}>
               {departments.map((dept) => (<MenuItem key={dept.code} value={dept.code}>{dept.name}</MenuItem>))}
             </Select>
-             {errors.department && <FormHelperText>{errors.department}</FormHelperText>}
+            {errors.department && <FormHelperText>{errors.department}</FormHelperText>}
           </FormControl>
-          <TextField required fullWidth name="location" label="Location" value={formData.location} onChange={handleChange} error={!!errors.location} helperText={errors.location || " "}/>
+          <TextField required fullWidth name="location" label="Location" value={formData.location} onChange={handleChange} onBlur={handleBlur} error={!!errors.location} helperText={errors.location || " "}/>
         </Stack>
 
-        {/* --- ROW 2: Four side-by-side fields --- */}
+        {/* --- ROW 2 --- */}
         <Stack direction="row" spacing={2}>
-          <TextField required fullWidth name="contactNumber" label="Contact Number / PAX" value={formData.contactNumber} onChange={handleChange} error={!!errors.contactNumber} helperText={errors.contactNumber || " "}/>
-          <TextField required fullWidth name="jobTitle" label="Job Title" value={formData.jobTitle} onChange={handleChange} error={!!errors.jobTitle} helperText={errors.jobTitle || " "}/>
-          <TextField fullWidth disabled label="Ticket No." defaultValue={userDetails.ticketNo} />
-          <TextField fullWidth disabled label="Requestor Name" defaultValue={userDetails.name} />
+          <InfoTooltip title={contactTooltipText} placement="top-start">
+            <TextField 
+                required 
+                fullWidth 
+                name="contactNumber" 
+                label="Contact Number / PAX" 
+                value={formData.contactNumber} 
+                onChange={handleChange} 
+                onBlur={handleBlur}
+                error={!!errors.contactNumber} 
+                helperText={errors.contactNumber || " "}
+            />
+          </InfoTooltip>
+          <TextField required fullWidth name="jobTitle" label="Job Title" value={formData.jobTitle} onChange={handleChange} onBlur={handleBlur} error={!!errors.jobTitle} helperText={errors.jobTitle || " "}/>
+          <TextField fullWidth disabled label="Ticket No." value={user ? user.ticketNo : ''} />
+          <TextField fullWidth disabled label="Requestor Name" value={user ? user.name : ''} />
         </Stack>
 
-        {/* --- ROW 3: Description --- */}
-        <TextField required fullWidth multiline rows={5} name="description" label="Please provide a detailed description of the issue" value={formData.description} onChange={handleChange} error={!!errors.description} helperText={errors.description || " "}/>
+        {/* --- ROW 3 --- */}
+        <TextField required fullWidth multiline rows={5} name="description" label="Please provide a detailed description of the issue" value={formData.description} onChange={handleChange} onBlur={handleBlur} error={!!errors.description} helperText={errors.description || " "}/>
 
-        {/* --- ROW 4: Submit Button --- */}
+        {/* --- ROW 4 --- */}
         <Box sx={{ position: 'relative' }}>
           <Button
             variant="contained"
@@ -112,7 +177,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             sx={{ 
               py: 1.5, 
               fontSize: '1.1rem',
-              letterSpacing: '1.5px' // <-- THE ADDED STYLE
+              letterSpacing: '1.5px'
             }}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Incident'}

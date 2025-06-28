@@ -1,40 +1,44 @@
-// File: app/raise/page.jsx
-// This is the main page for the "Raise Incident" route.
 "use client";
 
 import * as React from "react";
+import { useRouter } from 'next/navigation'; // <-- Import the router
+import { IncidentContext } from "@/context/IncidentContext"; // <-- Import our new context
+import { NotificationContext } from "@/context/NotificationContext"; // <-- To show success
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
+import Button from "@mui/material/Button";
 import RaiseIncidentForm from "@/components/RaiseIncidentForm";
 
 export default function RaiseIncidentPage() {
+  const router = useRouter();
+  const { addIncident } = React.useContext(IncidentContext);
+  const { showNotification } = React.useContext(NotificationContext);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [submissionStatus, setSubmissionStatus] = React.useState(null); // null, 'success', or 'error'
+  const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);
 
-  const handleFormSubmit = async (formData) => {
+  const handleFormSubmit = (formData) => {
     setIsSubmitting(true);
-    setSubmissionStatus(null);
-    console.log("Submitting incident:", formData);
-
-    // --- Simulate an API call ---
-    // In a real application, you would use fetch() to send data to your Express.js backend.
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate 2 second network delay
-    // ----------------------------
-
-    // For demonstration, we'll randomly succeed or fail.
-    const isSuccess = Math.random() > 0.2; //  80% chance of success
-
-    if (isSuccess) {
-      setSubmissionStatus("success");
-      // In a real app, you might get back the new incident ID from the server.
-    } else {
-      setSubmissionStatus("error");
-    }
-
-    setIsSubmitting(false);
+    
+    // Simulate a short delay for the submission process
+    setTimeout(() => {
+      try {
+        const newIncident = addIncident(formData); // Use our context function
+        setSubmittedIncidentId(newIncident.id);
+        showNotification("Incident submitted successfully!", "success");
+      } catch (error) {
+        showNotification("Failed to submit incident. Please try again.", "error");
+        console.error(error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }, 1000); // 1-second delay to show submitting state
+  };
+  
+  const handleRaiseAnother = () => {
+      setSubmittedIncidentId(null);
   };
 
   return (
@@ -42,30 +46,31 @@ export default function RaiseIncidentPage() {
       <Typography variant="h4">Raise a New Incident</Typography>
 
       <Paper elevation={2} sx={{ p: 4 }}>
-        {/* We only show the form if a submission is NOT successful */}
-        {submissionStatus !== "success" ? (
+        {/* If an incident has been submitted, show success message */}
+        {submittedIncidentId ? (
+          <Stack spacing={3} alignItems="center">
+             <Alert severity="success" variant="filled" sx={{ width: '100%' }}>
+              <AlertTitle>Success!</AlertTitle>
+              Your incident has been submitted successfully with ID: <strong>{submittedIncidentId}</strong>.
+            </Alert>
+            <Stack direction="row" spacing={2}>
+                 <Button
+                    variant="contained"
+                    onClick={() => router.push(`/incidents/${submittedIncidentId}`)}
+                 >
+                    View Incident Details
+                </Button>
+                 <Button variant="outlined" onClick={handleRaiseAnother}>
+                    Raise Another Incident
+                </Button>
+            </Stack>
+          </Stack>
+        ) : (
+          // Otherwise, show the form
           <RaiseIncidentForm
             onSubmit={handleFormSubmit}
             isSubmitting={isSubmitting}
           />
-        ) : null}
-
-        {/* Show a success message after successful submission */}
-        {submissionStatus === "success" && (
-          <Alert severity="success" variant="filled">
-            <AlertTitle>Success!</AlertTitle>
-            Your incident has been submitted successfully. A member of the C&IT
-            team will review it shortly.
-          </Alert>
-        )}
-
-        {/* Show an error message if submission fails */}
-        {submissionStatus === "error" && (
-          <Alert severity="error" variant="filled">
-            <AlertTitle>Submission Failed</AlertTitle>
-            There was a problem submitting your incident. Please try again in a
-            few moments.
-          </Alert>
         )}
       </Paper>
     </Stack>

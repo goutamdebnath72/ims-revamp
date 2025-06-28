@@ -2,10 +2,9 @@ import * as React from 'react';
 import ThemeRegistry from './ThemeRegistry';
 import AppLayout from '@/components/AppLayout';
 import UserProvider from '@/context/UserContext';
-// --- THIS LINE IS CORRECTED ---
-import NotificationProvider from '@/context/NotificationContext'; // The file is NotificationContext.jsx
-// --- END OF CORRECTION ---
+import NotificationProvider from '@/context/NotificationContext'; // <-- This line has been corrected
 import SettingsProvider from '@/context/SettingsContext';
+import IncidentProvider from '@/context/IncidentContext';
 
 export const metadata = {
   title: 'IMS Dashboard',
@@ -24,9 +23,11 @@ export default function RootLayout({ children }) {
           <UserProvider>
             <NotificationProvider>
               <SettingsProvider>
-                <AppLayout>
-                  {children}
-                </AppLayout>
+                <IncidentProvider>
+                  <AppLayout>
+                    {children}
+                  </AppLayout>
+                </IncidentProvider>
               </SettingsProvider>
             </NotificationProvider>
           </UserProvider>
