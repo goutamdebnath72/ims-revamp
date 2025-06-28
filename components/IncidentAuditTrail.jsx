@@ -1,5 +1,3 @@
-// File: components/IncidentAuditTrail.jsx
-// FINAL VERSION: Exposes a `scrollToBottom` function for the parent to call.
 "use client";
 
 import * as React from "react";
@@ -14,25 +12,24 @@ import Button from "@mui/material/Button";
 import DownloadIcon from "@mui/icons-material/Download";
 import Rating from '@mui/material/Rating';
 import { generateIncidentPdf } from "@/utils/pdfGenerators";
+import EditableComment from './EditableComment'; // <-- Import new component
 
-// 1. Wrap the entire component in React.forwardRef to receive a ref from the parent.
 const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
   auditTrail,
   incident,
   isResolved,
-}, ref) { // The 'ref' is the second argument.
+  onCommentEdit,
+}, ref) {
 
-  // 2. Create an internal ref for the scrollable Paper element.
   const scrollContainerRef = React.useRef(null);
 
-  // 3. Expose a custom function to the parent through the ref.
   React.useImperativeHandle(ref, () => ({
     scrollToBottom() {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
       }
     }
-  }), []); // The empty dependency array means this function is created once.
+  }), []);
 
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
@@ -41,21 +38,16 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
   if (!auditTrail || auditTrail.length === 0) {
     return (
       <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
-        <Typography variant="h5" gutterBottom>
-          Audit Trail
-        </Typography>
+        <Typography variant="h5" gutterBottom>Audit Trail</Typography>
         <Divider sx={{ mb: 3 }} />
-        <Typography color="text.secondary">
-          No history available for this incident.
-        </Typography>
+        <Typography color="text.secondary">No history available for this incident.</Typography>
       </Paper>
     );
   }
 
-  // 4. The full, unabridged return statement.
   return (
     <Paper
-      ref={scrollContainerRef} // <-- Attach the internal ref here.
+      ref={scrollContainerRef}
       elevation={3}
       sx={{
         p: 3,
@@ -63,23 +55,10 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
         overflowY: "auto",
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
-          Audit Trail
-        </Typography>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>Audit Trail</Typography>
         {isResolved && (
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={handleDownload}
-          >
+          <Button variant="contained" size="small" startIcon={<DownloadIcon />} onClick={handleDownload}>
             Download PDF
           </Button>
         )}
@@ -88,10 +67,6 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
       <List sx={{ width: "100%", bgcolor: "background.paper", p: 0, py: 1.5 }}>
         {auditTrail.map((entry, index) => {
           const isClosedEntry = entry.action.toLowerCase().includes("closed");
-          const finalColor = "#4CAF50";
-          const comment = entry.comment.trim();
-          const needsPunctuation = !/[.!?]$/.test(comment);
-          const formattedComment = needsPunctuation ? `${comment}.` : comment;
           const hasRating = entry.rating !== undefined && entry.rating !== null;
 
           return (
@@ -100,58 +75,26 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                 <ListItemText
                   primary={
                     <React.Fragment>
-                      <Typography
-                        component="span"
-                        variant="body1"
-                        sx={{
-                          display: "block",
-                          fontWeight: "bold",
-                          color: isClosedEntry ? finalColor : "text.primary",
-                        }}
-                      >
+                      <Typography component="span" variant="body1" sx={{ display: "block", fontWeight: "bold", color: isClosedEntry ? "#4CAF50" : "text.primary" }}>
                         {entry.action}
                       </Typography>
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          display: "block",
-                          mt: 0.5,
-                          whiteSpace: 'pre-wrap'
-                        }}
-                      >
-                        {formattedComment}
-                      </Typography>
+                      <EditableComment
+                        initialComment={entry.comment}
+                        author={entry.author}
+                        onSave={(newComment) => onCommentEdit(index, newComment)}
+                      />
                       {hasRating && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                            Final Rating:
-                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>Final Rating:</Typography>
                           <Rating name="read-only-rating" value={entry.rating} readOnly />
                         </Box>
                       )}
                     </React.Fragment>
                   }
                   secondary={
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: "block",
-                        textAlign: "right",
-                        mt: 1,
-                        fontWeight: isClosedEntry ? "bold" : "normal",
-                        color: "text.secondary",
-                      }}
-                    >
+                    <Typography variant="caption" sx={{ display: "block", textAlign: "right", mt: 1, fontWeight: isClosedEntry ? "bold" : "normal", color: "text.secondary" }}>
                       <span>{`${entry.author} — `}</span>
-                      <span
-                        style={{
-                          textDecoration: isClosedEntry ? "underline" : "none",
-                        }}
-                      >
-                        {entry.timestamp}
-                      </span>
+                      <span style={{ textDecoration: isClosedEntry ? "underline" : "none" }}>{entry.timestamp}</span>
                     </Typography>
                   }
                 />

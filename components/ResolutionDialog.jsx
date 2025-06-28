@@ -1,5 +1,3 @@
-// File: components/ResolutionDialog.jsx
-// NEW: This component provides a confirmation dialog for resolving an incident.
 "use client";
 
 import * as React from "react";
@@ -13,22 +11,22 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Rating from "@mui/material/Rating";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { SettingsContext } from "@/context/SettingsContext";
 
 export default function ResolutionDialog({ open, onClose, onConfirm }) {
   const [comment, setComment] = React.useState("");
-  const [rating, setRating] = React.useState(3); // Default rating
+  const [rating, setRating] = React.useState(3);
+  const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
   const handleConfirm = () => {
     onConfirm(comment, rating);
-    onClose(); // Close the dialog after confirming
-    // Reset state for next time
+    onClose();
     setComment("");
     setRating(3);
   };
 
   const handleCancel = () => {
     onClose();
-    // Reset state for next time
     setComment("");
     setRating(3);
   };
@@ -53,6 +51,7 @@ export default function ResolutionDialog({ open, onClose, onConfirm }) {
           rows={3}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          spellCheck={isSpellcheckEnabled}
         />
         <Box
           sx={{

@@ -1,5 +1,3 @@
-// File: app/incidents/[id]/page.jsx
-// FINAL VERSION: The parent page now controls the scrolling of the child component.
 'use client';
 
 import * as React from 'react';
@@ -12,7 +10,6 @@ import IncidentAuditTrail from '@/components/IncidentAuditTrail';
 import IncidentActionForm from '@/components/IncidentActionForm';
 import ResolutionDialog from '@/components/ResolutionDialog';
 
-// --- Mock Data ---
 const longOpenIncidentData = {
   id: '1000031588',
   status: 'Awaiting User Response',
@@ -29,13 +26,8 @@ const longOpenIncidentData = {
   auditTrail: [
     { timestamp: 'Tue Jun 24, 2025 02:00 pm', author: 'ANIRBAN ROY', action: 'Incident Raised', comment: 'Software crashes on launch.' },
     { timestamp: 'Tue Jun 24, 2025 02:05 pm', author: 'AUTO-ASSIGN', action: 'Assigned to Application Support', comment: 'Rule-based assignment for category: Software.' },
-    { timestamp: 'Tue Jun 24, 2025 02:30 pm', author: 'DEBASHISH GHOSH', action: 'Initial Diagnosis', comment: 'Unable to replicate on test machine. Asking user for more details about their OS and recent updates.' },
-    { timestamp: 'Tue Jun 24, 2025 03:15 pm', author: 'ANIRBAN ROY', action: 'User provided details', comment: 'I am on macOS Sequoia 15.5. No recent updates were installed manually by me.' },
-    { timestamp: 'Tue Jun 24, 2025 04:00 pm', author: 'DEBASHISH GHOSH', action: 'Action Taken', comment: 'Cleared application cache and preferences file from user\'s Library folder. Asked user to restart and try again.' },
-    { timestamp: 'Tue Jun 24, 2025 04:10 pm', author: 'ANIRBAN ROY', action: 'User provided details', comment: 'Restarted the machine, the issue still persists. Same crash.' },
-    { timestamp: 'Wed Jun 25, 2025 09:30 am', author: 'DEBASHISH GHOSH', action: 'Further Investigation', comment: 'Checking for known compatibility issues with TallyPrime and the latest security patch for Sequoia. This might take some time.' },
-    { timestamp: 'Wed Jun 25, 2025 10:45 am', author: 'DEBASHISH GHOSH', action: 'Update', comment: 'Found a known issue on the vendor\'s forum. A specific system extension is causing the conflict. Preparing a workaround.' },
-    { timestamp: 'Wed Jun 25, 2025 11:30 am', author: 'DEBASHISH GHOSH', action: 'Action Plan', comment: 'Will need to schedule a remote session with the user to disable the conflicting extension. Have sent a meeting invite.' }
+    { timestamp: 'Tue Jun 24, 2025 02:30 pm', author: 'DEBASHISH GHOSH', action: 'Initial Diagnosis', comment: '1. Deleted the earlier installed SAP GUI.\n2. Freshly installed SAP GUI 750.\n3. User has checked by log-in.' },
+    { timestamp: 'Wed Jun 25, 2025 11:30 am', author: 'GOUTAM DEBNATH', action: 'Action Plan', comment: 'Will need to schedule a remote session with the user to disable the conflicting extension. Have sent a meeting invite.' }
   ]
 };
 
@@ -46,8 +38,8 @@ const longResolvedIncidentData = {
     ...longOpenIncidentData.auditTrail,
     {
       timestamp: 'Wed Jun 25, 2025 01:30 pm',
-      author: 'DEBASHISH GHOSH',
-      action: '(Closed By DEBASHISH GHOSH)',
+      author: 'GOUTAM DEBNATH',
+      action: '(Closed By GOUTAM DEBNATH)',
       comment: 'Disabled conflicting extension via remote session. Application now launches correctly. User confirmed resolution.',
       rating: 5
     }
@@ -116,6 +108,19 @@ export default function IncidentDetailsPage({ params }) {
     showNotification('Incident resolved successfully!', 'success');
   };
 
+  const handleCommentEdit = (entryIndex, newComment) => {
+    setIncident(prevIncident => {
+      const newAuditTrail = prevIncident.auditTrail.map((entry, index) => {
+        if (index === entryIndex) {
+          return { ...entry, comment: newComment };
+        }
+        return entry;
+      });
+      return { ...prevIncident, auditTrail: newAuditTrail };
+    });
+    showNotification("Comment updated successfully!", "info");
+  };
+
   const isResolved = incident.status === 'Resolved';
   
   if (!user) {
@@ -135,6 +140,7 @@ export default function IncidentDetailsPage({ params }) {
               auditTrail={incident.auditTrail}
               incident={incident}
               isResolved={isResolved}
+              onCommentEdit={handleCommentEdit}
             />
           </Box>
         ) : (
@@ -145,6 +151,7 @@ export default function IncidentDetailsPage({ params }) {
                   auditTrail={incident.auditTrail}
                   incident={incident}
                   isResolved={isResolved}
+                  onCommentEdit={handleCommentEdit}
                />
             </Box>
             <IncidentActionForm 
@@ -154,7 +161,6 @@ export default function IncidentDetailsPage({ params }) {
           </Stack>
         )}
       </Box>
-
       <ResolutionDialog
         open={isDialogOpen}
         onClose={() => setDialogOpen(false)}

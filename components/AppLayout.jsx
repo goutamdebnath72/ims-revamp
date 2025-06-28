@@ -1,12 +1,12 @@
-// File: components/AppLayout.jsx
-// CORRECTED: Restored all necessary Material UI component imports.
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { UserContext } from "@/context/UserContext";
+import { SettingsContext } from "@/context/SettingsContext";
+import InfoTooltip from './InfoTooltip';
 
-// --- All MUI imports are now correctly included ---
+// MUI Components
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import AppBar from "@mui/material/AppBar";
@@ -18,14 +18,40 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import SearchIcon from "@mui/icons-material/Search";
-import PostAddIcon from "@mui/icons-material/PostAdd";
 import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import Switch from '@mui/material/Switch';
+import Stack from '@mui/material/Stack';
+
+// Icons
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import SearchIcon from "@mui/icons-material/Search";
+import PostAddIcon from "@mui/icons-material/PostAdd";
 import LogoutIcon from "@mui/icons-material/Logout";
+import SpellcheckIcon from '@mui/icons-material/Spellcheck';
+// The react-icons import has been removed.
+
+const spellCheckTooltipText = (
+  <Stack spacing={1}>
+    <Typography color="inherit" sx={{ fontWeight: 'bold', fontSize: '13px' }}>
+      Enable Browser Spell Check
+    </Typography>
+    <Typography variant="body2">
+      For this feature to work, ensure spell check is also enabled in your browser settings.
+    </Typography>
+    <Box>
+      <Typography variant="body2" component="div">
+        <b>Chrome:</b> Settings → Languages → Spell check
+      </Typography>
+      <Typography variant="body2" component="div" sx={{ mt: 0.5 }}>
+        <b>Firefox:</b> Settings → General → Language → "Check your spelling..."
+      </Typography>
+    </Box>
+  </Stack>
+);
+
 
 const drawerWidth = 240;
 
@@ -37,25 +63,20 @@ const menuItems = [
 
 export default function AppLayout({ children }) {
   const { user } = React.useContext(UserContext);
+  const { isSpellcheckEnabled, toggleSpellcheck } = React.useContext(SettingsContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
-  const handleMenu = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  const handleMenu = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
 
   const handleLogout = () => {
     console.log("Logout clicked!");
     handleClose();
   };
-  
-  // Render nothing or a loading spinner until user data is available
+
   if (!user) {
-    return null; 
+    return null;
   }
 
   return (
@@ -68,7 +89,6 @@ export default function AppLayout({ children }) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Incident Management System - DSP
           </Typography>
-
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
               Welcome {user.name.toUpperCase()}
@@ -81,18 +101,28 @@ export default function AppLayout({ children }) {
             <Menu
               id="menu-appbar"
               anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "right",
-              }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
               open={open}
               onClose={handleClose}
             >
+              <InfoTooltip title={spellCheckTooltipText} placement="left">
+                <MenuItem onClick={toggleSpellcheck}>
+                  <ListItemIcon>
+                    <SpellcheckIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Spell Check</ListItemText>
+                  <Switch
+                    checked={isSpellcheckEnabled}
+                    edge="end"
+                    size="small"
+                    name="spellcheck-toggle"
+                  />
+                </MenuItem>
+              </InfoTooltip>
+
+              <Divider />
               <MenuItem onClick={handleLogout}>
                 <ListItemIcon>
                   <LogoutIcon fontSize="small" />
@@ -107,10 +137,7 @@ export default function AppLayout({ children }) {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-          },
+          "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
         }}
         variant="permanent"
         anchor="left"
@@ -128,7 +155,6 @@ export default function AppLayout({ children }) {
           ))}
         </List>
       </Drawer>
-
       <Box
         component="main"
         sx={{

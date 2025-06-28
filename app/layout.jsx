@@ -1,10 +1,11 @@
-// File: app/layout.jsx
-// UPDATED: Wrapped the application in the new NotificationProvider.
 import * as React from 'react';
 import ThemeRegistry from './ThemeRegistry';
 import AppLayout from '@/components/AppLayout';
 import UserProvider from '@/context/UserContext';
-import NotificationProvider from '@/context/NotificationContext'; // <-- Import the new provider
+// --- THIS LINE IS CORRECTED ---
+import NotificationProvider from '@/context/NotificationContext'; // The file is NotificationContext.jsx
+// --- END OF CORRECTION ---
+import SettingsProvider from '@/context/SettingsContext';
 
 export const metadata = {
   title: 'IMS Dashboard',
@@ -21,11 +22,12 @@ export default function RootLayout({ children }) {
       <body>
         <ThemeRegistry>
           <UserProvider>
-            {/* NotificationProvider wraps AppLayout to provide snackbar functionality */}
             <NotificationProvider>
-              <AppLayout>
-                {children}
-              </AppLayout>
+              <SettingsProvider>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </SettingsProvider>
             </NotificationProvider>
           </UserProvider>
         </ThemeRegistry>

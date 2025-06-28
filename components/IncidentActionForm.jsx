@@ -1,5 +1,3 @@
-// File: components/IncidentActionForm.jsx
-// UPDATED: "Resolve Incident" button now opens the resolution dialog.
 "use client";
 
 import * as React from "react";
@@ -9,17 +7,17 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
+import { SettingsContext } from "@/context/SettingsContext";
 
-// It now receives an `onOpenResolveDialog` prop
 export default function IncidentActionForm({ onUpdate, onOpenResolveDialog }) {
   const [comment, setComment] = React.useState("");
+  const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
   const handleSubmitUpdate = () => {
     onUpdate(comment);
     setComment(""); 
   };
   
-  // This button now just triggers the dialog to open
   const handleResolveClick = () => {
     onOpenResolveDialog();
   };
@@ -40,12 +38,13 @@ export default function IncidentActionForm({ onUpdate, onOpenResolveDialog }) {
           onChange={(e) => setComment(e.target.value)}
           variant="outlined"
           fullWidth
+          spellCheck={isSpellcheckEnabled}
         />
         <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
           <Button
             variant="outlined"
             color="success"
-            onClick={handleResolveClick} // Changed from handleResolve
+            onClick={handleResolveClick}
             sx={{ flex: 1, letterSpacing: "1px" }}
           >
             Resolve Incident
