@@ -1,20 +1,22 @@
+// File: context/IncidentContext.jsx
+// UPDATED: Added an `updateIncident` function to allow global state changes.
 "use client";
 
 import * as React from "react";
 import { mockIncidents } from "@/lib/mock-data";
 import { UserContext } from "./UserContext";
 import { NotificationContext } from "./NotificationContext";
-import useSound from "@/hooks/useSound"; // <-- Import our new sound hook
+import useSound from "@/hooks/useSound";
 
 export const IncidentContext = React.createContext(null);
 
-const C_AND_IT_DEPT_CODES = [98540, 98541]; // C & IT department codes
+const C_AND_IT_DEPT_CODES = [98540, 98541];
 
 export default function IncidentProvider({ children }) {
   const [incidents, setIncidents] = React.useState(mockIncidents);
   const { user } = React.useContext(UserContext);
   const { showNotification } = React.useContext(NotificationContext);
-  const playNotificationSound = useSound('/notification.mp3'); // <-- Initialize the sound
+  const playNotificationSound = useSound('/notification.mp3');
 
   const addIncident = (newIncidentData) => {
     const newId = Math.max(...incidents.map(i => i.id)) + 1;
@@ -28,23 +30,29 @@ export default function IncidentProvider({ children }) {
 
     setIncidents(prevIncidents => [newIncident, ...prevIncidents]);
 
-    // --- Conditional Notification Logic ---
-    // Check if the logged-in user is part of the C & IT department
     if (user && C_AND_IT_DEPT_CODES.includes(user.departmentCode)) {
-      // Play the sound
       playNotificationSound();
-      // Show the rich visual notification
       showNotification({
         title: `New Incident Raised: #${newIncident.id}`,
         message: `${newIncident.requestor} reported an issue: "${newIncident.jobTitle}"`
       }, 'info');
     }
-    // --- End of Logic ---
 
     return newIncident;
   };
 
-  const value = { incidents, addIncident };
+  // --- NEW FUNCTION TO UPDATE A SINGLE INCIDENT ---
+  const updateIncident = (incidentId, updatedData) => {
+    setIncidents(prevIncidents => 
+      prevIncidents.map(incident => 
+        incident.id.toString() === incidentId.toString()
+          ? { ...incident, ...updatedData }
+          : incident
+      )
+    );
+  };
+
+  const value = { incidents, addIncident, updateIncident };
 
   return (
     <IncidentContext.Provider value={value}>

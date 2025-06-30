@@ -1,8 +1,9 @@
+// File: components/RaiseIncidentForm.jsx
+// UPDATED: Added tooltips to Job Title and Description fields.
 'use client';
 
 import * as React from 'react';
 import { UserContext } from '@/context/UserContext';
-import { NotificationContext } from '@/context/NotificationContext'; // <-- Import NotificationContext
 import InfoTooltip from './InfoTooltip';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
@@ -24,15 +25,28 @@ const contactTooltipText = (
     <Box>
         <Typography color="inherit" sx={{ fontWeight: 'bold' }}>Input Instructions</Typography>
         <ul style={{ paddingLeft: '20px', margin: '8px 0 0 0' }}>
-            <li>For **Non-Executives**, please provide the 5-digit Department PAX No.</li>
+            <li>For **Non- Executives**, please provide the 5-digit Department PAX No.</li>
             <li>For **Executives**, please provide your 10-digit CUG mobile number.</li>
         </ul>
     </Box>
 );
 
+// --- NEW: Tooltip content for Job Title ---
+const jobTitleTooltipText = (
+  <Typography color="inherit">
+    Think of this as the <b>Subject Line</b> of an email. Provide a short, clear summary of the issue.
+  </Typography>
+);
+
+// --- NEW: Tooltip content for Description ---
+const descriptionTooltipText = (
+  <Typography color="inherit">
+    Think of this as the <b>Body</b> of an email. Provide all the details, error messages, and steps you've already tried.
+  </Typography>
+);
+
 export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const { user } = React.useContext(UserContext);
-  const { showNotification } = React.useContext(NotificationContext); // <-- Use NotificationContext
   
   const isExecutive = user && user.ticketNo.startsWith('4');
 
@@ -103,14 +117,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
     if (Object.keys(newErrors).length === 0) {
       onSubmit(formData);
-    } else {
-      // --- THIS IS THE NEW LOGIC ---
-      // If there are errors, show a pop-up notification.
-      showNotification({
-          title: "Validation Error",
-          message: "Please review the form and correct all highlighted errors before submitting."
-      }, "error");
-      // --- END OF NEW LOGIC ---
     }
   };
 
@@ -118,7 +124,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={3}>
 
-        {/* --- ROW 1 --- */}
+        {/* --- ROW 1: Four side-by-side fields --- */}
         <Stack direction="row" spacing={2}>
           <FormControl fullWidth required error={!!errors.incidentType}>
             <InputLabel>Incident Type</InputLabel>
@@ -143,7 +149,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
           <TextField required fullWidth name="location" label="Location" value={formData.location} onChange={handleChange} onBlur={handleBlur} error={!!errors.location} helperText={errors.location || " "}/>
         </Stack>
 
-        {/* --- ROW 2 --- */}
+        {/* --- ROW 2: Four side-by-side fields --- */}
         <Stack direction="row" spacing={2}>
           <InfoTooltip title={contactTooltipText} placement="top-start">
             <TextField 
@@ -158,15 +164,19 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
                 helperText={errors.contactNumber || " "}
             />
           </InfoTooltip>
-          <TextField required fullWidth name="jobTitle" label="Job Title" value={formData.jobTitle} onChange={handleChange} onBlur={handleBlur} error={!!errors.jobTitle} helperText={errors.jobTitle || " "}/>
+          <InfoTooltip title={jobTitleTooltipText} placement="top-start">
+            <TextField required fullWidth name="jobTitle" label="Job Title" value={formData.jobTitle} onChange={handleChange} onBlur={handleBlur} error={!!errors.jobTitle} helperText={errors.jobTitle || " "}/>
+          </InfoTooltip>
           <TextField fullWidth disabled label="Ticket No." value={user ? user.ticketNo : ''} />
           <TextField fullWidth disabled label="Requestor Name" value={user ? user.name : ''} />
         </Stack>
 
-        {/* --- ROW 3 --- */}
-        <TextField required fullWidth multiline rows={5} name="description" label="Please provide a detailed description of the issue" value={formData.description} onChange={handleChange} onBlur={handleBlur} error={!!errors.description} helperText={errors.description || " "}/>
+        {/* --- ROW 3: Description --- */}
+        <InfoTooltip title={descriptionTooltipText} placement="top-start">
+            <TextField required fullWidth multiline rows={5} name="description" label="Please provide a detailed description of the issue" value={formData.description} onChange={handleChange} onBlur={handleBlur} error={!!errors.description} helperText={errors.description || " "}/>
+        </InfoTooltip>
 
-        {/* --- ROW 4 --- */}
+        {/* --- ROW 4: Submit Button --- */}
         <Box sx={{ position: 'relative' }}>
           <Button
             variant="contained"

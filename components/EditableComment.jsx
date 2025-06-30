@@ -1,3 +1,5 @@
+// File: components/EditableComment.jsx
+// UPDATED: Added new tooltip text for already-edited comments.
 "use client";
 
 import * as React from "react";
@@ -9,33 +11,66 @@ import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
+import Divider from "@mui/material/Divider";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
+import { Chip } from "@mui/material";
 
-export default function EditableComment({ initialComment, author, onSave }) {
+export default function EditableComment({ initialComment, author, onSave, isEdited }) {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editText, setEditText] = React.useState(initialComment);
-  const { user: currentUser } = React.useContext(UserContext);
   
-  // CORRECTED THIS LINE:
+  const separator = '\n---\n';
+  const parts = initialComment.split(separator);
+  const systemPart = parts[0]; 
+  const userPart = parts.slice(1).join(separator) || (parts.length === 1 ? parts[0] : '');
+
+  const [editText, setEditText] = React.useState(userPart);
+  const { user: currentUser } = React.useContext(UserContext);
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
   const canEdit = currentUser && currentUser.name === author;
+  const hasBeenEdited = isEdited;
 
   const handleSave = () => {
-    onSave(editText);
+    const finalComment = parts.length > 1 && systemPart !== userPart
+      ? systemPart + separator + editText
+      : editText;
+      
+    onSave(finalComment);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditText(initialComment);
+    setEditText(userPart);
     setIsEditing(false);
   };
+
+  const renderDisplayMode = () => (
+    <>
+      <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1 }}>
+        {systemPart}
+      </Typography>
+      {parts.length > 1 && userPart && <Divider dashed sx={{ my: 1 }} />}
+      {userPart && systemPart !== userPart && (
+        <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1 }}>
+            {userPart}
+        </Typography>
+      )}
+    </>
+  );
 
   if (isEditing) {
     return (
       <Box sx={{ my: 0.5, py: 1 }}>
+        {parts.length > 1 && systemPart !== userPart && (
+          <>
+            <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1, fontStyle: 'italic', opacity: 0.7 }}>
+              {systemPart}
+            </Typography>
+            <Divider sx={{ my: 1 }} />
+          </>
+        )}
         <TextField
           variant="outlined"
           size="small"
@@ -45,23 +80,13 @@ export default function EditableComment({ initialComment, author, onSave }) {
           onChange={(e) => setEditText(e.target.value)}
           autoFocus
           spellCheck={isSpellcheckEnabled}
+          label="Edit your comment"
         />
         <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={handleSave}
-            disabled={!editText.trim()}
-          >
+          <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={!editText.trim()}>
             Save
           </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<CancelIcon />}
-            onClick={handleCancel}
-          >
+          <Button size="small" variant="outlined" startIcon={<CancelIcon />} onClick={handleCancel}>
             Cancel
           </Button>
         </Stack>
@@ -69,37 +94,38 @@ export default function EditableComment({ initialComment, author, onSave }) {
     );
   }
 
+  // --- THIS IS THE FINAL TOOLTIP LOGIC ---
+  const getTitle = () => {
+      if (hasBeenEdited) return "One time editable";
+      if (canEdit) return "Edit comment";
+      return "You can only edit your own comments";
+  }
+
   return (
     <Box
       sx={{
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "space-between",
         "&:hover .edit-button": {
-          opacity: canEdit ? 1 : 0.2,
+          opacity: canEdit && !hasBeenEdited ? 1 : 0.2,
         },
         minHeight: '36px',
       }}
     >
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{
-          display: "block",
-          mt: 0.5,
-          whiteSpace: "pre-wrap",
-          flexGrow: 1,
-        }}
-      >
-        {initialComment}
-      </Typography>
+      <Box sx={{ flexGrow: 1, mt: 0.5 }}>
+        {renderDisplayMode()}
+      </Box>
+      
+      {hasBeenEdited && <Chip label="Edited" size="small" sx={{ ml: 1, alignSelf: 'center' }} />}
+
       <IconButton
         className="edit-button"
         size="small"
         onClick={() => setIsEditing(true)}
-        disabled={!canEdit}
-        sx={{ ml: 1, opacity: 0, transition: 'opacity 0.2s' }}
-        title={canEdit ? "Edit comment" : "You can only edit your own comments"}
+        disabled={!canEdit || hasBeenEdited}
+        sx={{ ml: 1, opacity: hasBeenEdited ? 0.2 : 0, transition: 'opacity 0.2s' }}
+        title={getTitle()}
       >
         <EditIcon fontSize="inherit" />
       </IconButton>

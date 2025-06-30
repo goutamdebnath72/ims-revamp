@@ -1,14 +1,13 @@
 // File: components/IncidentDataGrid.jsx
-// Optimized with React.memo to prevent unnecessary re-renders.
+// UPDATED: Simplified statuses and applied high-contrast background colors.
 'use client';
 
-// Import memo from React
 import React, { memo } from 'react';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import { DataGrid } from '@mui/x-data-grid';
 import { Chip } from '@mui/material';
 
-// Define the columns for our Data Grid.
 const columns = [
   { field: 'id', headerName: 'Incident No.', width: 130 },
   { field: 'incidentType', headerName: 'Incident Type', width: 200 },
@@ -33,23 +32,43 @@ const columns = [
     renderCell: (params) => {
         const status = params.value;
         let color = 'default';
-        if (status === 'Resolved') color = 'success';
-        if (status === 'Processed') color = 'info';
-        if (status === 'Closed') color = 'primary';
-        return <Chip label={status} color={color} size="small" />;
-      },
+        // Simplified status colors for high contrast
+        if (status === 'New') color = 'success';
+        if (status === 'Processed') color = 'primary'; // Using blue for 'Processed'
+        if (status === 'Resolved') color = 'success'; // Keeping solid green for 'Resolved'
+        
+        // Use 'filled' variant for all to have solid backgrounds, except for 'New'
+        const variant = status === 'New' ? 'outlined' : 'filled';
+        
+        // For 'Resolved', use a lighter text color for better contrast
+        const chipStyles = status === 'Resolved' ? { color: '#fff' } : {};
+
+        return <Chip label={status} color={color} size="small" variant={variant} sx={chipStyles} />;
+    },
   },
   { field: 'reportedOn', headerName: 'Reported On', width: 180 },
 ];
 
-// The component function itself is unchanged.
 function IncidentDataGrid({ rows, loading }) {
+  const router = useRouter();
+
+  const handleRowClick = (params) => {
+    const incidentId = params.row.id;
+    router.push(`/incidents/${incidentId}`);
+  };
+
   return (
     <Box sx={{ height: '70vh', width: '100%' }}>
       <DataGrid
         rows={rows}
         columns={columns}
         loading={loading}
+        onRowClick={handleRowClick}
+        sx={{
+            '& .MuiDataGrid-row:hover': {
+                cursor: 'pointer',
+            },
+        }}
         initialState={{
           pagination: {
             paginationModel: { page: 0, pageSize: 20 },
@@ -63,5 +82,4 @@ function IncidentDataGrid({ rows, loading }) {
   );
 }
 
-// We export a memoized version of the component.
 export default memo(IncidentDataGrid);

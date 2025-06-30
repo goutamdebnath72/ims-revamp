@@ -1,96 +1,106 @@
+// File: app/incidents/[id]/page.jsx
+// UPDATED: A more robust state update in handleCommentEdit to fix the one-time edit bug.
 'use client';
 
 import * as React from 'react';
+import { useParams } from 'next/navigation';
 import { UserContext } from '@/context/UserContext';
 import { NotificationContext } from '@/context/NotificationContext';
+import { IncidentContext } from '@/context/IncidentContext';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import IncidentDetailsCard from '@/components/IncidentDetailsCard';
 import IncidentAuditTrail from '@/components/IncidentAuditTrail';
 import IncidentActionForm from '@/components/IncidentActionForm';
 import ResolutionDialog from '@/components/ResolutionDialog';
 
-const longOpenIncidentData = {
-  id: '1000031588',
-  status: 'Awaiting User Response',
-  incidentType: 'Software Issue',
-  jobTitle: 'Application crashing on launch',
-  description: 'User reports that the main accounting software (TallyPrime) crashes immediately upon opening. No error message is shown.',
-  priority: 'High',
-  department: 'Accounts',
-  location: 'Finance Wing',
-  requestor: 'ANIRBAN ROY',
-  ticketNo: '442205',
-  contactNumber: '9123456789',
-  reportedOn: '24 Jun 25, 02:00 PM',
-  auditTrail: [
-    { timestamp: 'Tue Jun 24, 2025 02:00 pm', author: 'ANIRBAN ROY', action: 'Incident Raised', comment: 'Software crashes on launch.' },
-    { timestamp: 'Tue Jun 24, 2025 02:05 pm', author: 'AUTO-ASSIGN', action: 'Assigned to Application Support', comment: 'Rule-based assignment for category: Software.' },
-    { timestamp: 'Tue Jun 24, 2025 02:30 pm', author: 'DEBASHISH GHOSH', action: 'Initial Diagnosis', comment: '1. Deleted the earlier installed SAP GUI.\n2. Freshly installed SAP GUI 750.\n3. User has checked by log-in.' },
-    { timestamp: 'Wed Jun 25, 2025 11:30 am', author: 'GOUTAM DEBNATH', action: 'Action Plan', comment: 'Will need to schedule a remote session with the user to disable the conflicting extension. Have sent a meeting invite.' }
-  ]
-};
+const C_AND_IT_DEPT_CODES = [98540, 98541];
 
-const longResolvedIncidentData = {
-  ...longOpenIncidentData,
-  status: 'Resolved',
-  auditTrail: [
-    ...longOpenIncidentData.auditTrail,
-    {
-      timestamp: 'Wed Jun 25, 2025 01:30 pm',
-      author: 'GOUTAM DEBNATH',
-      action: '(Closed By GOUTAM DEBNATH)',
-      comment: 'Disabled conflicting extension via remote session. Application now launches correctly. User confirmed resolution.',
-      rating: 5
-    }
-  ]
-};
-
-export default function IncidentDetailsPage({ params }) {
-  const initialData = longOpenIncidentData;
-  // const initialData = longResolvedIncidentData;
-
-  const [incident, setIncident] = React.useState(initialData);
-  const [isDialogOpen, setDialogOpen] = React.useState(false);
+export default function IncidentDetailsPage() {
+  const params = useParams();
+  const { incidents, updateIncident } = React.useContext(IncidentContext);
   const { user } = React.useContext(UserContext);
   const { showNotification } = React.useContext(NotificationContext);
-
+  
+  const incident = incidents.find(inc => inc.id.toString() === params.id);
+  
+  const [isDialogOpen, setDialogOpen] = React.useState(false);
   const auditTrailRef = React.useRef(null);
-  const isInitialPageLoad = React.useRef(true);
-
+  
   React.useEffect(() => {
-    if (isInitialPageLoad.current) {
-      isInitialPageLoad.current = false;
-      return;
+      setTimeout(() => {
+          auditTrailRef.current?.scrollToBottom();
+      }, 0);
+  }, [incident?.auditTrail?.length]);
+
+
+  const handleUpdate = ({ comment, newType, newPriority }) => {
+    if (!comment.trim() || !user || !incident) return;
+
+    const updatedFields = {};
+    let actionDescription = [];
+
+    const newStatus = 
+      incident.status === 'New' && user && C_AND_IT_DEPT_CODES.includes(user.departmentCode)
+      ? 'Processed'
+      : incident.status;
+    if (newStatus !== incident.status) {
+        updatedFields.status = newStatus;
     }
     
-    setTimeout(() => {
-      auditTrailRef.current?.scrollToBottom();
-    }, 0);
+    if (newType && newType !== incident.incidentType && !incident.isTypeLocked) {
+        updatedFields.incidentType = newType;
+        updatedFields.isTypeLocked = true;
+        actionDescription.push(`Incident Type changed to "${newType}".`);
+    }
 
-  }, [incident.auditTrail]);
+    if (newPriority && newPriority !== incident.priority && !incident.isPriorityLocked) {
+        updatedFields.priority = newPriority;
+        updatedFields.isPriorityLocked = true;
+        actionDescription.push(`Priority changed to "${newPriority}".`);
+    }
 
-  const handleUpdate = (comment) => {
-    if (!comment || !user) return; 
-
+    const finalComment = actionDescription.length > 0 
+      ? actionDescription.join('\n') + '\n---\n' + comment 
+      : comment;
+      
     const newAuditEntry = {
       timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
       author: user.name,
-      action: 'Action Taken',
-      comment: comment,
+      action: actionDescription.length > 0 ? 'Details Updated' : 'Action Taken',
+      comment: finalComment,
+      isEdited: false, 
+    };
+    
+    updateIncident(params.id, {
+        ...updatedFields,
+        auditTrail: [...(incident.auditTrail || []), newAuditEntry]
+    });
+    
+    showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
+  };
+  
+  // --- THIS FUNCTION IS CORRECTED ---
+  const handleCommentEdit = (entryIndex, newComment) => {
+    if (!incident) return;
+    
+    // Create a completely new copy of the audit trail array to ensure React detects the change.
+    const newAuditTrail = [...incident.auditTrail];
+    
+    // Update the specific entry and mark it as edited.
+    newAuditTrail[entryIndex] = {
+      ...newAuditTrail[entryIndex],
+      comment: newComment,
+      isEdited: true,
     };
 
-    setIncident(prevIncident => ({
-      ...prevIncident,
-      auditTrail: [...prevIncident.auditTrail, newAuditEntry],
-    }));
-    
-    showNotification('Incident updated successfully!', 'success');
+    updateIncident(params.id, { auditTrail: newAuditTrail });
+    showNotification({ title: "Comment Updated", message: "Your comment has been saved." }, "info");
   };
 
   const handleConfirmResolve = (comment, rating) => {
-    if (!comment || !user) return;
-
+    if (!comment || !user || !incident) return;
     const finalAuditEntry = {
       timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
       author: user.name,
@@ -98,38 +108,29 @@ export default function IncidentDetailsPage({ params }) {
       comment: comment,
       rating: rating,
     };
-
-    setIncident(prevIncident => ({
-      ...prevIncident,
-      status: 'Resolved',
-      auditTrail: [...prevIncident.auditTrail, finalAuditEntry],
-    }));
-
-    showNotification('Incident resolved successfully!', 'success');
-  };
-
-  const handleCommentEdit = (entryIndex, newComment) => {
-    setIncident(prevIncident => {
-      const newAuditTrail = prevIncident.auditTrail.map((entry, index) => {
-        if (index === entryIndex) {
-          return { ...entry, comment: newComment };
-        }
-        return entry;
-      });
-      return { ...prevIncident, auditTrail: newAuditTrail };
+    updateIncident(params.id, {
+        status: 'Resolved',
+        auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
     });
-    showNotification("Comment updated successfully!", "info");
+    showNotification({ title: 'Incident Resolved', message: 'The incident has been successfully closed.' }, 'success');
   };
+
+  if (!user) { return null; }
+
+  if (!incident) {
+    return (
+      <Box sx={{ textAlign: 'center', mt: 10 }}>
+        <Typography variant="h4" color="error">Incident Not Found</Typography>
+        <Typography>The incident with ID "{params.id}" could not be found in the system.</Typography>
+      </Box>
+    );
+  }
 
   const isResolved = incident.status === 'Resolved';
-  
-  if (!user) {
-    return null;
-  }
 
   return (
     <> 
-      <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch' }}>
+      <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch', height: 'calc(100vh - 112px)'}}>
         <Box sx={{ flex: 7, minWidth: 0 }}>
           <IncidentDetailsCard incident={incident} />
         </Box>
@@ -137,24 +138,28 @@ export default function IncidentDetailsPage({ params }) {
           <Box sx={{ flex: 5, minWidth: 0, display: 'flex' }}>
             <IncidentAuditTrail
               ref={auditTrailRef}
-              auditTrail={incident.auditTrail}
+              auditTrail={incident.auditTrail || []}
               incident={incident}
               isResolved={isResolved}
               onCommentEdit={handleCommentEdit}
             />
           </Box>
         ) : (
-          <Stack spacing={3} sx={{ flex: 5, minWidth: 0 }}>
-            <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex', maxHeight: '50vh' }}>
+          <Stack 
+            spacing={3} 
+            sx={{ flex: 5, minWidth: 0 }}
+          >
+            <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
                <IncidentAuditTrail
                   ref={auditTrailRef}
-                  auditTrail={incident.auditTrail}
+                  auditTrail={incident.auditTrail || []}
                   incident={incident}
                   isResolved={isResolved}
                   onCommentEdit={handleCommentEdit}
                />
             </Box>
             <IncidentActionForm 
+              incident={incident}
               onUpdate={handleUpdate} 
               onOpenResolveDialog={() => setDialogOpen(true)}
             />

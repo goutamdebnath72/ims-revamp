@@ -1,8 +1,8 @@
 // File: components/IncidentSearchForm.jsx
-// Optimized with React.memo.
+// UPDATED: Removed 'Closed' from the list of statuses in the dropdown filter.
 'use client';
 
-import React, { memo } from 'react'; // Import memo
+import React, { memo } from 'react';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
@@ -10,7 +10,8 @@ import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import SearchIcon from '@mui/icons-material/Search';
 
-const statuses = ['Any', 'New', 'Processed', 'Resolved', 'Closed'];
+// --- THIS IS THE FIX: The 'Closed' status is removed from this array ---
+const statuses = ['Any', 'New', 'Processed', 'Resolved'];
 const priorities = ['Any', 'Low', 'Medium', 'High'];
 
 function IncidentSearchForm({ onSearch, isLoading }) {
@@ -20,7 +21,7 @@ function IncidentSearchForm({ onSearch, isLoading }) {
     status: 'Any',
     priority: 'Any'
   });
-
+  
   const handleChange = (event) => {
     const { name, value } = event.target;
     setCriteria(prev => ({ ...prev, [name]: value }));
@@ -30,7 +31,7 @@ function IncidentSearchForm({ onSearch, isLoading }) {
     event.preventDefault();
     onSearch(criteria);
   };
-
+  
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Grid container spacing={2} alignItems="center">
@@ -60,5 +61,4 @@ function IncidentSearchForm({ onSearch, isLoading }) {
   );
 }
 
-// Export the memoized version
 export default memo(IncidentSearchForm);
