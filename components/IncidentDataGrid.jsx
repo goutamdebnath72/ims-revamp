@@ -1,5 +1,5 @@
 // File: components/IncidentDataGrid.jsx
-// UPDATED: Simplified statuses and applied high-contrast background colors.
+// UPDATED: Changed 'Closed' status chip to a solid grey background for distinction.
 'use client';
 
 import React, { memo } from 'react';
@@ -32,16 +32,15 @@ const columns = [
     renderCell: (params) => {
         const status = params.value;
         let color = 'default';
-        // Simplified status colors for high contrast
         if (status === 'New') color = 'success';
-        if (status === 'Processed') color = 'primary'; // Using blue for 'Processed'
-        if (status === 'Resolved') color = 'success'; // Keeping solid green for 'Resolved'
+        if (status === 'Processed') color = 'info';
+        if (status === 'Resolved') color = 'success';
+        // The 'Closed' status will now use the 'default' grey color with a solid background.
+        if (status === 'Closed') color = 'default'; 
         
-        // Use 'filled' variant for all to have solid backgrounds, except for 'New'
         const variant = status === 'New' ? 'outlined' : 'filled';
         
-        // For 'Resolved', use a lighter text color for better contrast
-        const chipStyles = status === 'Resolved' ? { color: '#fff' } : {};
+        const chipStyles = (status === 'Resolved' || status === 'Processed' ) ? { color: '#fff' } : {};
 
         return <Chip label={status} color={color} size="small" variant={variant} sx={chipStyles} />;
     },

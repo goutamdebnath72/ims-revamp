@@ -1,5 +1,5 @@
 // File: components/IncidentSearchForm.jsx
-// UPDATED: Removed 'Closed' from the list of statuses in the dropdown filter.
+// UPDATED: Added 'Closed' back to the list of statuses in the dropdown filter.
 'use client';
 
 import React, { memo } from 'react';
@@ -10,8 +10,8 @@ import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import SearchIcon from '@mui/icons-material/Search';
 
-// --- THIS IS THE FIX: The 'Closed' status is removed from this array ---
-const statuses = ['Any', 'New', 'Processed', 'Resolved'];
+// --- THIS IS THE FIX: The 'Closed' status is now included in this array ---
+const statuses = ['Any', 'New', 'Processed', 'Resolved', 'Closed'];
 const priorities = ['Any', 'Low', 'Medium', 'High'];
 
 function IncidentSearchForm({ onSearch, isLoading }) {

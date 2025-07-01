@@ -1,5 +1,3 @@
-// File: components/EditableComment.jsx
-// UPDATED: Added new tooltip text for already-edited comments.
 "use client";
 
 import * as React from "react";
@@ -51,7 +49,8 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
       <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1 }}>
         {systemPart}
       </Typography>
-      {parts.length > 1 && userPart && <Divider dashed sx={{ my: 1 }} />}
+      {/* THIS IS THE FIX: Using variant="dashed" instead of the boolean prop */}
+      {parts.length > 1 && userPart && <Divider variant="dashed" sx={{ my: 1 }} />}
       {userPart && systemPart !== userPart && (
         <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1 }}>
             {userPart}
@@ -94,7 +93,6 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
     );
   }
 
-  // --- THIS IS THE FINAL TOOLTIP LOGIC ---
   const getTitle = () => {
       if (hasBeenEdited) return "One time editable";
       if (canEdit) return "Edit comment";

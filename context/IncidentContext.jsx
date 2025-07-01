@@ -1,5 +1,5 @@
 // File: context/IncidentContext.jsx
-// UPDATED: Added an `updateIncident` function to allow global state changes.
+// UPDATED: Exported the C_AND_IT_DEPT_CODES constant.
 "use client";
 
 import * as React from "react";
@@ -10,7 +10,8 @@ import useSound from "@/hooks/useSound";
 
 export const IncidentContext = React.createContext(null);
 
-const C_AND_IT_DEPT_CODES = [98540, 98541];
+// This constant is now exported
+export const C_AND_IT_DEPT_CODES = [98540, 98541];
 
 export default function IncidentProvider({ children }) {
   const [incidents, setIncidents] = React.useState(mockIncidents);
@@ -26,6 +27,9 @@ export default function IncidentProvider({ children }) {
       reportedOn: new Date().toLocaleString('en-US', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }),
       status: 'New',
       requestor: user.name,
+      isTypeLocked: false,
+      isPriorityLocked: false,
+      auditTrail: [] 
     };
 
     setIncidents(prevIncidents => [newIncident, ...prevIncidents]);
@@ -41,7 +45,6 @@ export default function IncidentProvider({ children }) {
     return newIncident;
   };
 
-  // --- NEW FUNCTION TO UPDATE A SINGLE INCIDENT ---
   const updateIncident = (incidentId, updatedData) => {
     setIncidents(prevIncidents => 
       prevIncidents.map(incident => 

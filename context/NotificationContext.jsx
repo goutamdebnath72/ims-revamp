@@ -11,11 +11,11 @@ export default function NotificationProvider({ children }) {
   const [notification, setNotification] = React.useState({
     open: false,
     message: "",
-    title: "", // Add a title field
+    title: "", 
     severity: "success",
   });
 
-  // showNotification now accepts an object with title and message
+  // This function accepts an object with a title and message
   const showNotification = ({ title, message }, severity = "success") => {
     setNotification({ open: true, title, message, severity });
   };
@@ -34,10 +34,8 @@ export default function NotificationProvider({ children }) {
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleClose}
-        // Change position to bottom-right
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        {/* Update Alert to use AlertTitle for richer content */}
         <Alert
           onClose={handleClose}
           severity={notification.severity}

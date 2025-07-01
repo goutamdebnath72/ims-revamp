@@ -1,5 +1,5 @@
 // File: app/incidents/[id]/page.jsx
-// UPDATED: A more robust state update in handleCommentEdit to fix the one-time edit bug.
+// UPDATED: handleConfirmResolve now handles both "Resolve" and "Close" actions.
 'use client';
 
 import * as React from 'react';
@@ -29,9 +29,9 @@ export default function IncidentDetailsPage() {
   const auditTrailRef = React.useRef(null);
   
   React.useEffect(() => {
-      setTimeout(() => {
-          auditTrailRef.current?.scrollToBottom();
-      }, 0);
+    setTimeout(() => {
+      auditTrailRef.current?.scrollToBottom();
+    }, 0);
   }, [incident?.auditTrail?.length]);
 
 
@@ -81,14 +81,38 @@ export default function IncidentDetailsPage() {
     showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
   };
   
-  // --- THIS FUNCTION IS CORRECTED ---
+  // --- THIS FUNCTION IS UPDATED ---
+  const handleConfirmResolve = ({ action, comment, rating, closingReason }) => {
+    if (!comment || !user || !incident) return;
+    
+    const isClosing = action === 'close';
+    const newStatus = isClosing ? 'Closed' : 'Resolved';
+    
+    const finalComment = isClosing 
+      ? `Reason for closing: ${closingReason}.\n---\n${comment}`
+      : comment;
+
+    const finalAuditEntry = {
+      timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
+      author: user.name,
+      action: `(${newStatus} By ${user.name})`,
+      comment: finalComment,
+      rating: rating, // Will be null if closing, which is correct
+    };
+
+    updateIncident(params.id, {
+        status: newStatus,
+        auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
+    });
+
+    showNotification({ title: `Incident ${newStatus}`, message: `The incident has been successfully ${newStatus.toLowerCase()}.` }, 'success');
+  };
+  
   const handleCommentEdit = (entryIndex, newComment) => {
     if (!incident) return;
     
-    // Create a completely new copy of the audit trail array to ensure React detects the change.
     const newAuditTrail = [...incident.auditTrail];
     
-    // Update the specific entry and mark it as edited.
     newAuditTrail[entryIndex] = {
       ...newAuditTrail[entryIndex],
       comment: newComment,
@@ -97,22 +121,6 @@ export default function IncidentDetailsPage() {
 
     updateIncident(params.id, { auditTrail: newAuditTrail });
     showNotification({ title: "Comment Updated", message: "Your comment has been saved." }, "info");
-  };
-
-  const handleConfirmResolve = (comment, rating) => {
-    if (!comment || !user || !incident) return;
-    const finalAuditEntry = {
-      timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
-      author: user.name,
-      action: `(Closed By ${user.name})`,
-      comment: comment,
-      rating: rating,
-    };
-    updateIncident(params.id, {
-        status: 'Resolved',
-        auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
-    });
-    showNotification({ title: 'Incident Resolved', message: 'The incident has been successfully closed.' }, 'success');
   };
 
   if (!user) { return null; }
@@ -126,7 +134,7 @@ export default function IncidentDetailsPage() {
     );
   }
 
-  const isResolved = incident.status === 'Resolved';
+  const isResolved = incident.status === 'Resolved' || incident.status === 'Closed';
 
   return (
     <> 
@@ -166,6 +174,7 @@ export default function IncidentDetailsPage() {
           </Stack>
         )}
       </Box>
+
       <ResolutionDialog
         open={isDialogOpen}
         onClose={() => setDialogOpen(false)}

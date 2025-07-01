@@ -1,4 +1,5 @@
-// utils/pdfGenerators.js
+// File: utils/pdfGenerators.js
+// UPDATED: Added new user detail fields and fixed comment formatting.
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -24,18 +25,25 @@ export function generateIncidentPdf(incident, auditTrail) {
 
   currentY += 2;
   doc.setLineWidth(0.5);
-  doc.line(margin, currentY, pageWidth - margin, currentY); // underline
+  doc.line(margin, currentY, pageWidth - margin, currentY);
   currentY += 6;
 
-  // Incident Details Table
+  // --- THIS IS THE CHANGE: Added new rows for the new user details ---
   const detailRows = [
-    ["Incident No.", incident.incidentNumber || "1000029878"],
-    ["Incident Type", incident.incidentType],
+    ["Incident No.", incident.id],
     ["Job Title", incident.jobTitle],
-    ["Description", formatDescription(incident.description)],
+    ["Incident Type", incident.incidentType],
+    ["Priority", incident.priority],
+    ["Status", incident.status],
     ["Requestor", incident.requestor],
+    ["Designation", incident.designation || "N/A"],
+    ["Ticket No.", incident.ticketNo || "N/A"],
+    ["SAIL P. No.", incident.sailPNo || "N/A"],
+    ["Mail ID", incident.mailId || "N/A"],
     ["Department", incident.department],
     ["Contact", incident.contactNumber],
+    ["Location", incident.location],
+    ["Description", incident.description],
   ];
 
   autoTable(doc, {
@@ -43,39 +51,42 @@ export function generateIncidentPdf(incident, auditTrail) {
     head: [["Field", "Value"]],
     body: detailRows,
     theme: "grid",
-    styles: { fontSize: 12 },
-    // ... inside the first autoTable call
+    styles: { fontSize: 10, cellPadding: 2 },
     headStyles: {
-      fillColor: [0, 82, 155], // blue
-      textColor: 255, // white
+      fillColor: [0, 82, 155],
+      textColor: 255,
       fontStyle: "bold",
     },
     columnStyles: {
-      0: { cellWidth: 40 },
-      1: { cellWidth: pageWidth - 2 * margin - 40 },
+      0: { cellWidth: 40, fontStyle: 'bold' },
     },
     didDrawCell: (data) => {
+      // If the cell is for the 'Description' or 'Job Title', apply custom styles
+      if (data.row.raw[0] === 'Description' || data.row.raw[0] === 'Job Title') {
+          // This ensures the text can take up multiple lines if needed
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+      }
       currentY = data.cursor.y;
     },
   });
-  currentY += 20; // Add a gap before the next section
 
-  // NOTE: The first extra closing brace that was here has been removed.
+  currentY += 10;
 
   // Audit Trail Table
   autoTable(doc, {
     startY: currentY,
     head: [["Timestamp", "Author", "Action", "Comment"]],
-    body: auditTrail.map((entry) => [
-      formatDate(entry.timestamp),
+    body: (auditTrail || []).map((entry) => [
+      entry.timestamp,
       entry.author,
       entry.action,
-      formatComment(entry.comment),
+      formatComment(entry.comment), // Use the corrected helper function
     ]),
     theme: "grid",
-    styles: { fontSize: 12 },
+    styles: { fontSize: 9, cellPadding: 2 },
     headStyles: {
-      fillColor: [0, 82, 155], // blue
+      fillColor: [0, 82, 155],
       textColor: 255,
       fontStyle: "bold",
     },
@@ -83,10 +94,6 @@ export function generateIncidentPdf(incident, auditTrail) {
       0: { cellWidth: 35 },
       1: { cellWidth: 40 },
       2: { fontStyle: "normal", cellWidth: 35 },
-      3: { cellWidth: pageWidth - 2 * margin - 110 },
-    },
-    didDrawCell: (data) => {
-      currentY = data.cursor.y;
     },
   });
 
@@ -105,41 +112,12 @@ export function generateIncidentPdf(incident, auditTrail) {
     );
   }
 
-  doc.save(`Incident_${incident.incidentNumber || "1000029878"}.pdf`);
+  doc.save(`Incident_${incident.id}.pdf`);
+}
 
-  // --- Helper Functions ---
-  // These are nested inside generateIncidentPdf to have access to its scope if needed in the future.
-
-  function formatDate(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  }
-
-  // This is the new, dynamic function
-  function formatComment(comment) {
-    // Dynamically replace any newline characters with a space, ensuring any
-    // comment from the database will be formatted correctly on one line.
-    // Then, remove any trailing periods for clean formatting.
-    return comment.replace(/\r?\n/g, " ").replace(/\.+$/, "");
-  }
-
-  // This is the new, dynamic function
-  function formatDescription(desc) {
-    let formattedDesc = desc;
-
-    // --- Step 1: Normalize separators between discrete data fragments ---
-    // This ensures that keywords are always preceded by a single comma and a space,
-    // correcting any missing commas or incorrect spacing between the data fragments.
-    formattedDesc = formattedDesc.replace(/\s*Ticket No:/g, ", Ticket No:");
-    formattedDesc = formattedDesc.replace(/\s*SAIL PNo:/g, ", SAIL PNo:");
-    formattedDesc = formattedDesc.replace(/\s*Department:/g, ", Department:");
-
-    // --- Step 2: Ensure a single space follows every colon ---
-    // This handles the spacing within a fragment, like "Ticket No:223379".
-    // The regex finds a colon (:) followed by any non-space character (\S)
-    // and replaces it with the colon, a space, and the character that was found.
-    formattedDesc = formattedDesc.replace(/:(\S)/g, ": $1");
-
-    return formattedDesc;
-  }
+// --- THIS IS THE FIX: This function now preserves line breaks ---
+function formatComment(comment) {
+  // It no longer replaces newlines with spaces.
+  // It just ensures the comment is a string.
+  return comment ? comment.toString() : '';
 }
