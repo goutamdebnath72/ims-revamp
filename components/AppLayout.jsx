@@ -31,7 +31,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
-// The react-icons import has been removed.
 
 const spellCheckTooltipText = (
   <Stack spacing={1}>
@@ -52,7 +51,6 @@ const spellCheckTooltipText = (
   </Stack>
 );
 
-
 const drawerWidth = 240;
 
 const menuItems = [
@@ -62,7 +60,7 @@ const menuItems = [
 ];
 
 export default function AppLayout({ children }) {
-  const { user } = React.useContext(UserContext);
+  const { user, logout } = React.useContext(UserContext);
   const { isSpellcheckEnabled, toggleSpellcheck } = React.useContext(SettingsContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -71,12 +69,12 @@ export default function AppLayout({ children }) {
   const handleClose = () => setAnchorEl(null);
 
   const handleLogout = () => {
-    console.log("Logout clicked!");
     handleClose();
+    logout();
   };
-
+  
   if (!user) {
-    return null;
+    return null; 
   }
 
   return (
@@ -121,7 +119,6 @@ export default function AppLayout({ children }) {
                   />
                 </MenuItem>
               </InfoTooltip>
-
               <Divider />
               <MenuItem onClick={handleLogout}>
                 <ListItemIcon>
