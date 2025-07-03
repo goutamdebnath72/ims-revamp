@@ -1,9 +1,6 @@
 import * as React from 'react';
 import ThemeRegistry from './ThemeRegistry';
-import UserProvider from '@/context/UserContext';
-import NotificationProvider from '@/context/NotificationContext';
-import SettingsProvider from '@/context/SettingsContext';
-import IncidentProvider from '@/context/IncidentContext';
+import { AppProviders } from './providers'; // <-- Import your new provider wrapper
 
 export const metadata = {
   title: 'IMS Application',
@@ -16,15 +13,9 @@ export default function RootLayout({ children }) {
       <head />
       <body>
         <ThemeRegistry>
-          <UserProvider>
-            <NotificationProvider>
-              <SettingsProvider>
-                <IncidentProvider>
-                  {children}
-                </IncidentProvider>
-              </SettingsProvider>
-            </NotificationProvider>
-          </UserProvider>
+          <AppProviders>
+            {children}
+          </AppProviders>
         </ThemeRegistry>
       </body>
     </html>

@@ -1,5 +1,5 @@
 // File: app/(main)/page.jsx
-// UPDATED: Implemented a fully dynamic dashboard with date filters, animated numbers, and responsive cards.
+// UPDATED: Replaced the premium 'DateRangePicker' with the standard 'DatePicker' components.
 "use client";
 
 import * as React from 'react';
@@ -11,11 +11,11 @@ import CardContent from '@mui/material/CardContent';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-import { Chip, Stack } from '@mui/material';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import CountUp from 'react-countup'; // <-- Import animation library
-import { startOfWeek, startOfMonth, isWithinInterval, parse } from 'date-fns'; // <-- Import date calculation functions
+import { Chip, Stack, Button, Menu, MenuItem, Divider, Box } from '@mui/material';
+import CountUp from 'react-countup';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'; // <-- Use the standard DatePicker
+import { startOfWeek, startOfMonth, endOfDay, format, isWithinInterval, parse, isValid } from 'date-fns';
+import EventIcon from '@mui/icons-material/Event';
 
 const recentIncidentsData = [
   { id: '10001', title: 'Network Down in Admin Building', priority: 'High', status: 'Processed' },
@@ -26,36 +26,39 @@ const recentIncidentsData = [
 
 export default function DashboardPage() {
     const { incidents } = React.useContext(IncidentContext);
-    const [timeRange, setTimeRange] = React.useState('all');
+    
+    // The state now holds a start and end date object
+    const [dateRange, setDateRange] = React.useState({ start: null, end: null });
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const open = Boolean(anchorEl);
 
-    const handleTimeRangeChange = (event, newTimeRange) => {
-        if (newTimeRange !== null) {
-            setTimeRange(newTimeRange);
-        }
+    const handleClick = (event) => setAnchorEl(event.currentTarget);
+    const handleClose = () => setAnchorEl(null);
+
+    const setPresetRange = (rangeName) => {
+        const now = new Date();
+        if (rangeName === 'today') setDateRange({ start: now, end: now });
+        if (rangeName === 'week') setDateRange({ start: startOfWeek(now), end: now });
+        if (rangeName === 'month') setDateRange({ start: startOfMonth(now), end: now });
+        if (rangeName === 'all') setDateRange({ start: null, end: null });
+        handleClose();
     };
 
-    // --- NEW: Filter incidents based on the selected time range ---
     const filteredIncidents = React.useMemo(() => {
-        const now = new Date();
+        const { start, end } = dateRange;
+        if (!start || !end || !isValid(start) || !isValid(end)) {
+            return incidents; // If no valid range, return all
+        }
+
+        const interval = { start, end: endOfDay(end) };
         const parseDate = (dateStr) => parse(dateStr, 'dd MMM yy, hh:mm a', new Date());
-
-        if (timeRange === 'all') {
-            return incidents;
-        }
         
-        let interval;
-        if (timeRange === 'today') {
-            interval = { start: new Date(now.setHours(0, 0, 0, 0)), end: new Date(now.setHours(23, 59, 59, 999)) };
-        } else if (timeRange === 'week') {
-            interval = { start: startOfWeek(now), end: now };
-        } else if (timeRange === 'month') {
-            interval = { start: startOfMonth(now), end: now };
-        }
-        
-        return incidents.filter(i => isWithinInterval(parseDate(i.reportedOn), interval));
-    }, [incidents, timeRange]);
+        return incidents.filter(i => {
+            const reportedDate = parseDate(i.reportedOn);
+            return isValid(reportedDate) && isWithinInterval(reportedDate, interval);
+        });
+    }, [incidents, dateRange]);
 
-    // --- All calculations now use the 'filteredIncidents' list ---
     const pendingIncidents = filteredIncidents.filter(i => i.status === 'New').length;
     const processedIncidents = filteredIncidents.filter(i => i.status === 'Processed').length;
     const resolvedIncidents = filteredIncidents.filter(i => i.status === 'Resolved').length;
@@ -76,9 +79,13 @@ export default function DashboardPage() {
         return 'default';
     };
 
-    // Helper to adjust font size for large numbers
-    const getNumberVariant = (value) => {
-        return value.toString().length > 4 ? 'h4' : 'h3';
+    const getNumberVariant = (value) => value.toString().length > 4 ? 'h4' : 'h3';
+
+    const formatDateRange = () => {
+        const { start, end } = dateRange;
+        if (!start || !end) return "All Time";
+        if (format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd')) return format(start, 'do MMM, yyyy');
+        return `${format(start, 'do MMM')} - ${format(end, 'do MMM, yyyy')}`;
     };
 
   return (
@@ -87,30 +94,56 @@ export default function DashboardPage() {
           <Typography variant="h4">
               Dashboard
           </Typography>
-          <ToggleButtonGroup
-            value={timeRange}
-            exclusive
-            onChange={handleTimeRangeChange}
-            aria-label="time range"
-            size="small"
+          <Button
+            id="date-range-button"
+            aria-controls={open ? 'date-range-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? 'true' : undefined}
+            variant="outlined"
+            onClick={handleClick}
+            startIcon={<EventIcon />}
           >
-            <ToggleButton value="today" aria-label="today">Today</ToggleButton>
-            <ToggleButton value="week" aria-label="this week">This Week</ToggleButton>
-            <ToggleButton value="month" aria-label="this month">This Month</ToggleButton>
-            <ToggleButton value="all" aria-label="all time">All Time</ToggleButton>
-          </ToggleButtonGroup>
+            {formatDateRange()}
+          </Button>
+          <Menu
+            id="date-range-menu"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+          >
+            <MenuItem onClick={() => setPresetRange('today')}>Today</MenuItem>
+            <MenuItem onClick={() => setPresetRange('week')}>This Week</MenuItem>
+            <MenuItem onClick={() => setPresetRange('month')}>This Month</MenuItem>
+            <MenuItem onClick={() => setPresetRange('all')}>All Time</MenuItem>
+            <Divider />
+            {/* Using two separate DatePicker components */}
+            <Box sx={{ p: 2 }}>
+                <Typography variant="overline" display="block" sx={{ mb: 2 }}>Custom Range</Typography>
+                <Stack spacing={2}>
+                    <DatePicker 
+                        label="Start Date" 
+                        value={dateRange.start} 
+                        onChange={(newValue) => setDateRange(prev => ({...prev, start: newValue}))}
+                    />
+                    <DatePicker 
+                        label="End Date" 
+                        value={dateRange.end} 
+                        onChange={(newValue) => setDateRange(prev => ({...prev, end: newValue}))}
+                    />
+                </Stack>
+            </Box>
+          </Menu>
       </Stack>
       
       <Grid container spacing={3}>
           {statCardsData.map((card, index) => (
             <Grid container xs={12} sm={6} md={2.4} key={index}> 
                 <Card elevation={2} sx={{ width: '100%'}}>
-                  <CardContent sx={{ textAlign: 'center' }}> {/* <-- Center align content */}
+                  <CardContent sx={{ textAlign: 'center' }}>
                       <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
                       {card.title}
                       </Typography>
                       <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
-                        {/* Use the CountUp component for animation */}
                         <CountUp end={card.value} duration={1.5} separator="," />
                       </Typography>
                   </CardContent>
