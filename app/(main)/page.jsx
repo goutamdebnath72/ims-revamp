@@ -1,33 +1,25 @@
-// File: app/(main)/page.jsx
-// UPDATED: Replaced the premium 'DateRangePicker' with the standard 'DatePicker' components.
 "use client";
 
 import * as React from 'react';
+import Link from 'next/link';
 import { IncidentContext } from '@/context/IncidentContext';
 import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import { Chip, Stack, Button, Menu, MenuItem, Divider, Box } from '@mui/material';
 import CountUp from 'react-countup';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'; // <-- Use the standard DatePicker
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { startOfWeek, startOfMonth, endOfDay, format, isWithinInterval, parse, isValid } from 'date-fns';
+import { Stack, Button, Menu, MenuItem, Divider, Box, CardActionArea } from '@mui/material';
 import EventIcon from '@mui/icons-material/Event';
 
-const recentIncidentsData = [
-  { id: '10001', title: 'Network Down in Admin Building', priority: 'High', status: 'Processed' },
-  { id: '10002', title: 'Email Not Working for Mr. Debnath', priority: 'High', status: 'Processed' },
-  { id: '10003', title: 'Software Install Request: VS Code', priority: 'Medium', status: 'Pending' },
-  { id: '10004', title: 'SAP Login Issue', priority: 'Medium', status: 'Pending' },
-];
+import StatusChart from '@/components/StatusChart';
+import PriorityChart from '@/components/PriorityChart';
+import TeamAvailabilityCard from '@/components/TeamAvailabilityCard';
+import RecentIncidentsCard from '@/components/RecentIncidentsCard';
 
 export default function DashboardPage() {
     const { incidents } = React.useContext(IncidentContext);
     
-    // The state now holds a start and end date object
     const [dateRange, setDateRange] = React.useState({ start: null, end: null });
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
@@ -47,7 +39,7 @@ export default function DashboardPage() {
     const filteredIncidents = React.useMemo(() => {
         const { start, end } = dateRange;
         if (!start || !end || !isValid(start) || !isValid(end)) {
-            return incidents; // If no valid range, return all
+            return incidents;
         }
 
         const interval = { start, end: endOfDay(end) };
@@ -59,25 +51,33 @@ export default function DashboardPage() {
         });
     }, [incidents, dateRange]);
 
-    const pendingIncidents = filteredIncidents.filter(i => i.status === 'New').length;
+    const newIncidents = filteredIncidents.filter(i => i.status === 'New').length;
     const processedIncidents = filteredIncidents.filter(i => i.status === 'Processed').length;
     const resolvedIncidents = filteredIncidents.filter(i => i.status === 'Resolved').length;
     const closedIncidents = filteredIncidents.filter(i => i.status === 'Closed').length;
-    const allOpenIncidents = pendingIncidents + processedIncidents;
+    const allOpenIncidents = newIncidents + processedIncidents;
 
     const statCardsData = [
-        { title: 'New Incidents', value: pendingIncidents, color: 'warning' },
-        { title: 'Processed Incidents', value: processedIncidents, color: 'info' },
-        { title: 'All Open Incidents', value: allOpenIncidents, color: 'secondary' },
-        { title: 'Resolved Incidents', value: resolvedIncidents, color: 'success' },
-        { title: 'Closed Incidents', value: closedIncidents, color: 'default' },
+        { title: 'New Incidents', value: newIncidents, color: 'warning', filterStatus: 'New' },
+        { title: 'Processed', value: processedIncidents, color: 'info', filterStatus: 'Processed' },
+        { title: 'All Open', value: allOpenIncidents, color: 'secondary', filterStatus: 'AllOpen' },
+        { title: 'Resolved', value: resolvedIncidents, color: 'success', filterStatus: 'Resolved' },
+        { title: 'Closed', value: closedIncidents, color: 'default', filterStatus: 'Closed' },
     ];
-
-    const getPriorityChipColor = (priorityValue) => {
-        if (priorityValue === 'High') return 'error';
-        if (priorityValue === 'Medium') return 'warning';
-        return 'default';
-    };
+    
+    const statusChartData = [
+        { name: 'New', count: newIncidents },
+        { name: 'Processed', count: processedIncidents },
+        { name: 'Resolved', count: resolvedIncidents },
+        { name: 'Closed', count: closedIncidents },
+    ];
+    
+    const openIncidentsList = filteredIncidents.filter(i => i.status === 'New' || i.status === 'Processed');
+    const priorityChartData = [
+        { name: 'High', value: openIncidentsList.filter(i => i.priority === 'High').length },
+        { name: 'Medium', value: openIncidentsList.filter(i => i.priority === 'Medium').length },
+        { name: 'Low', value: openIncidentsList.filter(i => i.priority === 'Low').length },
+    ];
 
     const getNumberVariant = (value) => value.toString().length > 4 ? 'h4' : 'h3';
 
@@ -96,9 +96,6 @@ export default function DashboardPage() {
           </Typography>
           <Button
             id="date-range-button"
-            aria-controls={open ? 'date-range-menu' : undefined}
-            aria-haspopup="true"
-            aria-expanded={open ? 'true' : undefined}
             variant="outlined"
             onClick={handleClick}
             startIcon={<EventIcon />}
@@ -116,7 +113,6 @@ export default function DashboardPage() {
             <MenuItem onClick={() => setPresetRange('month')}>This Month</MenuItem>
             <MenuItem onClick={() => setPresetRange('all')}>All Time</MenuItem>
             <Divider />
-            {/* Using two separate DatePicker components */}
             <Box sx={{ p: 2 }}>
                 <Typography variant="overline" display="block" sx={{ mb: 2 }}>Custom Range</Typography>
                 <Stack spacing={2}>
@@ -135,44 +131,35 @@ export default function DashboardPage() {
           </Menu>
       </Stack>
       
-      <Grid container spacing={3}>
+      <Stack direction="row" spacing={3}>
           {statCardsData.map((card, index) => (
-            <Grid container xs={12} sm={6} md={2.4} key={index}> 
-                <Card elevation={2} sx={{ width: '100%'}}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                      <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-                      {card.title}
-                      </Typography>
-                      <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
-                        <CountUp end={card.value} duration={1.5} separator="," />
-                      </Typography>
-                  </CardContent>
+            <Box key={index} sx={{ flex: 1, textDecoration: 'none' }}>
+                <Card elevation={3} sx={{ height: '100%' }}>
+                  <CardActionArea component={Link} href={`/search?status=${card.filterStatus}`} sx={{ height: '100%' }}>
+                    <CardContent sx={{ textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+                        {card.title}
+                        </Typography>
+                        <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
+                          <CountUp end={card.value} duration={1.5} separator="," />
+                        </Typography>
+                    </CardContent>
+                  </CardActionArea>
                 </Card>
-            </Grid>
+            </Box>
           ))}
-      </Grid>
+      </Stack>
 
-      <Typography variant="h5" sx={{ mt: 3, mb: 2 }}>
-          Recent Incidents
-      </Typography>
-      <Card elevation={2}>
-          <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-              {recentIncidentsData.map((incident) => (
-                <ListItem
-                  key={incident.id}
-                  divider
-                  secondaryAction={
-                    <Chip label={incident.priority} color={getPriorityChipColor(incident.priority)} size="small" />
-                  }
-                >
-                  <ListItemText
-                  primary={incident.title}
-                  secondary={`Status: ${incident.status}`}
-                  />
-              </ListItem>
-              ))}
-          </List>
-      </Card>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+          <Stack sx={{ flex: 7 }} spacing={3}>
+            <StatusChart data={statusChartData} />
+            <RecentIncidentsCard />
+          </Stack>
+          <Stack sx={{ flex: 5 }} spacing={3}>
+              <PriorityChart data={priorityChartData} />
+              <TeamAvailabilityCard />
+          </Stack>
+      </Stack>
     </Stack>
   );
 }
