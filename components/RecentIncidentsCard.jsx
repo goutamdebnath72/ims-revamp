@@ -3,21 +3,20 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { IncidentContext } from '@/context/IncidentContext';
-import { Paper, Typography, List, ListItem, ListItemText, Chip, Divider, Box, ListItemButton } from '@mui/material';
+import { Paper, Typography, List, ListItemText, Chip, Divider, Box, ListItemButton } from '@mui/material';
 
-export default function RecentIncidentsCard() {
-  const { incidents } = React.useContext(IncidentContext);
+// --- FIX: The component now accepts an `incidents` prop ---
+// This allows us to pass a pre-filtered list of incidents to it.
+export default function RecentIncidentsCard({ incidents: incidentsProp }) {
+  const { incidents: allIncidents } = React.useContext(IncidentContext);
   const router = useRouter();
 
-  // Sort incidents by parsing the date string robustly to find the most recent ones.
-  const recentIncidents = [...incidents]
-    .sort((a, b) => {
-        // A simple date sort might not be reliable for 'dd MMM yy' format.
-        // For production, a proper date object (like from new Date()) is better.
-        // For this mock data, a reverse sort is sufficient.
-        return b.id - a.id;
-    })
-    .slice(0, 5); // Get the top 5 most recent incidents
+  // If a specific list is passed as a prop, use it. Otherwise, fall back to the full list from context.
+  const incidentsToDisplay = incidentsProp || allIncidents;
+
+  const recentIncidents = [...incidentsToDisplay]
+    .sort((a, b) => b.id - a.id)
+    .slice(0, 5);
 
   const getStatusChipColor = (status) => {
     if (status === 'New') return 'success';
@@ -46,7 +45,8 @@ export default function RecentIncidentsCard() {
           >
             <ListItemText
               primary={incident.jobTitle}
-              secondary={`#${incident.id} - Reported by ${incident.requestor}`}
+              // Secondary text now correctly shows the requestor from the data
+              secondary={`#${incident.id} - Reported by ${incident.reportedBy?.name || 'Unknown'}`}
             />
             <Chip 
               label={incident.status} 

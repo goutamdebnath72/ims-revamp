@@ -53,10 +53,13 @@ const spellCheckTooltipText = (
 
 const drawerWidth = 240;
 
-const menuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, href: "/" },
-  { text: "Search & Archive", icon: <SearchIcon />, href: "/search" },
-  { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise" },
+// --- MENU ITEM LOGIC UPDATED ---
+const allMenuItems = [
+  { text: "Dashboard", icon: <DashboardIcon />, href: "/", roles: ['admin', 'user'] },
+  // "Search & Archive" is now available to both roles
+  { text: "Search & Archive", icon: <SearchIcon />, href: "/search", roles: ['admin', 'user'] },
+  // "Raise Incident" is now only visible to admins in the sidebar
+  { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin'] },
 ];
 
 export default function AppLayout({ children }) {
@@ -72,6 +75,10 @@ export default function AppLayout({ children }) {
     handleClose();
     logout();
   };
+  
+  const visibleMenuItems = allMenuItems.filter(item => 
+    item.roles.includes(user?.role)
+  );
   
   if (!user) {
     return null; 
@@ -142,7 +149,7 @@ export default function AppLayout({ children }) {
         <Toolbar />
         <Divider />
         <List>
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton LinkComponent={Link} href={item.href}>
                 <ListItemIcon>{item.icon}</ListItemIcon>
