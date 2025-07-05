@@ -3,26 +3,14 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-// --- MOCK USER DATABASE ---
-// This simulates fetching user data. The role is not stored here.
 const MOCK_USER_DB = {
-  "342461": {
-    name: "GOUTAM DEBNATH",
-    initials: "GD",
-    ticketNo: "342461",
-    departmentCode: 98540, // C & IT Department
-    departmentName: "C & IT (TECH)",
-  },
-  "111111": {
-    name: "ANAMIKA SHARMA",
-    initials: "AS",
-    ticketNo: "111111",
-    departmentCode: 88123, // A different department
-    departmentName: "OPERATIONS",
-  },
+  "342461": { name: "GOUTAM DEBNATH", initials: "GD", ticketNo: "342461", departmentCode: 98540 }, // C&IT Admin
+  "111111": { name: "ANAMIKA SHARMA", initials: "AS", ticketNo: "111111", departmentCode: 88123 }, // Standard User
+  "222222": { name: "RAKESH GUPTA", initials: "RG", ticketNo: "222222", departmentCode: 98500 }, // C&IT Executive
 };
 
-const C_AND_IT_DEPTS = [98500, 98540];
+const EXECUTIVE_DEPT = 98500;
+const ADMIN_DEPT = 98540;
 
 export const UserContext = React.createContext(null);
 
@@ -33,16 +21,12 @@ export default function UserProvider({ children }) {
   const login = (userId, password) => {
     const userData = MOCK_USER_DB[userId];
 
-    // Check if user exists and password is correct
     if (userData && password === "password") {
-      // Determine role based on department code
-      const role = C_AND_IT_DEPTS.includes(userData.departmentCode) 
-        ? "admin" 
-        : "user";
+      let role = 'user';
+      if (userData.departmentCode === EXECUTIVE_DEPT) role = 'sys_admin';
+      else if (userData.departmentCode === ADMIN_DEPT) role = 'admin';
 
-      // Set the user state with the dynamically assigned role
       setUser({ ...userData, role });
-      
       router.push('/');
       return { success: true };
     } 
@@ -53,6 +37,7 @@ export default function UserProvider({ children }) {
   const logout = () => {
     setUser(null);
     router.push('/login');
+    setTimeout(() => { window.location.reload(); }, 100);
   };
 
   return (

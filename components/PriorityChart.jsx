@@ -1,8 +1,7 @@
-// File: components/PriorityChart.jsx
-// NEW: A reusable pie chart to display incidents by priority.
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Paper, Typography, Box } from '@mui/material';
 
@@ -13,11 +12,23 @@ const COLORS = {
 };
 
 export default function PriorityChart({ data }) {
-  // Ensure we don't try to render a chart with no data
+  const router = useRouter();
   const hasData = data.some(item => item.value > 0);
 
+  const handlePieClick = (data) => {
+    if (data && data.name) {
+      router.push(`/search?priority=${data.name}`);
+    }
+  };
+
   return (
-    <Paper elevation={3} sx={{ p: 3, height: '400px' }}>
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        p: 3, 
+        height: '400px',
+      }}
+    >
       <Typography variant="h6" gutterBottom>
         Open Incidents by Priority
       </Typography>
@@ -34,9 +45,19 @@ export default function PriorityChart({ data }) {
               dataKey="value"
               nameKey="name"
               label={(entry) => `${entry.name}: ${entry.value}`}
+              onClick={handlePieClick}
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[entry.name]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[entry.name]} 
+                  stroke={'#FFFFFF'}
+                  // --- GAP & VISUAL FIXES ---
+                  strokeWidth={3} // Increased gap for better visual separation
+                  style={{ cursor: 'pointer' }} 
+                  // This event handler prevents the default browser focus rectangle on click
+                  onMouseDown={(e) => e.preventDefault()}
+                />
               ))}
             </Pie>
             <Tooltip />

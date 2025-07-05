@@ -3,7 +3,7 @@
 import React, { memo } from 'react';
 import { UserContext } from '@/context/UserContext';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack'; // Using Stack for a more direct flexbox layout
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
@@ -13,7 +13,7 @@ const statuses = ['Any', 'New', 'Processed', 'Resolved', 'Closed'];
 const priorities = ['Any', 'Low', 'Medium', 'High'];
 
 function IncidentSearchForm({ onSearch, isLoading }) {
-  const { user } = React.useContext(UserContext); // Get user from context
+  const { user } = React.useContext(UserContext);
 
   const [criteria, setCriteria] = React.useState({
     incidentId: '',
@@ -32,39 +32,42 @@ function IncidentSearchForm({ onSearch, isLoading }) {
     onSearch(criteria);
   };
   
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'sys_admin';
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
-          <TextField fullWidth label="Incident ID" name="incidentId" value={criteria.incidentId} onChange={handleChange} size="small" />
-        </Grid>
+      {/* --- LAYOUT FIX V3: Using Stack with Flexbox for guaranteed equal widths --- */}
+      <Stack direction="row" spacing={2} alignItems="center">
         
-        {/* --- ROLE-BASED UI --- */}
-        {/* The Requestor field is now only shown to admin users */}
+        <Box sx={{ flex: 1 }}>
+          <TextField fullWidth label="Incident ID" name="incidentId" value={criteria.incidentId} onChange={handleChange} size="small" />
+        </Box>
+        
         {isAdmin && (
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: 1 }}>
             <TextField fullWidth label="Requestor Name/ID" name="requestor" value={criteria.requestor} onChange={handleChange} size="small" />
-          </Grid>
+          </Box>
         )}
 
-        <Grid item xs={12} sm={6} md={isAdmin ? 2 : 3}>
+        <Box sx={{ flex: 1 }}>
           <TextField select fullWidth label="Status" name="status" value={criteria.status} onChange={handleChange} size="small">
             {statuses.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
           </TextField>
-        </Grid>
-        <Grid item xs={12} sm={6} md={isAdmin ? 2 : 3}>
+        </Box>
+
+        <Box sx={{ flex: 1 }}>
           <TextField select fullWidth label="Priority" name="priority" value={criteria.priority} onChange={handleChange} size="small">
             {priorities.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
           </TextField>
-        </Grid>
-        <Grid item xs={12} md={2}>
-          <Button type="submit" variant="contained" fullWidth startIcon={<SearchIcon />} size="large" disabled={isLoading} sx={{ height: '40px' }}>
+        </Box>
+        
+        <Box>
+          <Button type="submit" variant="contained" startIcon={<SearchIcon />} size="large" disabled={isLoading} sx={{ height: '40px' }}>
             {isLoading ? 'Searching...' : 'Search'}
           </Button>
-        </Grid>
-      </Grid>
+        </Box>
+
+      </Stack>
     </Box>
   );
 }

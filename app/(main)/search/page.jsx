@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
+import { isSystemIncident } from '@/lib/incident-helpers';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
@@ -15,77 +16,87 @@ import Alert from '@mui/material/Alert';
 
 export default function SearchPage() {
   const { incidents } = React.useContext(IncidentContext);
-  const { user } = React.useContext(UserContext); // Get user for role check
+  const { user } = React.useContext(UserContext);
   const searchParams = useSearchParams();
 
   const [searchResults, setSearchResults] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [hasSearched, setHasSearched] = React.useState(false);
-  const [showUnfilteredMessage, setShowUnfilteredMessage] = React.useState(false);
   
   const performSearch = React.useCallback((criteria) => {
-    if (!user) return; // Don't search if user isn't loaded yet
+    if (!user) return;
 
     setLoading(true);
     setHasSearched(true); 
     
-    const isUnfiltered = !criteria.incidentId && criteria.status === 'Any' && criteria.priority === 'Any';
-    setShowUnfilteredMessage(isUnfiltered);
+    const category = searchParams.get('category') || 'general';
 
     setTimeout(() => {
       let results = incidents.filter(incident => {
-        // --- ROLE-BASED DATA SECURITY ---
-        // If the user is NOT an admin, we add a check to ensure they only see their own incidents.
-        const isOwner = user.role === 'admin' || (incident.reportedBy && incident.reportedBy.ticketNo === user.ticketNo);
+        const isSys = isSystemIncident(incident);
 
-        return (
-          isOwner &&
-          (criteria.incidentId ? incident.id.toString().includes(criteria.incidentId) : true) &&
-          (user.role === 'admin' && criteria.requestor ? (incident.reportedBy?.name.toLowerCase().includes(criteria.requestor.toLowerCase()) || incident.reportedBy?.ticketNo.includes(criteria.requestor)) : true) &&
-          (criteria.status !== 'Any' ? incident.status === criteria.status : true) &&
-          (criteria.priority !== 'Any' ? incident.priority === criteria.priority : true)
-        )
+        if (category === 'system' && !isSys) return false;
+        if (user.role === 'admin' && category === 'general' && isSys) return false;
+
+        const isOwner = user.role === 'sys_admin' || user.role === 'admin' || (incident.reportedBy && incident.reportedBy.ticketNo === user.ticketNo);
+        if (!isOwner) return false;
+
+        const idMatch = criteria.incidentId ? incident.id.toString().includes(criteria.incidentId) : true;
+        const requestorMatch = (user.role === 'admin' || user.role === 'sys_admin') && criteria.requestor ? (incident.reportedBy?.name.toLowerCase().includes(criteria.requestor.toLowerCase()) || incident.reportedBy?.ticketNo.includes(criteria.requestor)) : true;
+        const statusMatch = criteria.status !== 'Any' ? incident.status === criteria.status : true;
+        const priorityMatch = criteria.priority !== 'Any' ? incident.priority === criteria.priority : true;
+
+        return idMatch && requestorMatch && statusMatch && priorityMatch;
       });
       setSearchResults(results);
       setLoading(false);
     }, 500);
-  }, [incidents, user]);
+  }, [incidents, user, searchParams]);
 
   React.useEffect(() => {
-    // This handles the initial search when clicking cards on the dashboard
     const initialStatus = searchParams.get('status');
     const initialUser = searchParams.get('user');
+    const initialPriority = searchParams.get('priority'); // --- PIE CHART FIX --- Get priority from URL
 
-    if (initialStatus) {
-      const defaultCriteria = { status: initialStatus, priority: 'Any', incidentId: '', requestor: '' };
+    // Trigger a search if any filter is present in the URL
+    if (initialStatus || initialUser || initialPriority) {
+      const defaultCriteria = { 
+        status: initialStatus === 'open' || initialStatus === 'AllOpen' ? 'Any' : (initialStatus || 'Any'), 
+        priority: initialPriority || 'Any', // Use the priority from the URL
+        incidentId: '', 
+        requestor: '' 
+      };
       
-      if (initialStatus === 'AllOpen') {
-          const openResults = incidents.filter(i => {
-              const isOwner = !initialUser || (i.reportedBy && i.reportedBy.ticketNo === initialUser);
-              return isOwner && (i.status === 'New' || i.status === 'Processed');
-          });
-          setSearchResults(openResults);
-          setHasSearched(true);
-          setShowUnfilteredMessage(false);
+      if (initialStatus === 'open' || initialStatus === 'AllOpen') {
+        const openResults = incidents.filter(i => {
+          const isSys = isSystemIncident(i);
+          if (user?.role === 'admin' && isSys) return false;
+          if (user?.role === 'user' && i.reportedBy?.ticketNo !== user.ticketNo) return false;
+          return (i.status === 'New' || i.status === 'Processed');
+        });
+        setSearchResults(openResults);
+        setHasSearched(true);
       } else {
         performSearch(defaultCriteria);
       }
     }
-  }, [searchParams, incidents, performSearch]);
+  }, [searchParams, incidents, performSearch, user]);
 
-  const isScrolled = useScrollTrigger({
-    disableHysteresis: true,
-    threshold: 0,
-  });
+  const isScrolled = useScrollTrigger({ disableHysteresis: true, threshold: 0 });
+  
+  const getHeading = () => {
+    const category = searchParams.get('category');
+    if (user?.role === 'sys_admin') {
+      return `Search & Archive ${category === 'system' ? '(System)' : '(General)'}`;
+    }
+    return 'Search & Archive';
+  };
 
   return (
     <Stack spacing={2}>
-      <Paper 
-        elevation={isScrolled ? 4 : 2} 
-        sx={{ p: 2, position: 'sticky', top: 64, zIndex: 10, backgroundColor: 'background.default', transition: 'box-shadow 0.2s ease-in-out' }}
-      >
+      <Paper elevation={isScrolled ? 4 : 2} sx={{ p: 2, position: 'sticky', top: 64, zIndex: 10, bgcolor: 'background.default' }}>
         <Typography variant="h4" sx={{ mb: 2, textAlign: 'left' }}>
-            Search & Archive
+            {getHeading()}
         </Typography>
         <IncidentSearchForm onSearch={performSearch} isLoading={loading} />
       </Paper>
@@ -95,11 +106,6 @@ export default function SearchPage() {
             <Typography variant="h5" sx={{ mb: 2 }}>
                 Search Results
             </Typography>
-            {showUnfilteredMessage && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                    Showing all your incidents. Use the filters above to refine your search.
-                </Alert>
-            )}
             <IncidentDataGrid rows={searchResults} loading={loading} />
          </Paper>
       )}

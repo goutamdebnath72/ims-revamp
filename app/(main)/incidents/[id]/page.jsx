@@ -1,5 +1,3 @@
-// File: app/incidents/[id]/page.jsx
-// UPDATED: handleConfirmResolve now handles both "Resolve" and "Close" actions.
 'use client';
 
 import * as React from 'react';
@@ -15,7 +13,9 @@ import IncidentAuditTrail from '@/components/IncidentAuditTrail';
 import IncidentActionForm from '@/components/IncidentActionForm';
 import ResolutionDialog from '@/components/ResolutionDialog';
 
-const C_AND_IT_DEPT_CODES = [98540, 98541];
+// --- BUG FIX ---
+// Corrected the department codes to include the executive department (98500).
+const C_AND_IT_DEPT_CODES = [98500, 98540];
 
 export default function IncidentDetailsPage() {
   const params = useParams();
@@ -81,7 +81,6 @@ export default function IncidentDetailsPage() {
     showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
   };
   
-  // --- THIS FUNCTION IS UPDATED ---
   const handleConfirmResolve = ({ action, comment, rating, closingReason }) => {
     if (!comment || !user || !incident) return;
     
@@ -97,7 +96,7 @@ export default function IncidentDetailsPage() {
       author: user.name,
       action: `(${newStatus} By ${user.name})`,
       comment: finalComment,
-      rating: rating, // Will be null if closing, which is correct
+      rating: rating,
     };
 
     updateIncident(params.id, {

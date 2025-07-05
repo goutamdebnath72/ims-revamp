@@ -3,6 +3,8 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { IncidentContext } from '@/context/IncidentContext';
+import { UserContext } from '@/context/UserContext'; // Import UserContext
+import { isSystemIncident } from '@/lib/incident-helpers';
 import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -19,7 +21,12 @@ import RecentIncidentsCard from '@/components/RecentIncidentsCard';
 
 export default function AdminDashboard() {
     const { incidents } = React.useContext(IncidentContext);
+    const { user } = React.useContext(UserContext); // Get user from context
     
+    const generalIncidents = React.useMemo(() => 
+        incidents.filter(incident => !isSystemIncident(incident)),
+    [incidents]);
+
     const [dateRange, setDateRange] = React.useState({ start: null, end: null });
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
@@ -39,18 +46,17 @@ export default function AdminDashboard() {
     const filteredIncidents = React.useMemo(() => {
         const { start, end } = dateRange;
         if (!start || !end || !isValid(start) || !isValid(end)) {
-            return incidents;
+            return generalIncidents;
         }
-
         const interval = { start, end: endOfDay(end) };
         const parseDate = (dateStr) => parse(dateStr, 'dd MMM yy, hh:mm a', new Date());
-        
-        return incidents.filter(i => {
+        return generalIncidents.filter(i => {
             const reportedDate = parseDate(i.reportedOn);
             return isValid(reportedDate) && isWithinInterval(reportedDate, interval);
         });
-    }, [incidents, dateRange]);
+    }, [generalIncidents, dateRange]);
 
+    // ... (rest of the data calculation logic remains the same)
     const newIncidents = filteredIncidents.filter(i => i.status === 'New').length;
     const processedIncidents = filteredIncidents.filter(i => i.status === 'Processed').length;
     const resolvedIncidents = filteredIncidents.filter(i => i.status === 'Resolved').length;
@@ -92,23 +98,16 @@ export default function AdminDashboard() {
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h4">
-              Dashboard
+              {/* --- HEADING FIX --- */}
+              {/* The heading is now dynamic based on the user's role */}
+              Dashboard {user?.role === 'sys_admin' ? '(General Incidents)' : ''}
           </Typography>
-          <Button
-            id="date-range-button"
-            variant="outlined"
-            onClick={handleClick}
-            startIcon={<EventIcon />}
-          >
+          <Button id="date-range-button" variant="outlined" onClick={handleClick} startIcon={<EventIcon />}>
             {formatDateRange()}
           </Button>
-          <Menu
-            id="date-range-menu"
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleClose}
-          >
-            <MenuItem onClick={() => setPresetRange('today')}>Today</MenuItem>
+          <Menu id="date-range-menu" anchorEl={anchorEl} open={open} onClose={handleClose}>
+             {/* MenuItems remain the same */}
+             <MenuItem onClick={() => setPresetRange('today')}>Today</MenuItem>
             <MenuItem onClick={() => setPresetRange('week')}>This Week</MenuItem>
             <MenuItem onClick={() => setPresetRange('month')}>This Month</MenuItem>
             <MenuItem onClick={() => setPresetRange('all')}>All Time</MenuItem>
@@ -138,7 +137,7 @@ export default function AdminDashboard() {
                   <CardActionArea component={Link} href={`/search?status=${card.filterStatus}`} sx={{ height: '100%' }}>
                     <CardContent sx={{ textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-                        {card.title}
+                          {card.title}
                         </Typography>
                         <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
                           <CountUp end={card.value} duration={1.5} separator="," />
@@ -153,7 +152,7 @@ export default function AdminDashboard() {
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
           <Stack sx={{ flex: 7 }} spacing={3}>
             <StatusChart data={statusChartData} />
-            <RecentIncidentsCard />
+            <RecentIncidentsCard incidents={filteredIncidents} />
           </Stack>
           <Stack sx={{ flex: 5 }} spacing={3}>
               <PriorityChart data={priorityChartData} />

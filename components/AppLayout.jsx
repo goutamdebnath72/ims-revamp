@@ -6,59 +6,30 @@ import { UserContext } from "@/context/UserContext";
 import { SettingsContext } from "@/context/SettingsContext";
 import InfoTooltip from './InfoTooltip';
 
-// MUI Components
-import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import List from "@mui/material/List";
-import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Avatar from "@mui/material/Avatar";
-import IconButton from "@mui/material/IconButton";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import Switch from '@mui/material/Switch';
-import Stack from '@mui/material/Stack';
-
-// Icons
+// MUI Components & Icons
+import { Box, Drawer, AppBar, Toolbar, List, Typography, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, IconButton, Menu, MenuItem, Switch, Stack } from '@mui/material';
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 const spellCheckTooltipText = (
   <Stack spacing={1}>
-    <Typography color="inherit" sx={{ fontWeight: 'bold', fontSize: '13px' }}>
-      Enable Browser Spell Check
-    </Typography>
-    <Typography variant="body2">
-      For this feature to work, ensure spell check is also enabled in your browser settings.
-    </Typography>
-    <Box>
-      <Typography variant="body2" component="div">
-        <b>Chrome:</b> Settings → Languages → Spell check
-      </Typography>
-      <Typography variant="body2" component="div" sx={{ mt: 0.5 }}>
-        <b>Firefox:</b> Settings → General → Language → "Check your spelling..."
-      </Typography>
-    </Box>
+    <Typography color="inherit" sx={{ fontWeight: 'bold', fontSize: '13px' }}>Enable Browser Spell Check</Typography>
+    <Typography variant="body2">For this feature to work, ensure spell check is also enabled in your browser settings.</Typography>
   </Stack>
 );
 
 const drawerWidth = 240;
 
-// --- FINAL MENU LOGIC ---
 const allMenuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, href: "/", roles: ['admin', 'user'] },
-  { text: "Search & Archive", icon: <SearchIcon />, href: "/search", roles: ['admin', 'user'] },
-  // "Raise Incident" is now available to both roles in the sidebar again.
-  { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin', 'user'] },
+  { text: "Dashboard", icon: <DashboardIcon />, href: "/", roles: ['admin', 'user', 'sys_admin'] },
+  { text: "Search & Archive", icon: <SearchIcon />, href: "/search", roles: ['admin', 'user', 'sys_admin'] },
+  { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin', 'user', 'sys_admin'] },
+  { text: "Pending Incidents (Sys)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system&status=open", roles: ['sys_admin'], divider: true },
+  { text: "All Incidents (Sys)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system", roles: ['sys_admin'] },
 ];
 
 export default function AppLayout({ children }) {
@@ -69,26 +40,15 @@ export default function AppLayout({ children }) {
 
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
-
-  const handleLogout = () => {
-    handleClose();
-    logout();
-  };
+  const handleLogout = () => { handleClose(); logout(); };
   
-  const visibleMenuItems = allMenuItems.filter(item => 
-    item.roles.includes(user?.role)
-  );
+  const visibleMenuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
   
-  if (!user) {
-    return null; 
-  }
+  if (!user) { return null; }
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}
-      >
+      <AppBar position="fixed" sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}>
         <Toolbar>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Incident Management System - DSP
@@ -98,19 +58,11 @@ export default function AppLayout({ children }) {
               Welcome {user.name.toUpperCase()}
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-              <Avatar sx={{ bgcolor: "secondary.main" }}>
-                {user.initials}
-              </Avatar>
+              <Avatar sx={{ bgcolor: "secondary.main" }}>{user.initials}</Avatar>
             </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              keepMounted
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-              open={open}
-              onClose={handleClose}
-            >
+            <Menu id="menu-appbar" anchorEl={anchorEl} open={open} onClose={handleClose}>
+              {/* --- SPELL CHECK FIX --- */}
+              {/* This block safely restores the Spell Check toggle to the menu */}
               <InfoTooltip title={spellCheckTooltipText} placement="left">
                 <MenuItem onClick={toggleSpellcheck}>
                   <ListItemIcon>
@@ -126,47 +78,33 @@ export default function AppLayout({ children }) {
                 </MenuItem>
               </InfoTooltip>
               <Divider />
+              {/* --- END OF FIX --- */}
               <MenuItem onClick={handleLogout}>
-                <ListItemIcon>
-                  <LogoutIcon fontSize="small" />
-                </ListItemIcon>
+                <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
                 <ListItemText>Logout</ListItemText>
               </MenuItem>
             </Menu>
           </Box>
         </Toolbar>
       </AppBar>
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" },
-        }}
-        variant="permanent"
-        anchor="left"
-      >
+      <Drawer variant="permanent" sx={{ width: drawerWidth, flexShrink: 0, "& .MuiDrawer-paper": { width: drawerWidth, boxSizing: "border-box" } }}>
         <Toolbar />
         <Divider />
         <List>
           {visibleMenuItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton LinkComponent={Link} href={item.href}>
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
+            <React.Fragment key={item.text}>
+              {item.divider && <Divider sx={{ my: 1 }} />}
+              <ListItem disablePadding>
+                <ListItemButton LinkComponent={Link} href={item.href}>
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            </React.Fragment>
           ))}
         </List>
       </Drawer>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          bgcolor: "background.default",
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-        }}
-      >
+      <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
         <Toolbar />
         {children}
       </Box>
