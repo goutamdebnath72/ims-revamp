@@ -53,13 +53,12 @@ const spellCheckTooltipText = (
 
 const drawerWidth = 240;
 
-// --- MENU ITEM LOGIC UPDATED ---
+// --- FINAL MENU LOGIC ---
 const allMenuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, href: "/", roles: ['admin', 'user'] },
-  // "Search & Archive" is now available to both roles
   { text: "Search & Archive", icon: <SearchIcon />, href: "/search", roles: ['admin', 'user'] },
-  // "Raise Incident" is now only visible to admins in the sidebar
-  { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin'] },
+  // "Raise Incident" is now available to both roles in the sidebar again.
+  { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin', 'user'] },
 ];
 
 export default function AppLayout({ children }) {
