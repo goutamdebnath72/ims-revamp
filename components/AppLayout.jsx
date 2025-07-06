@@ -6,7 +6,6 @@ import { UserContext } from "@/context/UserContext";
 import { SettingsContext } from "@/context/SettingsContext";
 import InfoTooltip from './InfoTooltip';
 
-// MUI Components & Icons
 import { Box, Drawer, AppBar, Toolbar, List, Typography, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, IconButton, Menu, MenuItem, Switch, Stack } from '@mui/material';
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
@@ -28,8 +27,9 @@ const allMenuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, href: "/", roles: ['admin', 'user', 'sys_admin'] },
   { text: "Search & Archive", icon: <SearchIcon />, href: "/search", roles: ['admin', 'user', 'sys_admin'] },
   { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin', 'user', 'sys_admin'] },
-  { text: "Pending Incidents (Sys)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system&status=open", roles: ['sys_admin'], divider: true },
-  { text: "All Incidents (Sys)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system", roles: ['sys_admin'] },
+  // --- TEXT CHANGE: (Sys) to (SYS) ---
+  { text: "Pending Incidents (SYS)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system&status=open", roles: ['sys_admin'], divider: true },
+  { text: "All Incidents (SYS)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system", roles: ['sys_admin'] },
 ];
 
 export default function AppLayout({ children }) {
@@ -61,24 +61,14 @@ export default function AppLayout({ children }) {
               <Avatar sx={{ bgcolor: "secondary.main" }}>{user.initials}</Avatar>
             </IconButton>
             <Menu id="menu-appbar" anchorEl={anchorEl} open={open} onClose={handleClose}>
-              {/* --- SPELL CHECK FIX --- */}
-              {/* This block safely restores the Spell Check toggle to the menu */}
               <InfoTooltip title={spellCheckTooltipText} placement="left">
                 <MenuItem onClick={toggleSpellcheck}>
-                  <ListItemIcon>
-                    <SpellcheckIcon fontSize="small" />
-                  </ListItemIcon>
+                  <ListItemIcon><SpellcheckIcon fontSize="small" /></ListItemIcon>
                   <ListItemText>Spell Check</ListItemText>
-                  <Switch
-                    checked={isSpellcheckEnabled}
-                    edge="end"
-                    size="small"
-                    name="spellcheck-toggle"
-                  />
+                  <Switch checked={isSpellcheckEnabled} edge="end" size="small" name="spellcheck-toggle" />
                 </MenuItem>
               </InfoTooltip>
               <Divider />
-              {/* --- END OF FIX --- */}
               <MenuItem onClick={handleLogout}>
                 <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
                 <ListItemText>Logout</ListItemText>

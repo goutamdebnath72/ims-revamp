@@ -4,9 +4,10 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 const MOCK_USER_DB = {
-  "342461": { name: "GOUTAM DEBNATH", initials: "GD", ticketNo: "342461", departmentCode: 98540 }, // C&IT Admin
-  "111111": { name: "ANAMIKA SHARMA", initials: "AS", ticketNo: "111111", departmentCode: 88123 }, // Standard User
-  "222222": { name: "RAKESH GUPTA", initials: "RG", ticketNo: "222222", departmentCode: 98500 }, // C&IT Executive
+  "342461": { name: "GOUTAM DEBNATH", initials: "GD", ticketNo: "342461", departmentCode: 98540 },
+  "111111": { name: "ANAMIKA SHARMA", initials: "AS", ticketNo: "111111", departmentCode: 88123 },
+  // --- NAME CHANGE ---
+  "222222": { name: "RAKESH OJHA", initials: "RO", ticketNo: "222222", departmentCode: 98500 },
 };
 
 const EXECUTIVE_DEPT = 98500;

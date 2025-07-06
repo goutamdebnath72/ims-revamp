@@ -36,17 +36,31 @@ export default function SearchPage() {
         const isSys = isSystemIncident(incident);
 
         if (category === 'system' && !isSys) return false;
-        if (user.role === 'admin' && category === 'general' && isSys) return false;
+        if (user.role === 'admin' && isSys) return false;
 
         const isOwner = user.role === 'sys_admin' || user.role === 'admin' || (incident.reportedBy && incident.reportedBy.ticketNo === user.ticketNo);
         if (!isOwner) return false;
 
         const idMatch = criteria.incidentId ? incident.id.toString().includes(criteria.incidentId) : true;
-        const requestorMatch = (user.role === 'admin' || user.role === 'sys_admin') && criteria.requestor ? (incident.reportedBy?.name.toLowerCase().includes(criteria.requestor.toLowerCase()) || incident.reportedBy?.ticketNo.includes(criteria.requestor)) : true;
+        
+        let requestorMatch = true;
+        if ((user.role === 'admin' || user.role === 'sys_admin') && criteria.requestor) {
+            const searchTerm = criteria.requestor.toLowerCase();
+            const reportedBy = incident.reportedBy;
+            requestorMatch = (
+              (reportedBy?.name?.toLowerCase().includes(searchTerm)) ||
+              (reportedBy?.ticketNo?.includes(searchTerm)) ||
+              (reportedBy?.sailPNo?.includes(searchTerm)) ||
+              (reportedBy?.contactNumber?.includes(searchTerm))
+            );
+        }
+        
         const statusMatch = criteria.status !== 'Any' ? incident.status === criteria.status : true;
         const priorityMatch = criteria.priority !== 'Any' ? incident.priority === criteria.priority : true;
+        // --- NEW FILTER LOGIC ---
+        const typeMatch = criteria.incidentType !== 'Any' ? incident.incidentType === criteria.incidentType : true;
 
-        return idMatch && requestorMatch && statusMatch && priorityMatch;
+        return idMatch && requestorMatch && statusMatch && priorityMatch && typeMatch;
       });
       setSearchResults(results);
       setLoading(false);
@@ -56,15 +70,15 @@ export default function SearchPage() {
   React.useEffect(() => {
     const initialStatus = searchParams.get('status');
     const initialUser = searchParams.get('user');
-    const initialPriority = searchParams.get('priority'); // --- PIE CHART FIX --- Get priority from URL
+    const initialPriority = searchParams.get('priority');
 
-    // Trigger a search if any filter is present in the URL
     if (initialStatus || initialUser || initialPriority) {
       const defaultCriteria = { 
         status: initialStatus === 'open' || initialStatus === 'AllOpen' ? 'Any' : (initialStatus || 'Any'), 
-        priority: initialPriority || 'Any', // Use the priority from the URL
+        priority: initialPriority || 'Any',
         incidentId: '', 
-        requestor: '' 
+        requestor: '',
+        incidentType: 'Any', // Include in default criteria
       };
       
       if (initialStatus === 'open' || initialStatus === 'AllOpen') {
@@ -86,8 +100,8 @@ export default function SearchPage() {
   
   const getHeading = () => {
     const category = searchParams.get('category');
-    if (user?.role === 'sys_admin') {
-      return `Search & Archive ${category === 'system' ? '(System)' : '(General)'}`;
+    if (user?.role === 'sys_admin' && category === 'system') {
+      return 'Search & Archive (SYS)';
     }
     return 'Search & Archive';
   };
