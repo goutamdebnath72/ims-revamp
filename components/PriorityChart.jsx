@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Paper, Typography, Box } from '@mui/material';
+import { formatISO } from 'date-fns';
 
 const COLORS = {
     High: '#f44336', // error.main
@@ -11,30 +12,40 @@ const COLORS = {
     Low: '#6c757d', // grey
 };
 
-export default function PriorityChart({ data }) {
+// --- FIX: Component now accepts 'view' and 'dateRange' props ---
+export default function PriorityChart({ data, view, dateRange, userRole }) {
   const router = useRouter();
   const hasData = data.some(item => item.value > 0);
 
+  // --- FIX: Click handler now builds a "smart" URL with all necessary context ---
   const handlePieClick = (data) => {
     if (data && data.name) {
-      router.push(`/search?priority=${data.name}`);
+      const category = userRole === 'sys_admin' ? view : 'general';
+      const params = new URLSearchParams();
+      params.append('priority', data.name);
+      params.append('category', category);
+
+      if (dateRange.start) {
+          params.append('startDate', formatISO(dateRange.start, { representation: 'date' }));
+      }
+      if (dateRange.end) {
+          params.append('endDate', formatISO(dateRange.end, { representation: 'date' }));
+      }
+      router.push(`/search?${params.toString()}`);
     }
   };
 
   return (
     <Paper 
       elevation={3} 
-      sx={{ 
-        p: 3, 
-        height: '400px',
-      }}
+      sx={{ p: 3, height: '400px' }}
     >
       <Typography variant="h6" gutterBottom>
         Open Incidents by Priority
       </Typography>
       <ResponsiveContainer width="100%" height="90%">
         {hasData ? (
-          <PieChart>
+           <PieChart>
             <Pie
               data={data}
               cx="50%"
@@ -48,14 +59,12 @@ export default function PriorityChart({ data }) {
               onClick={handlePieClick}
             >
               {data.map((entry, index) => (
-                <Cell 
+                 <Cell 
                   key={`cell-${index}`} 
                   fill={COLORS[entry.name]} 
                   stroke={'#FFFFFF'}
-                  // --- GAP & VISUAL FIXES ---
-                  strokeWidth={3} // Increased gap for better visual separation
+                  strokeWidth={3}
                   style={{ cursor: 'pointer' }} 
-                  // This event handler prevents the default browser focus rectangle on click
                   onMouseDown={(e) => e.preventDefault()}
                 />
               ))}
@@ -65,7 +74,7 @@ export default function PriorityChart({ data }) {
           </PieChart>
         ) : (
           <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-            <Typography color="text.secondary">No open incidents in the selected date range.</Typography>
+            <Typography color="text.secondary">No open incidents to display.</Typography>
           </Box>
         )}
       </ResponsiveContainer>

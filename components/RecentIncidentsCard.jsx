@@ -5,13 +5,10 @@ import { useRouter } from 'next/navigation';
 import { IncidentContext } from '@/context/IncidentContext';
 import { Paper, Typography, List, ListItemText, Chip, Divider, Box, ListItemButton } from '@mui/material';
 
-// --- FIX: The component now accepts an `incidents` prop ---
-// This allows us to pass a pre-filtered list of incidents to it.
 export default function RecentIncidentsCard({ incidents: incidentsProp }) {
   const { incidents: allIncidents } = React.useContext(IncidentContext);
   const router = useRouter();
 
-  // If a specific list is passed as a prop, use it. Otherwise, fall back to the full list from context.
   const incidentsToDisplay = incidentsProp || allIncidents;
 
   const recentIncidents = [...incidentsToDisplay]
@@ -25,37 +22,76 @@ export default function RecentIncidentsCard({ incidents: incidentsProp }) {
     if (status === 'Closed') return 'default';
     return 'default';
   };
+
+  const getPriorityColor = (priority) => {
+    if (priority === 'High') return 'error.main';
+    if (priority === 'Medium') return 'warning.main';
+    return 'info.main';
+  }
   
   const handleItemClick = (id) => {
       router.push(`/incidents/${id}`);
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+    <Paper elevation={3} sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Typography variant="h6" gutterBottom>
         Recent Activity
       </Typography>
-      <Divider />
-      <List sx={{ width: '100%', bgcolor: 'background.paper', p: 0 }}>
+      <Divider sx={{ mb: 1 }} />
+      {/* --- FIX: Reduced maxHeight to make the card more compact --- */}
+      <List sx={{ 
+          width: '100%', 
+          bgcolor: 'background.paper', 
+          p: 0, 
+          maxHeight: 220, // Reduced from 350 to 220
+          overflowY: 'auto' 
+      }}>
         {recentIncidents.map((incident, index) => (
           <ListItemButton 
             key={incident.id} 
             divider={index < recentIncidents.length - 1}
             onClick={() => handleItemClick(incident.id)}
+            sx={{ py: 1.5 }}
           >
-            <ListItemText
-              primary={incident.jobTitle}
-              // Secondary text now correctly shows the requestor from the data
-              secondary={`#${incident.id} - Reported by ${incident.reportedBy?.name || 'Unknown'}`}
-            />
-            <Chip 
-              label={incident.status} 
-              color={getStatusChipColor(incident.status)}
-              variant={incident.status === 'New' ? 'outlined' : 'filled'}
-              size="small" 
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <ListItemText
+                  primary={incident.incidentType}
+                  secondary={`#${incident.id} - Reported by ${incident.requestor || 'Unknown'}`}
+                  sx={{ m: 0 }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, textAlign: 'right', pl: 2 }}>
+                    <Typography variant="body2" sx={{ 
+                        width: '90px', 
+                        color: getPriorityColor(incident.priority), 
+                        fontWeight: 500,
+                        display: { xs: 'none', sm: 'block' }
+                    }}>
+                        {incident.priority}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ 
+                        width: '180px',
+                        display: { xs: 'none', md: 'block' } 
+                    }}>
+                        {incident.reportedOn}
+                    </Typography>
+                    <Box sx={{ width: '95px' }}>
+                        <Chip 
+                            label={incident.status} 
+                            color={getStatusChipColor(incident.status)}
+                            variant={incident.status === 'New' ? 'outlined' : 'filled'}
+                            size="small" 
+                        />
+                    </Box>
+                </Box>
+            </Box>
           </ListItemButton>
         ))}
+        {recentIncidents.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                No recent activity to display.
+            </Typography>
+        )}
       </List>
     </Paper>
   );

@@ -17,5 +17,6 @@ export default function DashboardPage() {
         );
     }
 
-    return user.role === 'admin' ? <AdminDashboard /> : <StandardUserDashboard />;
+    // This line now shows the AdminDashboard for both 'admin' and 'sys_admin' roles
+    return user.role === 'admin' || user.role === 'sys_admin' ? <AdminDashboard /> : <StandardUserDashboard />;
 }

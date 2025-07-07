@@ -15,9 +15,9 @@ import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { Chip } from "@mui/material";
 
-export default function EditableComment({ initialComment, author, onSave, isEdited }) {
+// --- NEW: Component now accepts 'incidentStatus' prop ---
+export default function EditableComment({ initialComment, author, onSave, isEdited, incidentStatus }) {
   const [isEditing, setIsEditing] = React.useState(false);
-  
   const separator = '\n---\n';
   const parts = initialComment.split(separator);
   const systemPart = parts[0]; 
@@ -29,6 +29,8 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
 
   const canEdit = currentUser && currentUser.name === author;
   const hasBeenEdited = isEdited;
+  // --- NEW: Logic to check if the incident is resolved or closed ---
+  const isIncidentClosed = incidentStatus === 'Resolved' || incidentStatus === 'Closed';
 
   const handleSave = () => {
     const finalComment = parts.length > 1 && systemPart !== userPart
@@ -49,7 +51,6 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
       <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1 }}>
         {systemPart}
       </Typography>
-      {/* THIS IS THE FIX: Using variant="dashed" instead of the boolean prop */}
       {parts.length > 1 && userPart && <Divider variant="dashed" sx={{ my: 1 }} />}
       {userPart && systemPart !== userPart && (
         <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1 }}>
@@ -67,7 +68,7 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
             <Typography variant="body2" color="text.secondary" sx={{ display: "block", whiteSpace: "pre-wrap", flexGrow: 1, fontStyle: 'italic', opacity: 0.7 }}>
               {systemPart}
             </Typography>
-            <Divider sx={{ my: 1 }} />
+             <Divider sx={{ my: 1 }} />
           </>
         )}
         <TextField
@@ -85,7 +86,7 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
           <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={handleSave} disabled={!editText.trim()}>
             Save
           </Button>
-          <Button size="small" variant="outlined" startIcon={<CancelIcon />} onClick={handleCancel}>
+           <Button size="small" variant="outlined" startIcon={<CancelIcon />} onClick={handleCancel}>
             Cancel
           </Button>
         </Stack>
@@ -94,7 +95,9 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
   }
 
   const getTitle = () => {
-      if (hasBeenEdited) return "One time editable";
+      // --- NEW: Title shows reason for being disabled ---
+      if (isIncidentClosed) return "Editing is disabled for resolved or closed incidents";
+      if (hasBeenEdited) return "This comment has already been edited once";
       if (canEdit) return "Edit comment";
       return "You can only edit your own comments";
   }
@@ -106,7 +109,8 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
         alignItems: "center",
         justifyContent: "space-between",
         "&:hover .edit-button": {
-          opacity: canEdit && !hasBeenEdited ? 1 : 0.2,
+          // --- NEW: Opacity logic also respects closed status ---
+          opacity: canEdit && !hasBeenEdited && !isIncidentClosed ? 1 : 0.2,
         },
         minHeight: '36px',
       }}
@@ -121,8 +125,9 @@ export default function EditableComment({ initialComment, author, onSave, isEdit
         className="edit-button"
         size="small"
         onClick={() => setIsEditing(true)}
-        disabled={!canEdit || hasBeenEdited}
-        sx={{ ml: 1, opacity: hasBeenEdited ? 0.2 : 0, transition: 'opacity 0.2s' }}
+        // --- NEW: Button is now also disabled if incident is closed ---
+        disabled={!canEdit || hasBeenEdited || isIncidentClosed}
+        sx={{ ml: 1, opacity: (hasBeenEdited || isIncidentClosed) ? 0.2 : 0, transition: 'opacity 0.2s' }}
         title={getTitle()}
       >
         <EditIcon fontSize="inherit" />

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { UserContext } from "@/context/UserContext";
 import { SettingsContext } from "@/context/SettingsContext";
 import InfoTooltip from './InfoTooltip';
-
 import { Box, Drawer, AppBar, Toolbar, List, Typography, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, IconButton, Menu, MenuItem, Switch, Stack } from '@mui/material';
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
@@ -14,10 +13,22 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
+// --- UPDATED: Tooltip text now includes browser paths ---
 const spellCheckTooltipText = (
-  <Stack spacing={1}>
-    <Typography color="inherit" sx={{ fontWeight: 'bold', fontSize: '13px' }}>Enable Browser Spell Check</Typography>
-    <Typography variant="body2">For this feature to work, ensure spell check is also enabled in your browser settings.</Typography>
+  <Stack spacing={1.5}>
+    <Box>
+        <Typography color="inherit" sx={{ fontWeight: 'bold', fontSize: '13px' }}>Enable Browser Spell Check</Typography>
+        <Typography variant="body2">For this feature to work, ensure spell check is also enabled in your browser settings.</Typography>
+    </Box>
+    <Divider />
+    <Box>
+        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Chrome:</Typography>
+        <Typography variant="caption" display="block" sx={{ lineHeight: 1.2 }}>Settings → Languages → Spell check</Typography>
+    </Box>
+    <Box>
+        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Firefox:</Typography>
+        <Typography variant="caption" display="block" sx={{ lineHeight: 1.2 }}>Settings → General → Language → Check your spelling as you type</Typography>
+    </Box>
   </Stack>
 );
 
@@ -27,7 +38,6 @@ const allMenuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, href: "/", roles: ['admin', 'user', 'sys_admin'] },
   { text: "Search & Archive", icon: <SearchIcon />, href: "/search", roles: ['admin', 'user', 'sys_admin'] },
   { text: "Raise Incident", icon: <PostAddIcon />, href: "/raise", roles: ['admin', 'user', 'sys_admin'] },
-  // --- TEXT CHANGE: (Sys) to (SYS) ---
   { text: "Pending Incidents (SYS)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system&status=open", roles: ['sys_admin'], divider: true },
   { text: "All Incidents (SYS)", icon: <AdminPanelSettingsIcon />, href: "/search?category=system", roles: ['sys_admin'] },
 ];
@@ -54,13 +64,15 @@ export default function AppLayout({ children }) {
             Incident Management System - DSP
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
+       
+             <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
               Welcome {user.name.toUpperCase()}
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
               <Avatar sx={{ bgcolor: "secondary.main" }}>{user.initials}</Avatar>
             </IconButton>
-            <Menu id="menu-appbar" anchorEl={anchorEl} open={open} onClose={handleClose}>
+          
+           <Menu id="menu-appbar" anchorEl={anchorEl} open={open} onClose={handleClose}>
               <InfoTooltip title={spellCheckTooltipText} placement="left">
                 <MenuItem onClick={toggleSpellcheck}>
                   <ListItemIcon><SpellcheckIcon fontSize="small" /></ListItemIcon>
@@ -87,7 +99,7 @@ export default function AppLayout({ children }) {
               <ListItem disablePadding>
                 <ListItemButton LinkComponent={Link} href={item.href}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
+                   <ListItemText primary={item.text} />
                 </ListItemButton>
               </ListItem>
             </React.Fragment>
@@ -95,7 +107,7 @@ export default function AppLayout({ children }) {
         </List>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default", p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
-        <Toolbar />
+         <Toolbar />
         {children}
       </Box>
     </Box>

@@ -1,5 +1,4 @@
 // File: components/IncidentAuditTrail.jsx
-// UPDATED: Corrected styling logic to make 'Resolved' green and 'Closed' bold black.
 "use client";
 
 import * as React from "react";
@@ -50,13 +49,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
   return (
     <Paper
       elevation={3}
-      sx={{
-        p: 3,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      sx={{ p: 3, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       <Box sx={{ flexShrink: 0 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -72,17 +65,9 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
       
       <List 
         ref={scrollContainerRef}
-        sx={{ 
-          width: "100%", 
-          bgcolor: "background.paper", 
-          p: 0, 
-          py: 1.5,
-          flexGrow: 1,
-          overflowY: 'auto'
-        }}
+        sx={{ width: "100%", bgcolor: "background.paper", p: 0, py: 1.5, flexGrow: 1, overflowY: 'auto' }}
       >
         {auditTrail.map((entry, index) => {
-          // --- THIS IS THE FIX: New logic to handle both Resolved and Closed states ---
           const isResolvedEntry = entry.action.toLowerCase().includes("resolved");
           const isFinalEntry = entry.action.toLowerCase().includes("resolved") || entry.action.toLowerCase().includes("closed");
 
@@ -92,7 +77,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                 <ListItemText
                   primary={
                     <React.Fragment>
-                      <Typography component="span" variant="body1" sx={{ 
+                       <Typography component="span" variant="body1" sx={{ 
                           display: "block", 
                           fontWeight: "bold", 
                           color: isResolvedEntry ? "#4CAF50" : "text.primary" 
@@ -100,10 +85,12 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                         {entry.action}
                       </Typography>
                       <EditableComment
-                        initialComment={entry.comment}
+                         initialComment={entry.comment}
                         author={entry.author}
                         isEdited={entry.isEdited}
                         onSave={(newComment) => onCommentEdit(index, newComment)}
+                        // --- NEW: Passing incident status down to the comment component ---
+                        incidentStatus={incident.status}
                       />
                       {entry.rating && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
@@ -111,7 +98,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                           <Rating name="read-only-rating" value={entry.rating} readOnly />
                         </Box>
                       )}
-                    </React.Fragment>
+                     </React.Fragment>
                   }
                   secondary={
                     <Typography variant="caption" sx={{ display: "block", textAlign: "right", mt: 1, fontWeight: isFinalEntry ? "bold" : "normal", color: "text.secondary" }}>
@@ -122,7 +109,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                 />
               </ListItem>
               {index < auditTrail.length - 1 && <Divider component="li" />}
-            </React.Fragment>
+             </React.Fragment>
           );
         })}
       </List>
