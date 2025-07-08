@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { IncidentContext } from '@/context/IncidentContext';
 import { UserContext } from '@/context/UserContext';
 import { isSystemIncident } from '@/lib/incident-helpers';
-import { formatISO, startOfWeek, startOfMonth, endOfDay, format, isWithinInterval, parse, isValid } from 'date-fns';
+// --- FIX: Added 'startOfDay' back to the import list ---
+import { formatISO, startOfWeek, startOfMonth, endOfDay, format, isWithinInterval, parse, isValid, startOfDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { Stack, Button, Menu, MenuItem, Divider, Box, CardActionArea, ToggleButtonGroup, ToggleButton, Typography, Card, CardContent } from '@mui/material';
 import CountUp from 'react-countup';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -93,11 +95,13 @@ export default function AdminDashboard() {
         { name: 'Low', value: openIncidentsList.filter(i => i.priority === 'Low').length },
     ];
     const getNumberVariant = (value) => value.toString().length > 4 ? 'h4' : 'h3';
+
     const formatDateRange = () => {
         const { start, end } = dateRange;
         if (!start || !end) return "All Time";
-        if (format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd')) return format(start, 'do MMM, yyyy');
-        return `${format(start, 'do MMM')} - ${format(end, 'do MMM, yyyy')}`;
+        const options = { locale: enUS };
+        if (format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd')) return format(start, 'do MMM, yyyy', options);
+        return `${format(start, 'do MMM', options)} - ${format(end, 'do MMM, yyyy', options)}`;
     };
     const showTeamAvailability = user?.role === 'admin' || (user?.role === 'sys_admin' && view === 'general');
 
@@ -114,7 +118,6 @@ export default function AdminDashboard() {
             </Box>
           )}
           <Button id="date-range-button" variant="outlined" onClick={handleClick} startIcon={<EventIcon />}>{formatDateRange()}</Button>
-          {/* --- FIX: Restored the elegant Date Range menu --- */}
           <Menu id="date-range-menu" anchorEl={anchorEl} open={open} onClose={handleClose}>
              <MenuItem onClick={() => setPresetRange('today')}>Today</MenuItem>
             <MenuItem onClick={() => setPresetRange('week')}>This Week</MenuItem>
@@ -155,7 +158,6 @@ export default function AdminDashboard() {
                 <RecentIncidentsCard incidents={filteredIncidents} />
             </Stack>
             <Stack sx={{ flex: 5 }} spacing={3}>
-                {/* --- FIX: Passing context props to PriorityChart --- */}
                 <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} />
                 <TeamAvailabilityCard />
             </Stack>
@@ -165,7 +167,6 @@ export default function AdminDashboard() {
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
                 <Box sx={{ flex: 7 }}><StatusChart data={statusChartData} /></Box>
                 <Box sx={{ flex: 5 }}>
-                  {/* --- FIX: Passing context props to PriorityChart --- */}
                   <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} />
                 </Box>
             </Stack>
