@@ -4,8 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { UserContext } from "@/context/UserContext";
 import { SettingsContext } from "@/context/SettingsContext";
+import { getCurrentShift } from "@/lib/date-helpers";
 import InfoTooltip from './InfoTooltip';
-import { Box, Drawer, AppBar, Toolbar, List, Typography, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, IconButton, Menu, MenuItem, Switch, Stack } from '@mui/material';
+import { Box, Drawer, AppBar, Toolbar, List, Typography, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, IconButton, Menu, MenuItem, Switch, Stack, Chip } from '@mui/material';
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
 import PostAddIcon from "@mui/icons-material/PostAdd";
@@ -13,7 +14,6 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from '@mui/icons-material/Spellcheck';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
-// --- UPDATED: Tooltip text now includes browser paths ---
 const spellCheckTooltipText = (
   <Stack spacing={1.5}>
     <Box>
@@ -31,7 +31,6 @@ const spellCheckTooltipText = (
     </Box>
   </Stack>
 );
-
 const drawerWidth = 240;
 
 const allMenuItems = [
@@ -47,12 +46,13 @@ export default function AppLayout({ children }) {
   const { isSpellcheckEnabled, toggleSpellcheck } = React.useContext(SettingsContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
   const handleLogout = () => { handleClose(); logout(); };
   
   const visibleMenuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
+  const isCnIT = user?.role === 'admin' || user?.role === 'sys_admin';
+  const currentShift = getCurrentShift();
   
   if (!user) { return null; }
 
@@ -60,19 +60,36 @@ export default function AppLayout({ children }) {
     <Box sx={{ display: "flex" }}>
       <AppBar position="fixed" sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}>
         <Toolbar>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Incident Management System - DSP
-          </Typography>
+          <Box>
+            <Typography variant="h6" noWrap component="div">
+               Incident Management System - DSP
+            </Typography>
+            {isCnIT && (
+              // --- FIX: The Chip's label is now a component to allow for mixed styling ---
+              <Chip
+                label={
+                  <Box component="span" sx={{ display: 'flex', alignItems: 'baseline' }}>
+                    Current Shift:&nbsp;
+                    <Typography sx={{ fontSize: '14px', fontWeight: 'bold', lineHeight: 1 }}>
+                      {currentShift}
+                    </Typography>
+                  </Box>
+                }
+                color="secondary"
+                size="small"
+                sx={{ mt: 0.5, color: 'white', fontWeight: 500, height: '24px' }}
+              />
+            )}
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: "flex", alignItems: "center" }}>
-       
-             <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
+            <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
               Welcome {user.name.toUpperCase()}
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
               <Avatar sx={{ bgcolor: "secondary.main" }}>{user.initials}</Avatar>
             </IconButton>
-          
-           <Menu id="menu-appbar" anchorEl={anchorEl} open={open} onClose={handleClose}>
+            <Menu id="menu-appbar" anchorEl={anchorEl} open={open} onClose={handleClose}>
               <InfoTooltip title={spellCheckTooltipText} placement="left">
                 <MenuItem onClick={toggleSpellcheck}>
                   <ListItemIcon><SpellcheckIcon fontSize="small" /></ListItemIcon>

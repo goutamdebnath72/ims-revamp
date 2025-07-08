@@ -3,12 +3,8 @@
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { isSystemIncident } from '@/lib/incident-helpers';
-import { startOfDay, endOfDay, isWithinInterval, parse, isValid, subDays, parseISO } from 'date-fns';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import useScrollTrigger from '@mui/material/useScrollTrigger';
+import { startOfDay, endOfDay, isWithinInterval, parse, isValid, subDays, parseISO, getHours, format } from 'date-fns';
+import { Box, Typography, Paper, Stack, useScrollTrigger, Alert } from '@mui/material';
 import IncidentSearchForm from '@/components/IncidentSearchForm';
 import IncidentDataGrid from '@/components/IncidentDataGrid';
 import { IncidentContext } from '@/context/IncidentContext';
@@ -24,10 +20,17 @@ export default function SearchPage() {
   const [hasSearched, setHasSearched] = React.useState(false);
 
   const [criteria, setCriteria] = React.useState({
-    incidentId: '', requestor: '', status: 'Any', priority: 'Any', incidentType: 'Any', category: 'Any',
+    incidentId: '',
+    requestor: '',
+    status: 'Any',
+    priority: 'Any',
+    incidentType: 'Any',
+    category: 'Any',
+    shift: 'Any',
+    department: 'Any', // <-- Added department
     dateRange: { start: subDays(new Date(), 30), end: new Date() }
   });
-  
+
   const performSearch = React.useCallback((searchCriteria) => {
     if (!user || !incidents || incidents.length === 0) return;
 
@@ -38,6 +41,7 @@ export default function SearchPage() {
         const dateFiltered = incidents.filter(incident => {
             if (!searchCriteria.dateRange.start || !searchCriteria.dateRange.end) return true;
             const reportedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
+            
             if (!isValid(reportedDate)) return false;
             return isWithinInterval(reportedDate, {
                 start: startOfDay(searchCriteria.dateRange.start),
@@ -73,7 +77,21 @@ export default function SearchPage() {
             requestorMatch = requestorName.toLowerCase().includes(searchTerm);
         }
 
-        return idMatch && requestorMatch && priorityMatch && typeMatch;
+        const shiftMatch = searchCriteria.shift && searchCriteria.shift !== 'Any' && searchCriteria.shift !== 'All' ? (() => {
+            const parsedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
+            if (!isValid(parsedDate)) return false;
+            const hour = getHours(parsedDate);
+            
+            if (searchCriteria.shift === 'A') return hour >= 6 && hour < 14;
+            if (searchCriteria.shift === 'B') return hour >= 14 && hour < 22;
+            if (searchCriteria.shift === 'C') return hour >= 22 || hour < 6;
+            return false;
+        })() : true;
+        
+        // --- ADDED: Department filtering logic ---
+        const departmentMatch = searchCriteria.department !== 'Any' ? incident.department === searchCriteria.department : true;
+
+        return idMatch && requestorMatch && priorityMatch && typeMatch && shiftMatch && departmentMatch;
       });
       setSearchResults(results);
       setLoading(false);
@@ -86,41 +104,40 @@ export default function SearchPage() {
     const urlCategory = searchParams.get('category');
     const urlStatus = searchParams.get('status');
     const urlPriority = searchParams.get('priority');
+    const urlShift = searchParams.get('shift');
     const urlStartDate = searchParams.get('startDate');
     const urlEndDate = searchParams.get('endDate');
-
-    // Only act if navigating from a link
-    if (urlCategory || urlStatus || urlPriority) {
-        let dateRangeFromUrl = { start: null, end: null }; // Default to 'All Time' for links
+    
+    if (urlCategory || urlStatus || urlPriority || urlShift) {
+        let dateRangeFromUrl = { start: null, end: null };
+        
         if (urlStartDate && urlEndDate) {
             dateRangeFromUrl = { start: parseISO(urlStartDate), end: parseISO(urlEndDate) };
         }
 
-        // Build a single, correct criteria object directly from the URL params
         const criteriaFromLink = {
             incidentId: '',
             requestor: '',
             incidentType: 'Any',
             status: urlStatus || 'Any',
             priority: urlPriority || 'Any',
+            shift: urlShift || 'Any',
+            department: 'Any',
             category: urlCategory || (user.role === 'sys_admin' ? 'Any' : 'general'),
             dateRange: dateRangeFromUrl
         };
-
-        // Sync the form's visual state with the criteria from the link
+        
         const formCriteria = {
             ...criteriaFromLink,
             category: criteriaFromLink.category === 'system' ? 'System' : criteriaFromLink.category === 'general' ? 'General' : 'Any',
         };
         setCriteria(formCriteria);
-        
-        // Perform the search with the exact criteria from the link
         performSearch(criteriaFromLink);
     }
-  }, [user, incidents, searchParams]);
+  }, [user, incidents, searchParams, performSearch]);
 
   const isScrolled = useScrollTrigger({ disableHysteresis: true, threshold: 0 });
-
+  
   const getHeading = () => {
     const category = searchParams.get('category');
     if (user?.role === 'sys_admin' && category === 'system') {
@@ -128,6 +145,33 @@ export default function SearchPage() {
     }
     return 'Search & Archive';
   };
+
+  const getFilterContextText = () => {
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    const shiftParam = searchParams.get('shift');
+
+    if (!startDateParam && !shiftParam) {
+      return null;
+    }
+
+    let dateText = '';
+    if (startDateParam && endDateParam) {
+      const start = parseISO(startDateParam);
+      const end = parseISO(endDateParam);
+      if (format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd')) {
+        dateText = `Date: ${format(start, 'do MMM, yyyy')}`;
+      } else {
+        dateText = `Date Range: ${format(start, 'do MMM')} - ${format(end, 'do MMM, yyyy')}`;
+      }
+    }
+    
+    const shiftText = shiftParam ? `Shift: ${shiftParam}` : '';
+
+    return [dateText, shiftText].filter(Boolean).join('  |  ');
+  };
+
+  const filterContextText = getFilterContextText();
 
   return (
     <Stack spacing={2}>
@@ -139,12 +183,17 @@ export default function SearchPage() {
             criteria={criteria}
             onCriteriaChange={setCriteria}
             onSearch={performSearch} 
-            isLoading={loading} 
+            isLoading={loading}
         />
       </Paper>
 
       {hasSearched && (
         <Paper elevation={2} sx={{p: 2}}>
+            {filterContextText && (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Showing results based on dashboard selection — {filterContextText}
+              </Alert>
+            )}
             <Typography variant="h5" sx={{ mb: 2 }}>
                 Search Results
             </Typography>
