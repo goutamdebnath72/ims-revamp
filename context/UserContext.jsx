@@ -3,10 +3,11 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
+// --- UPDATED: Added new email fields to each mock user ---
 const MOCK_USER_DB = {
-  "342461": { name: "GOUTAM DEBNATH", initials: "GD", ticketNo: "342461", departmentCode: 98540 },
-  "111111": { name: "ANAMIKA SHARMA", initials: "AS", ticketNo: "111111", departmentCode: 88123 },
-  "222222": { name: "RAKESH OJHA", initials: "RO", ticketNo: "222222", departmentCode: 98500 },
+  "342461": { name: "GOUTAM DEBNATH", initials: "GD", ticketNo: "342461", departmentCode: 98540, emailSail: 'goutam.d@saildsp.co.in', emailNic: 'goutam@sail.in' },
+  "111111": { name: "ANAMIKA SHARMA", initials: "AS", ticketNo: "111111", departmentCode: 88123, emailSail: 'anamika.s@saildsp.co.in', emailNic: 'anamika.sharma@sail.in' },
+  "222222": { name: "RAKESH OJHA", initials: "RO", ticketNo: "222222", departmentCode: 98500, emailSail: 'rakesh.ojha@saildsp.co.in', emailNic: 'rakesh.o@sail.in' },
 };
 
 const EXECUTIVE_DEPT = 98500;
@@ -34,7 +35,6 @@ export default function UserProvider({ children }) {
     return { success: false, message: "Invalid User ID or Password" };
   };
 
-  // --- CORRECTED LOGOUT FUNCTION ---
   const logout = () => {
     setUser(null);
     router.replace('/login');

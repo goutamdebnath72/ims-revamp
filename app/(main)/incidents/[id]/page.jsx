@@ -13,8 +13,6 @@ import IncidentAuditTrail from '@/components/IncidentAuditTrail';
 import IncidentActionForm from '@/components/IncidentActionForm';
 import ResolutionDialog from '@/components/ResolutionDialog';
 
-// --- BUG FIX ---
-// Corrected the department codes to include the executive department (98500).
 const C_AND_IT_DEPT_CODES = [98500, 98540];
 
 export default function IncidentDetailsPage() {
@@ -24,7 +22,6 @@ export default function IncidentDetailsPage() {
   const { showNotification } = React.useContext(NotificationContext);
   
   const incident = incidents.find(inc => inc.id.toString() === params.id);
-  
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const auditTrailRef = React.useRef(null);
   
@@ -33,7 +30,6 @@ export default function IncidentDetailsPage() {
       auditTrailRef.current?.scrollToBottom();
     }, 0);
   }, [incident?.auditTrail?.length]);
-
 
   const handleUpdate = ({ comment, newType, newPriority }) => {
     if (!comment.trim() || !user || !incident) return;
@@ -49,13 +45,16 @@ export default function IncidentDetailsPage() {
         updatedFields.status = newStatus;
     }
     
-    if (newType && newType !== incident.incidentType && !incident.isTypeLocked) {
+    const typeChanged = newType && newType !== incident.incidentType && !incident.isTypeLocked;
+    const priorityChanged = newPriority && newPriority !== incident.priority && !incident.isPriorityLocked;
+
+    if (typeChanged) {
         updatedFields.incidentType = newType;
         updatedFields.isTypeLocked = true;
         actionDescription.push(`Incident Type changed to "${newType}".`);
     }
 
-    if (newPriority && newPriority !== incident.priority && !incident.isPriorityLocked) {
+    if (priorityChanged) {
         updatedFields.priority = newPriority;
         updatedFields.isPriorityLocked = true;
         actionDescription.push(`Priority changed to "${newPriority}".`);
@@ -64,29 +63,38 @@ export default function IncidentDetailsPage() {
     const finalComment = actionDescription.length > 0 
       ? actionDescription.join('\n') + '\n---\n' + comment 
       : comment;
-      
+
+    // --- NEW: Logic to determine the specific action text ---
+    let actionText = 'Action Taken';
+    if (typeChanged && priorityChanged) {
+        actionText = 'Details Updated';
+    } else if (typeChanged) {
+        actionText = 'Incident Type Changed';
+    } else if (priorityChanged) {
+        actionText = 'Priority Changed';
+    }
+
     const newAuditEntry = {
       timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
       author: user.name,
-      action: actionDescription.length > 0 ? 'Details Updated' : 'Action Taken',
+      action: actionText,
       comment: finalComment,
       isEdited: false, 
     };
-    
+
     updateIncident(params.id, {
         ...updatedFields,
         auditTrail: [...(incident.auditTrail || []), newAuditEntry]
     });
-    
+
     showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
   };
-  
+
   const handleConfirmResolve = ({ action, comment, rating, closingReason }) => {
     if (!comment || !user || !incident) return;
-    
     const isClosing = action === 'close';
     const newStatus = isClosing ? 'Closed' : 'Resolved';
-    
+
     const finalComment = isClosing 
       ? `Reason for closing: ${closingReason}.\n---\n${comment}`
       : comment;
@@ -103,21 +111,18 @@ export default function IncidentDetailsPage() {
         status: newStatus,
         auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
     });
-
     showNotification({ title: `Incident ${newStatus}`, message: `The incident has been successfully ${newStatus.toLowerCase()}.` }, 'success');
   };
-  
+
   const handleCommentEdit = (entryIndex, newComment) => {
     if (!incident) return;
     
     const newAuditTrail = [...incident.auditTrail];
-    
     newAuditTrail[entryIndex] = {
       ...newAuditTrail[entryIndex],
       comment: newComment,
       isEdited: true,
     };
-
     updateIncident(params.id, { auditTrail: newAuditTrail });
     showNotification({ title: "Comment Updated", message: "Your comment has been saved." }, "info");
   };
@@ -144,7 +149,7 @@ export default function IncidentDetailsPage() {
         {isResolved ? (
           <Box sx={{ flex: 5, minWidth: 0, display: 'flex' }}>
             <IncidentAuditTrail
-              ref={auditTrailRef}
+               ref={auditTrailRef}
               auditTrail={incident.auditTrail || []}
               incident={incident}
               isResolved={isResolved}
@@ -158,7 +163,7 @@ export default function IncidentDetailsPage() {
           >
             <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
                <IncidentAuditTrail
-                  ref={auditTrailRef}
+                   ref={auditTrailRef}
                   auditTrail={incident.auditTrail || []}
                   incident={incident}
                   isResolved={isResolved}

@@ -1,12 +1,11 @@
 // File: app/raise/page.jsx
-// UPDATED: The success notification is now conditional based on user role.
 "use client";
 
 import * as React from "react";
 import { useRouter } from 'next/navigation';
-import { IncidentContext, C_AND_IT_DEPT_CODES } from "@/context/IncidentContext"; // <-- Import constant
+import { IncidentContext } from "@/context/IncidentContext";
 import { NotificationContext } from "@/context/NotificationContext";
-import { UserContext } from "@/context/UserContext"; // <-- Import UserContext
+import { UserContext } from "@/context/UserContext";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
@@ -15,29 +14,28 @@ import AlertTitle from "@mui/material/AlertTitle";
 import Button from "@mui/material/Button";
 import RaiseIncidentForm from "@/components/RaiseIncidentForm";
 
+// --- FIX: Defined the constant locally instead of using a broken import ---
+const C_AND_IT_DEPT_CODES = [98540, 98541, 98500];
+
 export default function RaiseIncidentPage() {
   const router = useRouter();
   const { addIncident } = React.useContext(IncidentContext);
   const { showNotification } = React.useContext(NotificationContext);
-  const { user } = React.useContext(UserContext); // <-- Get the logged-in user
+  const { user } = React.useContext(UserContext);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);
 
   const handleFormSubmit = (formData) => {
     setIsSubmitting(true);
-    
     setTimeout(() => {
       try {
         const newIncident = addIncident(formData);
         setSubmittedIncidentId(newIncident.id);
 
-        // --- THIS IS THE NEW LOGIC ---
-        // Only show this generic success message if the user is NOT a C&IT employee
         const isCITEmployee = user && C_AND_IT_DEPT_CODES.includes(user.departmentCode);
         if (!isCITEmployee) {
             showNotification({ title: "Success!", message: `Your incident #${newIncident.id} has been submitted.` }, "success");
         }
-        // C&IT employees will see the "New Incident Raised" notification from the IncidentContext instead.
 
       } catch (error) {
         showNotification({ title: "Error", message: "Failed to submit incident. Please try again." }, "error");
@@ -67,12 +65,12 @@ export default function RaiseIncidentPage() {
                  <Button
                     variant="contained"
                     onClick={() => router.push(`/incidents/${submittedIncidentId}`)}
-                 >
+                  >
                     View Incident Details
                 </Button>
                  <Button variant="outlined" onClick={handleRaiseAnother}>
                     Raise Another Incident
-                </Button>
+                 </Button>
             </Stack>
           </Stack>
         ) : (

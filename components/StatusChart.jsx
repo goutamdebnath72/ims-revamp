@@ -1,5 +1,4 @@
 // File: components/StatusChart.jsx
-// NEW: A reusable bar chart to display incidents by status.
 'use client';
 
 import * as React from 'react';
@@ -25,7 +24,8 @@ export default function StatusChart({ data }) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis allowDecimals={false} />
-          <Tooltip />
+          {/* --- FIX: Added cursor={false} to remove the grey hover rectangle --- */}
+          <Tooltip cursor={false} />
           <Legend />
           <Bar dataKey="count" name="Total Incidents" fill="#8884d8" />
         </BarChart>

@@ -3,13 +3,12 @@
 import React, { memo } from 'react';
 import { UserContext } from '@/context/UserContext';
 import { incidentTypes } from '@/lib/incident-types';
-import { isSystemIncident } from '@/lib/incident-helpers'; // Import the helper
+import { isSystemIncident } from '@/lib/incident-helpers';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { Box, Stack, TextField, Button, MenuItem, Tooltip, IconButton } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-
 
 const statuses = ['Any', 'New', 'Processed', 'Resolved', 'Closed'];
 const priorities = ['Any', 'Low', 'Medium', 'High'];
@@ -18,17 +17,15 @@ const categories = ['Any', 'System', 'General'];
 function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading }) {
   const { user } = React.useContext(UserContext);
 
-  // --- NEW: Dynamically filter incident types based on user role ---
   const filteredIncidentTypes = React.useMemo(() => {
     if (user?.role === 'sys_admin') {
-      return ['Any', ...incidentTypes]; // System admins see all types
+      return ['Any', ...incidentTypes];
     }
     if (user?.role === 'admin') {
-      // Non-exec admins only see general (non-system) types
       const generalTypes = incidentTypes.filter(type => !isSystemIncident({ incidentType: type }));
       return ['Any', ...generalTypes];
     }
-    // Default for other roles if any
+    // Default for standard users is to see all types
     return ['Any', ...incidentTypes];
   }, [user]);
 
@@ -72,6 +69,14 @@ function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading })
                     </Tooltip>
                 </Box>
             )}
+
+            {/* --- FIX: "Incident Type" dropdown is now visible to all users --- */}
+            <Box sx={{ flex: 1 }}>
+                <TextField select fullWidth label="Incident Type" name="incidentType" value={criteria.incidentType} onChange={handleChange} size="small">
+                    {filteredIncidentTypes.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
+                </TextField>
+            </Box>
+
             <Box sx={{ flex: 1 }}><TextField select fullWidth label="Status" name="status" value={criteria.status} onChange={handleChange} size="small">
                 {statuses.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
             </TextField></Box>
@@ -83,13 +88,6 @@ function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading })
 
         {isCnIT && (
             <Stack direction="row" spacing={2} alignItems="center">
-                <Box sx={{ flex: 1 }}>
-                    {/* The dropdown now uses the dynamically filtered list */}
-                    <TextField select fullWidth label="Incident Type" name="incidentType" value={criteria.incidentType} onChange={handleChange} size="small">
-                        {filteredIncidentTypes.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
-                    </TextField>
-                </Box>
-
                 {user.role === 'sys_admin' && (
                     <Box sx={{ flex: 1 }}>
                         <TextField select fullWidth label="Category" name="category" value={criteria.category} onChange={handleChange} size="small">
