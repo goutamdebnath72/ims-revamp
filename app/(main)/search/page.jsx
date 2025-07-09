@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { isSystemIncident } from '@/lib/incident-helpers';
-import { startOfDay, endOfDay, isWithinInterval, parse, isValid, subDays, parseISO, getHours, format } from 'date-fns';
+import { startOfDay, endOfDay, isWithinInterval, parse, isValid, parseISO, getHours, format } from 'date-fns';
 import { Box, Typography, Paper, Stack, useScrollTrigger, Alert } from '@mui/material';
 import IncidentSearchForm from '@/components/IncidentSearchForm';
 import IncidentDataGrid from '@/components/IncidentDataGrid';
@@ -18,7 +18,6 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [hasSearched, setHasSearched] = React.useState(false);
-
   const [criteria, setCriteria] = React.useState({
     incidentId: '',
     requestor: '',
@@ -27,8 +26,8 @@ export default function SearchPage() {
     incidentType: 'Any',
     category: 'Any',
     shift: 'Any',
-    department: 'Any', // <-- Added department
-    dateRange: { start: subDays(new Date(), 30), end: new Date() }
+    department: 'Any',
+    dateRange: { start: null, end: null } // Corrected line for empty date fields
   });
 
   const performSearch = React.useCallback((searchCriteria) => {
@@ -77,7 +76,8 @@ export default function SearchPage() {
             requestorMatch = requestorName.toLowerCase().includes(searchTerm);
         }
 
-        const shiftMatch = searchCriteria.shift && searchCriteria.shift !== 'Any' && searchCriteria.shift !== 'All' ? (() => {
+        const shiftMatch = searchCriteria.shift && searchCriteria.shift !== 'Any' && searchCriteria.shift !== 'All' ?
+        (() => {
             const parsedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
             if (!isValid(parsedDate)) return false;
             const hour = getHours(parsedDate);
@@ -88,7 +88,6 @@ export default function SearchPage() {
             return false;
         })() : true;
         
-        // --- ADDED: Department filtering logic ---
         const departmentMatch = searchCriteria.department !== 'Any' ? incident.department === searchCriteria.department : true;
 
         return idMatch && requestorMatch && priorityMatch && typeMatch && shiftMatch && departmentMatch;
@@ -137,7 +136,7 @@ export default function SearchPage() {
   }, [user, incidents, searchParams, performSearch]);
 
   const isScrolled = useScrollTrigger({ disableHysteresis: true, threshold: 0 });
-  
+
   const getHeading = () => {
     const category = searchParams.get('category');
     if (user?.role === 'sys_admin' && category === 'system') {
@@ -198,7 +197,7 @@ export default function SearchPage() {
                 Search Results
             </Typography>
             <IncidentDataGrid rows={searchResults} loading={loading} />
-         </Paper>
+        </Paper>
       )}
     </Stack>
   );
