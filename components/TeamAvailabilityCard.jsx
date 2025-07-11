@@ -1,21 +1,27 @@
-// File: components/TeamAvailabilityCard.jsx
+// components/TeamAvailabilityCard.jsx
 'use client';
 
 import * as React from 'react';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
+import { teamMembers } from '@/lib/team-availability';
 import { Paper, Typography, Box, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
 import BeachAccessIcon from '@mui/icons-material/BeachAccess';
-import { teamMembers } from '@/lib/team-availability';
 
-const C_AND_IT_DEPT_CODES = [98540, 98541, 98500];
+// The list of C&IT department codes, with 98541 removed as you requested.
+const C_AND_IT_DEPT_CODES = [98540, 98500];
 
 export default function TeamAvailabilityCard() {
-  const { user } = React.useContext(UserContext);
+  // Get the session data, which now includes departmentCode thanks to the changes in Part 1.
+  const { data: session } = useSession();
+  const user = session?.user;
 
-  if (!user || !C_AND_IT_DEPT_CODES.includes(user.departmentCode)) {
-    return null;
+  // This logic now works correctly. The card will only render if the logged-in
+  // user's departmentCode is in the C_AND_IT_DEPT_CODES array.
+  if (!user || !user.departmentCode || !C_AND_IT_DEPT_CODES.includes(user.departmentCode)) {
+    return null; // Don't render the card for other departments
   }
 
+  // Restore the original logic to filter for "On Leave" members from the live data source.
   const onLeave = teamMembers.filter(member => member.status === 'On Leave');
 
   return (
@@ -23,7 +29,7 @@ export default function TeamAvailabilityCard() {
       <Typography variant="h6" gutterBottom>
         Team Availability (On Leave)
       </Typography>
-      {/* --- NEW: The List is now scrollable to match the Recent Activity card --- */}
+      {/* Restore the original scrollable Box layout. */}
       <Box sx={{
         maxHeight: 220,
         overflowY: 'auto'
@@ -39,6 +45,7 @@ export default function TeamAvailabilityCard() {
                   </ListItem>
               ))
           ) : (
+              // Restore the original message for when no one is on leave.
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
                   Everyone is available today.
               </Typography>

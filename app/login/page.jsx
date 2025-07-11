@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -9,21 +11,28 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Image from 'next/image';
-import { UserContext } from '@/context/UserContext';
 import LoginInfoPanel from '@/components/LoginInfoPanel';
 
 export default function LoginPage() {
   const [userId, setUserId] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
-  const { login } = React.useContext(UserContext);
+  const router = useRouter();
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
-    const result = login(userId, password);
-    if (!result.success) {
-      setError(result.message);
+
+    const res = await signIn('credentials', {
+      redirect: false,
+      userId,
+      password
+    });
+    
+    if (res.ok) {
+      router.replace('/');
+    } else {
+      setError('Invalid User ID or Password');
     }
   };
 
@@ -49,7 +58,7 @@ export default function LoginPage() {
         sx={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center', 
+          justifyContent: 'center',
           flex: '0 0 50%',
           px: 2,
           minWidth: '0',
@@ -65,7 +74,7 @@ export default function LoginPage() {
           alignItems: 'center',
           justifyContent: 'center',
           flex: '0 0 1px',
-          height: '700px', 
+          height: '700px',
           backgroundColor: 'rgba(0, 0, 0, 0.2)',
           alignSelf: 'center',
           mx: 0,
@@ -89,7 +98,8 @@ export default function LoginPage() {
         <Box
           sx={{
             width: '475px',
-            height: '505px',
+            // UPDATED: Changed height to minHeight to allow the card to grow
+            minHeight: '505px',
             position: 'relative',
           }}
         >
@@ -99,7 +109,8 @@ export default function LoginPage() {
               px: 4,
               py: 3,
               width: '100%',
-              height: '100%',
+              // UPDATED: Height is now flexible to fit the content
+              minHeight: '100%',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -165,29 +176,8 @@ export default function LoginPage() {
                   error={!!error}
                   variant="outlined"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      height: '56px',
-                      fontSize: '1rem',
-                      backgroundColor: 'white',
-                      '& fieldset': {
-                        borderColor: '#ddd',
-                        borderWidth: '1px',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#4A90E2',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#4A90E2',
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '1rem',
-                      color: '#666',
-                      '&.Mui-focused': {
-                        color: '#4A90E2',
-                      },
-                    },
+                    '& .MuiOutlinedInput-root': { height: '56px', fontSize: '1rem', backgroundColor: 'white', '& fieldset': { borderColor: '#ddd', borderWidth: '1px' }, '&:hover fieldset': { borderColor: '#4A90E2' }, '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' } },
+                    '& .MuiInputLabel-root': { fontSize: '1rem', color: '#666', '&.Mui-focused': { color: '#4A90E2' } },
                   }}
                 />
                 <TextField
@@ -203,31 +193,8 @@ export default function LoginPage() {
                   error={!!error}
                   variant="outlined"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      height: '56px',
-                      fontSize: '1rem',
-                      backgroundColor: 'white',
-                      '& fieldset': {
-                        borderColor: '#ddd',
-                        borderWidth: '1px',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#4A90E2',
-                      },
-                      '&.Mui-focused fieldset': {
-                        // --- THIS IS WHERE THE ERROR WAS ---
-                        // The comma was inside the string, now it's fixed.
-                        borderColor: '#4A90E2',
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '1rem',
-                      color: '#666',
-                      '&.Mui-focused': {
-                        color: '#4A90E2',
-                      },
-                    },
+                    '& .MuiOutlinedInput-root': { height: '56px', fontSize: '1rem', backgroundColor: 'white', '& fieldset': { borderColor: '#ddd', borderWidth: '1px' }, '&:hover fieldset': { borderColor: '#4A90E2' }, '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' } },
+                    '& .MuiInputLabel-root': { fontSize: '1rem', color: '#666', '&.Mui-focused': { color: '#4A90E2' } },
                   }}
                 />
                 {error && (

@@ -1,26 +1,31 @@
 'use client';
 
 import * as React from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { UserContext } from '@/context/UserContext';
 
 export default function AuthGuard({ children }) {
-    const { user } = React.useContext(UserContext);
-    const router = useRouter();
-    const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
-    React.useEffect(() => {
-        // If there is no user data and the user is not on the login page, redirect them.
-        if (!user && pathname !== '/login') {
-            router.push('/login');
-        }
-    }, [user, pathname, router]);
-    
-    // If there is a user, or if we are on the login page, show the content.
-    if (user || pathname === '/login') {
-        return <>{children}</>;
+  const user = session?.user;
+
+  React.useEffect(() => {
+    // If not authenticated and not already on /login, redirect
+    if (status === 'unauthenticated' && pathname !== '/login') {
+      router.push('/login');
     }
+  }, [status, pathname, router]);
 
-    // Otherwise, show nothing while the redirect happens.
-    return null;
+  // Allow rendering if:
+  // - session is still loading
+  // - user is logged in
+  // - or we're on the login page
+  if (status === 'loading' || user || pathname === '/login') {
+    return <>{children}</>;
+  }
+
+  // Otherwise (unauthenticated and not on /login), block render
+  return null;
 }

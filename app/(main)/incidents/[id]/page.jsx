@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
 import { NotificationContext } from '@/context/NotificationContext';
 import { IncidentContext } from '@/context/IncidentContext';
 import Box from '@mui/material/Box';
@@ -18,13 +18,16 @@ const C_AND_IT_DEPT_CODES = [98500, 98540];
 export default function IncidentDetailsPage() {
   const params = useParams();
   const { incidents, updateIncident } = React.useContext(IncidentContext);
-  const { user } = React.useContext(UserContext);
   const { showNotification } = React.useContext(NotificationContext);
-  
+
+  // Replaced UserContext with the useSession hook from NextAuth
+  const { data: session } = useSession();
+  const user = session?.user;
+
   const incident = incidents.find(inc => inc.id.toString() === params.id);
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const auditTrailRef = React.useRef(null);
-  
+
   React.useEffect(() => {
     setTimeout(() => {
       auditTrailRef.current?.scrollToBottom();
@@ -37,7 +40,7 @@ export default function IncidentDetailsPage() {
     const updatedFields = {};
     let actionDescription = [];
 
-    const newStatus = 
+    const newStatus =
       incident.status === 'New' && user && C_AND_IT_DEPT_CODES.includes(user.departmentCode)
       ? 'Processed'
       : incident.status;
@@ -61,10 +64,9 @@ export default function IncidentDetailsPage() {
     }
 
     const finalComment = actionDescription.length > 0 
-      ? actionDescription.join('\n') + '\n---\n' + comment 
+      ? actionDescription.join('\n') + '\n---\n' + comment
       : comment;
-
-    // --- NEW: Logic to determine the specific action text ---
+      
     let actionText = 'Action Taken';
     if (typeChanged && priorityChanged) {
         actionText = 'Details Updated';
@@ -86,7 +88,6 @@ export default function IncidentDetailsPage() {
         ...updatedFields,
         auditTrail: [...(incident.auditTrail || []), newAuditEntry]
     });
-
     showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
   };
 
@@ -94,11 +95,9 @@ export default function IncidentDetailsPage() {
     if (!comment || !user || !incident) return;
     const isClosing = action === 'close';
     const newStatus = isClosing ? 'Closed' : 'Resolved';
-
     const finalComment = isClosing 
       ? `Reason for closing: ${closingReason}.\n---\n${comment}`
       : comment;
-
     const finalAuditEntry = {
       timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
       author: user.name,
@@ -106,7 +105,6 @@ export default function IncidentDetailsPage() {
       comment: finalComment,
       rating: rating,
     };
-
     updateIncident(params.id, {
         status: newStatus,
         auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
@@ -149,7 +147,7 @@ export default function IncidentDetailsPage() {
         {isResolved ? (
           <Box sx={{ flex: 5, minWidth: 0, display: 'flex' }}>
             <IncidentAuditTrail
-               ref={auditTrailRef}
+              ref={auditTrailRef}
               auditTrail={incident.auditTrail || []}
               incident={incident}
               isResolved={isResolved}
@@ -163,7 +161,7 @@ export default function IncidentDetailsPage() {
           >
             <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
                <IncidentAuditTrail
-                   ref={auditTrailRef}
+                  ref={auditTrailRef}
                   auditTrail={incident.auditTrail || []}
                   incident={incident}
                   isResolved={isResolved}

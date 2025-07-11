@@ -1,9 +1,7 @@
-// File: components/IncidentActionForm.jsx
-// UPDATED: Dropdowns are now disabled if the incident status is "New".
 'use client';
 
 import * as React from 'react';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react'; // Import useSession from NextAuth
 import { SettingsContext } from "@/context/SettingsContext";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -19,14 +17,18 @@ import Box from '@mui/material/Box';
 import { incidentTypes } from '@/lib/incident-types';
 
 const priorities = ['Low', 'Medium', 'High'];
-const C_AND_IT_DEPT_CODES = [98540, 98541];
+
+// Corrected department codes to be consistent with other components
+const C_AND_IT_DEPT_CODES = [98540, 98500];
 
 export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDialog }) {
-  const { user } = React.useContext(UserContext);
+  // Replaced UserContext with the useSession hook
+  const { data: session } = useSession();
+  const user = session?.user;
+  
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
   const [comment, setComment] = React.useState("");
-  
   const [newType, setNewType] = React.useState(incident.incidentType);
   const [newPriority, setNewPriority] = React.useState(incident.priority);
 
@@ -59,7 +61,6 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
         {isCITEmployee && (
             <Stack direction="row" spacing={2}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                    {/* THIS IS THE FIX: Added 'incident.status === "New"' to the disabled condition */}
                     <FormControl fullWidth size="small" disabled={incident.status === 'New' || incident.isTypeLocked}>
                         <InputLabel>Change Incident Type</InputLabel>
                         <Select value={newType} label="Change Incident Type" onChange={(e) => setNewType(e.target.value)}>
@@ -68,7 +69,6 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
                     </FormControl>
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                    {/* THIS IS THE FIX: Added 'incident.status === "New"' to the disabled condition */}
                     <FormControl fullWidth size="small" disabled={incident.status === 'New' || incident.isPriorityLocked}>
                         <InputLabel>Change Priority</InputLabel>
                         <Select value={newPriority} label="Change Priority" onChange={(e) => setNewPriority(e.target.value)}>

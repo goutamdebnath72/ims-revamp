@@ -2,31 +2,26 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
 import { IncidentContext } from '@/context/IncidentContext';
 import RecentIncidentsCard from './RecentIncidentsCard';
 import { Box, Button, Typography, Stack, Card, CardActionArea, CardContent } from '@mui/material';
 import PostAddIcon from '@mui/icons-material/PostAdd';
 import CountUp from 'react-countup';
 
-// This is the new, personalized dashboard for standard users
 export default function StandardUserDashboard() {
-  const { user } = React.useContext(UserContext);
+  const { data: session } = useSession();
   const { incidents } = React.useContext(IncidentContext);
 
-  // Filter all incidents to get only those reported by the current user
+  const user = session?.user;
+
   const myIncidents = React.useMemo(() => {
     if (!user || !incidents) return [];
-    
-    // --- ERROR FIX ---
-    // Added a safety check `i.reportedBy &&` to ensure the reportedBy object exists
-    // before we try to read its ticketNo property. This prevents the crash.
-    return incidents.filter(i => 
+    return incidents.filter(i =>
       i.reportedBy && i.reportedBy.ticketNo === user.ticketNo
     );
   }, [user, incidents]);
 
-  // Calculate stats based on the user's personal incidents
   const myNewIncidents = myIncidents.filter(i => i.status === 'New').length;
   const myProcessedIncidents = myIncidents.filter(i => i.status === 'Processed').length;
   const myOpenIncidents = myNewIncidents + myProcessedIncidents;
@@ -40,6 +35,8 @@ export default function StandardUserDashboard() {
   ];
 
   const getNumberVariant = (value) => value.toString().length > 3 ? 'h4' : 'h3';
+
+  if (!user) return null;
 
   return (
     <Stack spacing={3}>
@@ -63,7 +60,11 @@ export default function StandardUserDashboard() {
         {statCardsData.map((card, index) => (
           <Box key={index} sx={{ flex: 1, textDecoration: 'none' }}>
             <Card elevation={3} sx={{ height: '100%' }}>
-              <CardActionArea component={Link} href={`/search?user=${user.ticketNo}&status=${card.filterStatus}`} sx={{ height: '100%' }}>
+              <CardActionArea
+                component={Link}
+                href={`/search?user=${user.ticketNo}&status=${card.filterStatus}`}
+                sx={{ height: '100%' }}
+              >
                 <CardContent sx={{ textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
                     {card.title}

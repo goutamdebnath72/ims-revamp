@@ -8,12 +8,14 @@ import { Box, Typography, Paper, Stack, useScrollTrigger, Alert } from '@mui/mat
 import IncidentSearchForm from '@/components/IncidentSearchForm';
 import IncidentDataGrid from '@/components/IncidentDataGrid';
 import { IncidentContext } from '@/context/IncidentContext';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
 
 export default function SearchPage() {
+  const { data: session } = useSession();
   const { incidents } = React.useContext(IncidentContext);
-  const { user } = React.useContext(UserContext);
   const searchParams = useSearchParams();
+
+  const user = session?.user;
 
   const [searchResults, setSearchResults] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -27,7 +29,7 @@ export default function SearchPage() {
     category: 'Any',
     shift: 'Any',
     department: 'Any',
-    dateRange: { start: null, end: null } // Corrected line for empty date fields
+    dateRange: { start: null, end: null }
   });
 
   const performSearch = React.useCallback((searchCriteria) => {
@@ -37,61 +39,61 @@ export default function SearchPage() {
     setHasSearched(true); 
     
     setTimeout(() => {
-        const dateFiltered = incidents.filter(incident => {
-            if (!searchCriteria.dateRange.start || !searchCriteria.dateRange.end) return true;
-            const reportedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
-            
-            if (!isValid(reportedDate)) return false;
-            return isWithinInterval(reportedDate, {
-                start: startOfDay(searchCriteria.dateRange.start),
-                end: endOfDay(searchCriteria.dateRange.end)
-            });
+      const dateFiltered = incidents.filter(incident => {
+        if (!searchCriteria.dateRange.start || !searchCriteria.dateRange.end) return true;
+        const reportedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
+        if (!isValid(reportedDate)) return false;
+
+        return isWithinInterval(reportedDate, {
+          start: startOfDay(searchCriteria.dateRange.start),
+          end: endOfDay(searchCriteria.dateRange.end)
         });
+      });
 
       let results = dateFiltered.filter(incident => {
         const isSys = isSystemIncident(incident);
 
         if (user.role === 'user' && incident.requestor !== user.name) return false;
         if (user.role === 'admin' && isSys) return false;
-        
+
         const category = user.role === 'sys_admin' ? searchCriteria.category : 'general';
 
         if (category?.toLowerCase() === 'system' && !isSys) return false;
         if (category?.toLowerCase() === 'general' && isSys) return false;
-        
+
         if (searchCriteria.status === 'open') {
-            if (incident.status !== 'New' && incident.status !== 'Processed') return false;
+          if (incident.status !== 'New' && incident.status !== 'Processed') return false;
         } else if (searchCriteria.status !== 'Any') {
-            if (incident.status !== searchCriteria.status) return false;
+          if (incident.status !== searchCriteria.status) return false;
         }
-        
+
         const idMatch = searchCriteria.incidentId ? incident.id.toString().includes(searchCriteria.incidentId) : true;
         const priorityMatch = searchCriteria.priority !== 'Any' ? incident.priority === searchCriteria.priority : true;
         const typeMatch = searchCriteria.incidentType !== 'Any' ? incident.incidentType === searchCriteria.incidentType : true;
-        
+
         let requestorMatch = true;
         if ((user.role === 'admin' || user.role === 'sys_admin') && searchCriteria.requestor) {
-            const searchTerm = searchCriteria.requestor.toLowerCase();
-            const requestorName = incident.requestor || '';
-            requestorMatch = requestorName.toLowerCase().includes(searchTerm);
+          const searchTerm = searchCriteria.requestor.toLowerCase();
+          const requestorName = incident.requestor || '';
+          requestorMatch = requestorName.toLowerCase().includes(searchTerm);
         }
 
         const shiftMatch = searchCriteria.shift && searchCriteria.shift !== 'Any' && searchCriteria.shift !== 'All' ?
         (() => {
-            const parsedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
-            if (!isValid(parsedDate)) return false;
-            const hour = getHours(parsedDate);
-            
-            if (searchCriteria.shift === 'A') return hour >= 6 && hour < 14;
-            if (searchCriteria.shift === 'B') return hour >= 14 && hour < 22;
-            if (searchCriteria.shift === 'C') return hour >= 22 || hour < 6;
-            return false;
+          const parsedDate = parse(incident.reportedOn, 'dd MMM yy, hh:mm a', new Date());
+          if (!isValid(parsedDate)) return false;
+          const hour = getHours(parsedDate);
+          if (searchCriteria.shift === 'A') return hour >= 6 && hour < 14;
+          if (searchCriteria.shift === 'B') return hour >= 14 && hour < 22;
+          if (searchCriteria.shift === 'C') return hour >= 22 || hour < 6;
+          return false;
         })() : true;
-        
+
         const departmentMatch = searchCriteria.department !== 'Any' ? incident.department === searchCriteria.department : true;
 
         return idMatch && requestorMatch && priorityMatch && typeMatch && shiftMatch && departmentMatch;
       });
+
       setSearchResults(results);
       setLoading(false);
     }, 500);
@@ -106,32 +108,37 @@ export default function SearchPage() {
     const urlShift = searchParams.get('shift');
     const urlStartDate = searchParams.get('startDate');
     const urlEndDate = searchParams.get('endDate');
-    
-    if (urlCategory || urlStatus || urlPriority || urlShift) {
-        let dateRangeFromUrl = { start: null, end: null };
-        
-        if (urlStartDate && urlEndDate) {
-            dateRangeFromUrl = { start: parseISO(urlStartDate), end: parseISO(urlEndDate) };
-        }
 
-        const criteriaFromLink = {
-            incidentId: '',
-            requestor: '',
-            incidentType: 'Any',
-            status: urlStatus || 'Any',
-            priority: urlPriority || 'Any',
-            shift: urlShift || 'Any',
-            department: 'Any',
-            category: urlCategory || (user.role === 'sys_admin' ? 'Any' : 'general'),
-            dateRange: dateRangeFromUrl
+    if (urlCategory || urlStatus || urlPriority || urlShift) {
+      let dateRangeFromUrl = { start: null, end: null };
+
+      if (urlStartDate && urlEndDate) {
+        dateRangeFromUrl = {
+          start: parseISO(urlStartDate),
+          end: parseISO(urlEndDate)
         };
-        
-        const formCriteria = {
-            ...criteriaFromLink,
-            category: criteriaFromLink.category === 'system' ? 'System' : criteriaFromLink.category === 'general' ? 'General' : 'Any',
-        };
-        setCriteria(formCriteria);
-        performSearch(criteriaFromLink);
+      }
+
+      const criteriaFromLink = {
+        incidentId: '',
+        requestor: '',
+        incidentType: 'Any',
+        status: urlStatus || 'Any',
+        priority: urlPriority || 'Any',
+        shift: urlShift || 'Any',
+        department: 'Any',
+        category: urlCategory || (user.role === 'sys_admin' ? 'Any' : 'general'),
+        dateRange: dateRangeFromUrl
+      };
+
+      const formCriteria = {
+        ...criteriaFromLink,
+        category: criteriaFromLink.category === 'system' ? 'System' :
+                  criteriaFromLink.category === 'general' ? 'General' : 'Any'
+      };
+
+      setCriteria(formCriteria);
+      performSearch(criteriaFromLink);
     }
   }, [user, incidents, searchParams, performSearch]);
 
@@ -150,9 +157,7 @@ export default function SearchPage() {
     const endDateParam = searchParams.get('endDate');
     const shiftParam = searchParams.get('shift');
 
-    if (!startDateParam && !shiftParam) {
-      return null;
-    }
+    if (!startDateParam && !shiftParam) return null;
 
     let dateText = '';
     if (startDateParam && endDateParam) {
@@ -164,9 +169,8 @@ export default function SearchPage() {
         dateText = `Date Range: ${format(start, 'do MMM')} - ${format(end, 'do MMM, yyyy')}`;
       }
     }
-    
-    const shiftText = shiftParam ? `Shift: ${shiftParam}` : '';
 
+    const shiftText = shiftParam ? `Shift: ${shiftParam}` : '';
     return [dateText, shiftText].filter(Boolean).join('  |  ');
   };
 
@@ -176,27 +180,27 @@ export default function SearchPage() {
     <Stack spacing={2}>
       <Paper elevation={isScrolled ? 4 : 2} sx={{ p: 2, position: 'sticky', top: 64, zIndex: 10, bgcolor: 'background.default' }}>
         <Typography variant="h4" sx={{ mb: 2, textAlign: 'left' }}>
-            {getHeading()}
+          {getHeading()}
         </Typography>
         <IncidentSearchForm 
-            criteria={criteria}
-            onCriteriaChange={setCriteria}
-            onSearch={performSearch} 
-            isLoading={loading}
+          criteria={criteria}
+          onCriteriaChange={setCriteria}
+          onSearch={performSearch} 
+          isLoading={loading}
         />
       </Paper>
 
       {hasSearched && (
-        <Paper elevation={2} sx={{p: 2}}>
-            {filterContextText && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Showing results based on dashboard selection — {filterContextText}
-              </Alert>
-            )}
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                Search Results
-            </Typography>
-            <IncidentDataGrid rows={searchResults} loading={loading} />
+        <Paper elevation={2} sx={{ p: 2 }}>
+          {filterContextText && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Showing results based on dashboard selection — {filterContextText}
+            </Alert>
+          )}
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            Search Results
+          </Typography>
+          <IncidentDataGrid rows={searchResults} loading={loading} />
         </Paper>
       )}
     </Stack>

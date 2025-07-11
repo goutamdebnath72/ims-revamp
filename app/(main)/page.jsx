@@ -1,22 +1,36 @@
-"use client";
+'use client';
 
 import * as React from 'react';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
 import AdminDashboard from '@/components/AdminDashboard';
 import StandardUserDashboard from '@/components/StandardUserDashboard';
 import { Box, CircularProgress } from '@mui/material';
 
 export default function DashboardPage() {
-    const { user } = React.useContext(UserContext);
+  const { data: session, status } = useSession();
 
-    if (!user) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <CircularProgress />
-            </Box>
-        );
+  console.log("Session:", session);
+  console.log("Status:", status);
+
+  if (status === 'loading') {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
     }
+    return null;
+  }
 
-    // This line now shows the AdminDashboard for both 'admin' and 'sys_admin' roles
-    return user.role === 'admin' || user.role === 'sys_admin' ? <AdminDashboard /> : <StandardUserDashboard />;
+  const role = session?.user?.role;
+  console.log("Session user:", session?.user);
+console.log("Session role:", session?.user?.role);
+
+
+  return role === 'admin' || role === 'sys_admin' ? <AdminDashboard /> : <StandardUserDashboard />;
 }

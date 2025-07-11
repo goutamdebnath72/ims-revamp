@@ -1,28 +1,25 @@
-"use client";
+// app/providers.jsx
+'use client';
 
-import * as React from 'react';
-
-// Import all your providers and the date adapter
-import UserProvider from '@/context/UserContext';
+import AuthSessionProvider from '@/components/SessionProvider';
 import NotificationProvider from '@/context/NotificationContext';
 import SettingsProvider from '@/context/SettingsContext';
 import IncidentProvider from '@/context/IncidentContext';
-import { LocalizationProvider } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 export function AppProviders({ children }) {
   return (
-    // Wrap everything in the LocalizationProvider
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <UserProvider>
-        <NotificationProvider>
-          <SettingsProvider>
-            <IncidentProvider>
+    <AuthSessionProvider>
+      <NotificationProvider>
+        <SettingsProvider>
+          <IncidentProvider>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
               {children}
-            </IncidentProvider>
-          </SettingsProvider>
-        </NotificationProvider>
-      </UserProvider>
-    </LocalizationProvider>
+            </LocalizationProvider>
+          </IncidentProvider>
+        </SettingsProvider>
+      </NotificationProvider>
+    </AuthSessionProvider>
   );
 }

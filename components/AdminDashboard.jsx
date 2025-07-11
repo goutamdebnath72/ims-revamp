@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { IncidentContext } from '@/context/IncidentContext';
-import { UserContext } from '@/context/UserContext';
 import { isSystemIncident } from '@/lib/incident-helpers';
 import { getCurrentShift } from '@/lib/date-helpers';
 import { formatISO, startOfWeek, startOfMonth, endOfDay, format, isWithinInterval, parse, isValid, getHours, startOfDay } from 'date-fns';
@@ -16,10 +15,13 @@ import StatusChart from '@/components/StatusChart';
 import PriorityChart from '@/components/PriorityChart';
 import TeamAvailabilityCard from '@/components/TeamAvailabilityCard';
 import RecentIncidentsCard from '@/components/RecentIncidentsCard';
+import { useSession } from "next-auth/react";
 
 export default function AdminDashboard() {
     const { incidents } = React.useContext(IncidentContext);
-    const { user } = React.useContext(UserContext);
+    const { data: session } = useSession();
+    const user = session?.user;
+
     const [view, setView] = React.useState('system');
     const [dateRange, setDateRange] = React.useState({ start: null, end: null });
     const [shift, setShift] = React.useState('All');
@@ -128,95 +130,99 @@ export default function AdminDashboard() {
     
     const showTeamAvailability = user?.role === 'admin' || (user?.role === 'sys_admin' && view === 'general');
 
-  return (
-    <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+    return (
+      <Stack spacing={3}>
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>Dashboard</Typography>
           {user?.role === 'sys_admin' && (
             <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-                <ToggleButtonGroup value={view} exclusive onChange={handleViewChange} aria-label="Dashboard view">
-                    <ToggleButton value="system" aria-label="system view">System View</ToggleButton>
-                    <ToggleButton value="general" aria-label="general view">General View</ToggleButton>
-                </ToggleButtonGroup>
+              <ToggleButtonGroup value={view} exclusive onChange={handleViewChange} aria-label="Dashboard view">
+                <ToggleButton value="system" aria-label="system view">System View</ToggleButton>
+                <ToggleButton value="general" aria-label="general view">General View</ToggleButton>
+              </ToggleButtonGroup>
             </Box>
           )}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
             {shift !== 'All' && <Chip label={`Shift: ${shift}`} color="secondary" size="small" variant="outlined" />}
             <Button id="date-range-button" variant="outlined" onClick={handleClick} startIcon={<EventIcon />}>{formatDateRange()}</Button>
           </Box>
-          
-          <Menu id="date-range-menu" anchorEl={anchorEl} open={open} onClose={handleClose}>
-             <MenuItem onClick={() => setPresetRange('today')}>Today</MenuItem>
-             <MenuItem onClick={() => setPresetRange('week')}>This Week</MenuItem>
-            <MenuItem onClick={() => setPresetRange('month')}>This Month</MenuItem>
-            <MenuItem onClick={() => setPresetRange('all')}>All Time</MenuItem>
-            <Divider />
-            <Box sx={{ p: 2, pt: 1 }}>
-                <Typography variant="overline" display="block" sx={{ mb: 2 }}>Custom Range</Typography>
-                <Stack spacing={2}>
-                    <DatePicker label="Start Date" value={dateRange.start} onChange={(newValue) => setDateRange(prev => ({...prev, start: newValue}))} />
-                    <DatePicker label="End Date" value={dateRange.end} onChange={(newValue) => setDateRange(prev => ({...prev, end: newValue}))} />
-                </Stack>
-            </Box>
-            <Divider />
-            <Box sx={{ p: 2, pt: 1 }}>
-                <Typography variant="overline" display="block">Filter by Shift</Typography>
-                <ToggleButtonGroup
-                    value={shift}
-                    exclusive
-                    onChange={handleShiftChange}
-                    aria-label="Shift filter"
-                    size="small"
-                    sx={{ mt: 1 }}
-                >
-                    <ToggleButton value="All" aria-label="all shifts">All</ToggleButton>
-                    <ToggleButton value="A" aria-label="a shift">A</ToggleButton>
-                    <ToggleButton value="B" aria-label="b shift">B</ToggleButton>
-                    <ToggleButton value="C" aria-label="c shift">C</ToggleButton>
-                </ToggleButtonGroup>
-            </Box>
-          </Menu>
-      </Stack>
-      
-      <Stack direction="row" spacing={3}>
+        </Stack>
+
+        {/* Menu & Filters */}
+        <Menu id="date-range-menu" anchorEl={anchorEl} open={open} onClose={handleClose}>
+          <MenuItem onClick={() => setPresetRange('today')}>Today</MenuItem>
+          <MenuItem onClick={() => setPresetRange('week')}>This Week</MenuItem>
+          <MenuItem onClick={() => setPresetRange('month')}>This Month</MenuItem>
+          <MenuItem onClick={() => setPresetRange('all')}>All Time</MenuItem>
+          <Divider />
+          <Box sx={{ p: 2, pt: 1 }}>
+            <Typography variant="overline" display="block" sx={{ mb: 2 }}>Custom Range</Typography>
+            <Stack spacing={2}>
+              <DatePicker label="Start Date" value={dateRange.start} onChange={(newValue) => setDateRange(prev => ({...prev, start: newValue}))} />
+              <DatePicker label="End Date" value={dateRange.end} onChange={(newValue) => setDateRange(prev => ({...prev, end: newValue}))} />
+            </Stack>
+          </Box>
+          <Divider />
+          <Box sx={{ p: 2, pt: 1 }}>
+            <Typography variant="overline" display="block">Filter by Shift</Typography>
+            <ToggleButtonGroup
+              value={shift}
+              exclusive
+              onChange={handleShiftChange}
+              aria-label="Shift filter"
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              <ToggleButton value="All" aria-label="all shifts">All</ToggleButton>
+              <ToggleButton value="A" aria-label="a shift">A</ToggleButton>
+              <ToggleButton value="B" aria-label="b shift">B</ToggleButton>
+              <ToggleButton value="C" aria-label="c shift">C</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        </Menu>
+
+        {/* Stat Cards */}
+        <Stack direction="row" spacing={3}>
           {statCardsData.map((card, index) => (
             <Box key={index} sx={{ flex: 1, textDecoration: 'none' }}>
-                <Card elevation={3} sx={{ height: '100%' }}>
-                  <CardActionArea component={Link} href={constructCardUrl(card.filterStatus)} sx={{ height: '100%' }}>
-                    <CardContent sx={{ textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>{card.title}</Typography>
-                        <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
-                          <CountUp end={card.value} duration={1.5} separator="," />
-                        </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
+              <Card elevation={3} sx={{ height: '100%' }}>
+                <CardActionArea component={Link} href={constructCardUrl(card.filterStatus)} sx={{ height: '100%' }}>
+                  <CardContent sx={{ textAlign: 'center', minHeight: 120, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>{card.title}</Typography>
+                    <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
+                      <CountUp end={card.value} duration={1.5} separator="," />
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
             </Box>
           ))}
-      </Stack>
+        </Stack>
 
-      {showTeamAvailability ? (
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+        {/* Charts and Cards */}
+        {showTeamAvailability ? (
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <Stack sx={{ flex: 7 }} spacing={3}>
-                <StatusChart data={statusChartData} />
-                <RecentIncidentsCard incidents={filteredIncidents} />
+              <StatusChart data={statusChartData} />
+              <RecentIncidentsCard incidents={filteredIncidents} />
             </Stack>
             <Stack sx={{ flex: 5 }} spacing={3}>
-                <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
-                <TeamAvailabilityCard />
+              <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
+              <TeamAvailabilityCard />
             </Stack>
-        </Stack>
-      ) : (
-        <Stack spacing={3}>
+          </Stack>
+        ) : (
+          <Stack spacing={3}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
-                <Box sx={{ flex: 7 }}><StatusChart data={statusChartData} /></Box>
-                <Box sx={{ flex: 5 }}>
-                  <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
-                </Box>
+              <Box sx={{ flex: 7 }}><StatusChart data={statusChartData} /></Box>
+              <Box sx={{ flex: 5 }}>
+                <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
+              </Box>
             </Stack>
             <RecentIncidentsCard incidents={filteredIncidents} />
-        </Stack>
-      )}
-    </Stack>
-  );
+          </Stack>
+        )}
+      </Stack>
+    );
 }

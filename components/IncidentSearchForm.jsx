@@ -1,7 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
-import { UserContext } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
 import { incidentTypes } from '@/lib/incident-types';
 import { departments } from '@/lib/departments.js';
 import { isSystemIncident } from '@/lib/incident-helpers';
@@ -17,7 +17,8 @@ const priorities = ['Any', 'Low', 'Medium', 'High'];
 const categories = ['Any', 'System', 'General'];
 
 function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading }) {
-  const { user } = React.useContext(UserContext);
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const filteredIncidentTypes = React.useMemo(() => {
     if (user?.role === 'sys_admin') {
@@ -53,7 +54,6 @@ function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading })
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box component="form" onSubmit={handleSubmit} noValidate>
         
-        {/* --- CONDITIONAL LAYOUT RENDERING --- */}
         {isCnIT ? (
           // LAYOUT FOR ADMIN & SYS_ADMIN USERS (2-Row Structure)
           <Stack spacing={2}>
@@ -92,7 +92,7 @@ function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading })
               <TextField select sx={{minWidth: 150}} label="Priority" name="priority" value={criteria.priority} onChange={handleChange} size="small">
                 {priorities.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
               </TextField>
-              {user.role === 'sys_admin' && (
+              {user?.role === 'sys_admin' && (
                 <TextField select sx={{minWidth: 150}} label="Category" name="category" value={criteria.category} onChange={handleChange} size="small">
                   {categories.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
                 </TextField>
@@ -100,20 +100,18 @@ function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading })
               <DatePicker label="Start Date" value={criteria.dateRange.start} onChange={(val) => handleDateChange('start', val)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
               <DatePicker label="End Date" value={criteria.dateRange.end} onChange={(val) => handleDateChange('end', val)} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
               <Tooltip title="By default, search is limited to the last 30 days." placement="top" arrow>
-                  <IconButton size="small">
-                      <InfoOutlinedIcon color="action" fontSize="small" />
-                  </IconButton>
+                <IconButton size="small">
+                    <InfoOutlinedIcon color="action" fontSize="small" />
+                </IconButton>
               </Tooltip>
               <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button type="submit" variant="contained" startIcon={<SearchIcon />} size="large" disabled={isLoading} sx={{ height: '40px', width: '120px' }}>
-                      {isLoading ? 'Searching...' : 'Search'}
-                  </Button>
+                <Button type="submit" variant="contained" startIcon={<SearchIcon />} size="large" disabled={isLoading} sx={{ height: '40px', width: '120px' }}>
+                  {isLoading ? 'Searching...' : 'Search'}
+                </Button>
               </Box>
             </Stack>
           </Stack>
-
         ) : (
-
           // LAYOUT FOR NON-C&IT USERS (Clean Single-Row Structure)
           <Stack direction="row" spacing={2} alignItems="center">
             <TextField sx={{ flex: '2 1 200px' }} label="Incident ID" name="incidentId" value={criteria.incidentId} onChange={handleChange} size="small" />
@@ -130,7 +128,6 @@ function IncidentSearchForm({ criteria, onCriteriaChange, onSearch, isLoading })
               {isLoading ? 'Searching...' : 'Search'}
             </Button>
           </Stack>
-          
         )}
       </Box>
     </LocalizationProvider>
