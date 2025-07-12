@@ -1,9 +1,9 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MOCK_USER_DB } from "@/lib/citusers";
-import { getCurrentShift } from "@/lib/date-helpers"; // Import the helper function
+import { getCurrentShift } from "@/lib/date-helpers";
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -13,63 +13,86 @@ const handler = NextAuth({
       },
       authorize(credentials) {
         const user = MOCK_USER_DB[credentials.userId];
-
         if (user && user.password === credentials.password) {
           return {
             id: user.ticketNo,
             name: user.name,
             role: user.role,
-            email: user.emailSail || user.emailNic || "",
+            emailSail: user.emailSail,
+            emailNic: user.emailNic,
+            sailpno: user.sailpno,
             departmentCode: user.departmentCode,
-            loginShift: getCurrentShift(), // Add the user's login shift
+            loginShift: getCurrentShift(),
+            designation: user.designation,
+            department: user.department,
+            mobileNo: user.mobileNo,
           };
         }
-
         if (
           credentials.userId === "111111" &&
           credentials.password === "password"
         ) {
           return {
-            id: "111111",
-            name: "Standard User",
-            role: "standard",
-            email: "",
-            departmentCode: 0,
-            loginShift: getCurrentShift(), // Add the user's login shift
+            id: "111111", name: "Standard User", role: "standard",
+            emailSail: '', emailNic: '', sailpno: 'N/A', departmentCode: 0,
+            loginShift: getCurrentShift(), designation: 'N/A', department: 'N/A', mobileNo: 'N/A',
           };
         }
-        
         return null;
       },
     }),
   ],
+  // --- THIS IS THE NEW SECTION ---
+  // This configuration creates a session cookie that is deleted on browser close.
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
   session: {
     strategy: "jwt",
-    // We do not set maxAge here, as the logout is now handled by our custom logic
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.name = user.name;
-        token.email = user.email;
+        token.emailSail = user.emailSail;
+        token.emailNic = user.emailNic;
+        token.sailpno = user.sailpno;
         token.departmentCode = user.departmentCode;
-        token.loginShift = user.loginShift; // Persist loginShift to the token
+        token.loginShift = user.loginShift;
+        token.designation = user.designation;
+        token.department = user.department;
+        token.mobileNo = user.mobileNo;
       }
       return token;
     },
     async session({ session, token }) {
+      session.user.id = token.sub;
       session.user.role = token.role;
       session.user.name = token.name;
-      session.user.email = token.email;
+      session.user.emailSail = token.emailSail;
+      session.user.emailNic = token.emailNic;
+      session.user.sailpno = token.sailpno;
       session.user.departmentCode = token.departmentCode;
-      session.user.loginShift = token.loginShift; // Make loginShift available in the session
+      session.user.loginShift = token.loginShift;
+      session.user.designation = token.designation;
+      session.user.department = token.department;
+      session.user.mobileNo = token.mobileNo;
       return session;
     },
   },
   pages: {
     signIn: "/login",
   },
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

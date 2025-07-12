@@ -23,12 +23,11 @@ export function generateIncidentPdf(incident, auditTrail) {
   doc.setLineWidth(0.5);
   doc.line(margin, currentY, pageWidth - margin, currentY);
   currentY += 8;
-
-  // --- NEW: Two-Column Layout for Incident Details ---
-
-  // 1. Prepare the data for two columns
-  const displayEmailSail = incident.emailSail?.endsWith('@saildsp.co.in') ? incident.emailSail : 'N/A';
-  const displayEmailNic = incident.emailNic?.endsWith('@sail.in') ? incident.emailNic : 'N/A';
+  
+  // --- Incident Details ---
+  // CORRECTED: Simplified email logic to be more robust.
+  const displayEmailSail = incident.emailSail || 'N/A';
+  const displayEmailNic = incident.emailNic || 'N/A';
 
   const leftColumnDetails = [
       { label: "Incident No.", value: incident.id },
@@ -40,69 +39,63 @@ export function generateIncidentPdf(incident, auditTrail) {
       { label: "Email ID", value: displayEmailSail },
       { label: "IP Address", value: incident.ipAddress },
   ];
-
+  
   const rightColumnDetails = [
       { label: "Status", value: incident.status },
       { label: "Priority", value: incident.priority },
       { label: "", value: "" }, // Placeholder to align with Job Title
       { label: "", value: "" }, // Placeholder to align with Description
       { label: "Ticket No.", value: incident.ticketNo },
-      { label: "SAIL P/No", value: incident.sailPNo },
+      // CORRECTED: This now uses the standardized 'sailpno' property
+      { label: "SAIL P/No", value: incident.sailpno },
       { label: "Email ID (NIC)", value: displayEmailNic },
       { label: "Job From", value: incident.jobFrom },
   ];
   
-  // 2. Define layout parameters
   const colWidth = (pageWidth - (margin * 2)) / 2;
   const labelWidth = 40;
   const valueWidth = colWidth - labelWidth;
   const rightColX = margin + colWidth;
-  const lineHeight = 5; // Approx height for a single line of text
+  const lineHeight = 5;
   const padding = 2;
   
   doc.setFontSize(10);
   doc.setLineWidth(0.2);
-
-  // 3. Loop and draw both columns simultaneously
+  
   const rowCount = Math.max(leftColumnDetails.length, rightColumnDetails.length);
   for (let i = 0; i < rowCount; i++) {
       const leftItem = leftColumnDetails[i] || { label: '', value: '' };
       const rightItem = rightColumnDetails[i] || { label: '', value: '' };
-
       const leftValueText = doc.splitTextToSize(String(leftItem.value || 'N/A'), valueWidth - (padding * 2));
       const rightValueText = doc.splitTextToSize(String(rightItem.value || 'N/A'), valueWidth - (padding * 2));
-      
       const rowHeight = Math.max(leftValueText.length, rightValueText.length) * lineHeight + (padding * 2);
 
       // Draw Left Column
-      doc.setFillColor(240, 240, 240); // Light Grey
+      doc.setFillColor(240, 240, 240);
       doc.rect(margin, currentY, labelWidth, rowHeight, 'F');
       doc.text(leftItem.label, margin + padding, currentY + padding + lineHeight - 1);
-      
-      doc.setFillColor(255, 255, 255); // White
+      doc.setFillColor(255, 255, 255);
       doc.rect(margin + labelWidth, currentY, valueWidth, rowHeight, 'F');
       doc.text(leftValueText, margin + labelWidth + padding, currentY + padding + lineHeight - 1);
       
       // Draw Right Column
       if (rightItem.label) {
-          doc.setFillColor(240, 240, 240); // Light Grey
+          doc.setFillColor(240, 240, 240);
           doc.rect(rightColX, currentY, labelWidth, rowHeight, 'F');
           doc.text(rightItem.label, rightColX + padding, currentY + padding + lineHeight - 1);
-          
-          doc.setFillColor(255, 255, 255); // White
+          doc.setFillColor(255, 255, 255);
           doc.rect(rightColX + labelWidth, currentY, valueWidth, rowHeight, 'F');
           doc.text(rightValueText, rightColX + labelWidth + padding, currentY + padding + lineHeight - 1);
       }
 
       // Draw borders for the row
       doc.rect(margin, currentY, colWidth * 2, rowHeight);
-      
       currentY += rowHeight;
   }
   
-  currentY += 10; // Space before the next table
+  currentY += 10;
 
-  // --- Audit Trail Table (Unchanged) ---
+  // --- Audit Trail Table ---
   autoTable(doc, {
     startY: currentY,
     head: [["Timestamp", "Author", "Action", "Comment"]],

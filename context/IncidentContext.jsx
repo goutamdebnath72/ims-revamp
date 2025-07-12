@@ -1,97 +1,59 @@
-// File: context/IncidentContext.jsx
 "use client";
 
 import * as React from "react";
-import { mockIncidents } from "@/lib/mock-data";
-import { isSystemIncident } from "@/lib/incident-helpers";
 import { NotificationContext } from "./NotificationContext";
-import useSound from "@/hooks/useSound";
-import { useSession } from "next-auth/react";
 
 export const IncidentContext = React.createContext(null);
 
 export default function IncidentProvider({ children }) {
-  const { data: session } = useSession();
-  const user = session?.user;
-  const [incidents, setIncidents] = React.useState(mockIncidents);
+  const [incidents, setIncidents] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const { showNotification } = React.useContext(NotificationContext);
-  const playNotificationSound = useSound("/notification.mp3");
 
-  const addIncident = (newIncidentData) => {
-    if (!user) return;
-
-    const newId = Math.max(...incidents.map((i) => i.id)) + 1;
-
-    const newIncident = {
-      ...newIncidentData,
-      id: newId,
-      status: "New",
-      reportedOn:
-        new Date()
-          .toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "2-digit",
-          })
-          .replace(/ /g, " ") +
-        ", " +
-        new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      requestor: user.name,
-      ticketNo: user.ticketNo,
-      department: user.department,
-      contactNumber: user.contactNumber,
-      sailPNo: user.sailPNo,
-      emailSail: user.emailSail,
-      emailNic: user.emailNic,
-      ipAddress: "10.141.27.53",
-      jobFrom: user.name,
-      isTypeLocked: false,
-      isPriorityLocked: false,
-      auditTrail: [],
-    };
-
-    setIncidents((prevIncidents) => [newIncident, ...prevIncidents]);
-
-    if (isSystemIncident(newIncident) && user?.role === "sys_admin") {
-      playNotificationSound();
-      showNotification(
-        {
-          title: `New System Incident Raised: #${newIncident.id}`,
-          message: `${newIncident.requestor} reported a system issue: "${newIncident.incidentType}"`,
-        },
-        "info"
-      );
+  const fetchIncidents = React.useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/incidents');
+      if (!response.ok) {
+        throw new Error('Failed to fetch incidents');
+      }
+      const data = await response.json();
+      setIncidents(data);
+    } catch (error) {
+      console.error(error);
+      showNotification({ title: 'Error', message: 'Could not load incident data.' }, 'error');
+    } finally {
+      setIsLoading(false);
     }
+  }, [showNotification]);
 
-    if (!isSystemIncident(newIncident) && user?.role === "admin") {
-      playNotificationSound();
-      showNotification(
-        {
-          title: `New General Incident Raised: #${newIncident.id}`,
-          message: `${newIncident.requestor} reported a new issue: "${newIncident.incidentType}"`,
-        },
-        "success"
-      );
+  React.useEffect(() => {
+    fetchIncidents();
+  }, [fetchIncidents]);
+
+  // UPDATED: This function now sends the update to our new API
+  const updateIncident = async (incidentId, updatedData) => {
+    try {
+      const response = await fetch(`/api/incidents/${incidentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Server responded with an error during update');
+      }
+
+      // After a successful update, refetch all data to ensure UI is in sync
+      await fetchIncidents();
+
+    } catch (error) {
+      console.error('Failed to update incident:', error);
+      showNotification({ title: 'Error', message: 'Failed to save update.' }, 'error');
     }
-
-    return newIncident;
   };
 
-  const updateIncident = (incidentId, updatedData) => {
-    setIncidents((prevIncidents) =>
-      prevIncidents.map((incident) =>
-        incident.id.toString() === incidentId.toString()
-          ? { ...incident, ...updatedData }
-          : incident
-      )
-    );
-  };
-
-  const value = { incidents, addIncident, updateIncident };
+  const value = { incidents, isLoading, updateIncident, refetchIncidents: fetchIncidents };
 
   return (
     <IncidentContext.Provider value={value}>

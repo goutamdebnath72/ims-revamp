@@ -19,14 +19,15 @@ export default function IncidentDetailsPage() {
   const params = useParams();
   const { incidents, updateIncident } = React.useContext(IncidentContext);
   const { showNotification } = React.useContext(NotificationContext);
-
-  // Replaced UserContext with the useSession hook from NextAuth
   const { data: session } = useSession();
   const user = session?.user;
 
   const incident = incidents.find(inc => inc.id.toString() === params.id);
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const auditTrailRef = React.useRef(null);
+  
+  // This new state manages the expand/collapse feature
+  const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
 
   React.useEffect(() => {
     setTimeout(() => {
@@ -44,23 +45,24 @@ export default function IncidentDetailsPage() {
       incident.status === 'New' && user && C_AND_IT_DEPT_CODES.includes(user.departmentCode)
       ? 'Processed'
       : incident.status;
+
     if (newStatus !== incident.status) {
-        updatedFields.status = newStatus;
+      updatedFields.status = newStatus;
     }
     
     const typeChanged = newType && newType !== incident.incidentType && !incident.isTypeLocked;
     const priorityChanged = newPriority && newPriority !== incident.priority && !incident.isPriorityLocked;
 
     if (typeChanged) {
-        updatedFields.incidentType = newType;
-        updatedFields.isTypeLocked = true;
-        actionDescription.push(`Incident Type changed to "${newType}".`);
+      updatedFields.incidentType = newType;
+      updatedFields.isTypeLocked = true;
+      actionDescription.push(`Incident Type changed to "${newType}".`);
     }
 
     if (priorityChanged) {
-        updatedFields.priority = newPriority;
-        updatedFields.isPriorityLocked = true;
-        actionDescription.push(`Priority changed to "${newPriority}".`);
+      updatedFields.priority = newPriority;
+      updatedFields.isPriorityLocked = true;
+      actionDescription.push(`Priority changed to "${newPriority}".`);
     }
 
     const finalComment = actionDescription.length > 0 
@@ -69,11 +71,11 @@ export default function IncidentDetailsPage() {
       
     let actionText = 'Action Taken';
     if (typeChanged && priorityChanged) {
-        actionText = 'Details Updated';
+      actionText = 'Details Updated';
     } else if (typeChanged) {
-        actionText = 'Incident Type Changed';
+      actionText = 'Incident Type Changed';
     } else if (priorityChanged) {
-        actionText = 'Priority Changed';
+      actionText = 'Priority Changed';
     }
 
     const newAuditEntry = {
@@ -85,8 +87,8 @@ export default function IncidentDetailsPage() {
     };
 
     updateIncident(params.id, {
-        ...updatedFields,
-        auditTrail: [...(incident.auditTrail || []), newAuditEntry]
+      ...updatedFields,
+      auditTrail: [...(incident.auditTrail || []), newAuditEntry]
     });
     showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
   };
@@ -106,8 +108,8 @@ export default function IncidentDetailsPage() {
       rating: rating,
     };
     updateIncident(params.id, {
-        status: newStatus,
-        auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
+      status: newStatus,
+      auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
     });
     showNotification({ title: `Incident ${newStatus}`, message: `The incident has been successfully ${newStatus.toLowerCase()}.` }, 'success');
   };
@@ -152,27 +154,33 @@ export default function IncidentDetailsPage() {
               incident={incident}
               isResolved={isResolved}
               onCommentEdit={handleCommentEdit}
+              isExpanded={false}
+              onToggleExpand={() => {}}
             />
           </Box>
         ) : (
           <Stack 
-            spacing={3} 
+            spacing={isAuditTrailExpanded ? 0 : 3} 
             sx={{ flex: 5, minWidth: 0 }}
           >
-            <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
+            <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex', position: 'relative' }}>
                <IncidentAuditTrail
                   ref={auditTrailRef}
                   auditTrail={incident.auditTrail || []}
                   incident={incident}
                   isResolved={isResolved}
                   onCommentEdit={handleCommentEdit}
+                  isExpanded={isAuditTrailExpanded}
+                  onToggleExpand={() => setIsAuditTrailExpanded(prev => !prev)}
                />
             </Box>
-            <IncidentActionForm 
-              incident={incident}
-              onUpdate={handleUpdate} 
-              onOpenResolveDialog={() => setDialogOpen(true)}
-            />
+            {!isAuditTrailExpanded && (
+              <IncidentActionForm 
+                incident={incident}
+                onUpdate={handleUpdate} 
+                onOpenResolveDialog={() => setDialogOpen(true)}
+              />
+            )}
           </Stack>
         )}
       </Box>

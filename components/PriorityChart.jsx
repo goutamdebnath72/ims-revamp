@@ -6,40 +6,38 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { Paper, Typography, Box } from '@mui/material';
 import { formatISO } from 'date-fns';
 
-const COLORS = {
-    High: '#f44336', // error.main
-    Medium: '#ed6c02', // warning.main
-    Low: '#6c757d', // grey
-};
+const COLORS = { High: '#f44336', Medium: '#ed6c02', Low: '#6c757d' };
 
-// --- FIX: Component now accepts 'view' and 'dateRange' props ---
-export default function PriorityChart({ data, view, dateRange, userRole }) {
+// UPDATED: Added 'shift' to the component's props
+export default function PriorityChart({ data, view, dateRange, userRole, shift }) {
   const router = useRouter();
   const hasData = data.some(item => item.value > 0);
 
-  // --- FIX: Click handler now builds a "smart" URL with all necessary context ---
   const handlePieClick = (data) => {
     if (data && data.name) {
       const category = userRole === 'sys_admin' ? view : 'general';
       const params = new URLSearchParams();
       params.append('priority', data.name);
       params.append('category', category);
+      params.append('status', 'open'); // Ensure we are searching for open incidents
+
+      // UPDATED: Add the shift parameter to the URL if it is active
+      if (shift && shift !== 'All') {
+        params.append('shift', shift);
+      }
 
       if (dateRange.start) {
-          params.append('startDate', formatISO(dateRange.start, { representation: 'date' }));
+        params.append('startDate', formatISO(dateRange.start, { representation: 'date' }));
       }
       if (dateRange.end) {
-          params.append('endDate', formatISO(dateRange.end, { representation: 'date' }));
+        params.append('endDate', formatISO(dateRange.end, { representation: 'date' }));
       }
       router.push(`/search?${params.toString()}`);
     }
   };
 
   return (
-    <Paper 
-      elevation={3} 
-      sx={{ p: 3, height: '400px' }}
-    >
+    <Paper elevation={3} sx={{ p: 3, height: '400px' }}>
       <Typography variant="h6" gutterBottom>
         Open Incidents by Priority
       </Typography>

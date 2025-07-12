@@ -1,4 +1,3 @@
-// File: app/(main)/raise/page.jsx
 "use client";
 
 import * as React from "react";
@@ -14,16 +13,22 @@ import AlertTitle from "@mui/material/AlertTitle";
 import Button from "@mui/material/Button";
 import RaiseIncidentForm from "@/components/RaiseIncidentForm";
 
-const C_AND_IT_DEPT_CODES = [98540, 98541, 98500];
+// --- ADD THESE IMPORTS ---
+import useSound from "@/hooks/useSound";
+import { isSystemIncident } from "@/lib/incident-helpers";
 
 export default function RaiseIncidentPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { addIncident } = React.useContext(IncidentContext);
   const { showNotification } = React.useContext(NotificationContext);
+  const { refetchIncidents } = React.useContext(IncidentContext); 
+
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);
-
+  
+  // --- ADD THIS HOOK TO PREPARE THE SOUND ---
+  const playNotificationSound = useSound("/notification.mp3");
+  
   const user = session?.user;
 
   if (status === "loading") return null;
@@ -35,37 +40,47 @@ export default function RaiseIncidentPage() {
     );
   }
 
-  const handleFormSubmit = (formData) => {
+  const handleFormSubmit = async (formData) => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      try {
-        const newIncident = addIncident(formData);
-        setSubmittedIncidentId(newIncident.id);
+    try {
+      const response = await fetch('/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-        const isCITEmployee =
-          user && C_AND_IT_DEPT_CODES.includes(user.departmentCode);
-        if (!isCITEmployee) {
-          showNotification(
-            {
-              title: "Success!",
-              message: `Your incident #${newIncident.id} has been submitted.`,
-            },
-            "success"
-          );
-        }
-      } catch (error) {
-        showNotification(
-          {
-            title: "Error",
-            message: "Failed to submit incident. Please try again.",
-          },
-          "error"
-        );
-        console.error(error);
-      } finally {
-        setIsSubmitting(false);
+      if (!response.ok) {
+        throw new Error('Server responded with an error');
       }
-    }, 1000);
+
+      const newIncident = await response.json();
+      setSubmittedIncidentId(newIncident.id);
+
+      if (refetchIncidents) {
+        refetchIncidents();
+      }
+      
+      showNotification(
+        { title: "Success!", message: `Your incident #${newIncident.id} has been submitted.` }, "success"
+      );
+
+      // --- ADD THIS LOGIC TO PLAY THE SOUND FOR ADMINS/SYS_ADMINS ---
+      if (isSystemIncident(newIncident) && user?.role === "sys_admin") {
+        playNotificationSound();
+      }
+      if (!isSystemIncident(newIncident) && user?.role === "admin") {
+        playNotificationSound();
+      }
+      // --- END OF NEW LOGIC ---
+
+    } catch (error) {
+      showNotification(
+        { title: "Error", message: "Failed to submit incident. Please try again." }, "error"
+      );
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRaiseAnother = () => {
@@ -75,7 +90,6 @@ export default function RaiseIncidentPage() {
   return (
     <Stack spacing={4}>
       <Typography variant="h4">Raise a New Incident</Typography>
-
       <Paper elevation={2} sx={{ p: 4 }}>
         {submittedIncidentId ? (
           <Stack spacing={3} alignItems="center">

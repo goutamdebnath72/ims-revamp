@@ -1,4 +1,3 @@
-// File: components/IncidentAuditTrail.jsx
 "use client";
 
 import * as React from "react";
@@ -14,15 +13,21 @@ import DownloadIcon from "@mui/icons-material/Download";
 import Rating from '@mui/material/Rating';
 import { generateIncidentPdf } from "@/utils/pdfGenerators";
 import EditableComment from './EditableComment';
+import IconButton from '@mui/material/IconButton';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
   auditTrail,
   incident,
   isResolved,
   onCommentEdit,
+  isExpanded,
+  onToggleExpand,
 }, ref) {
 
   const scrollContainerRef = React.useRef(null);
+  const [canExpand, setCanExpand] = React.useState(false);
 
   React.useImperativeHandle(ref, () => ({
     scrollToBottom() {
@@ -32,9 +37,24 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
     }
   }), []);
 
+  React.useEffect(() => {
+    const checkOverflow = () => {
+      if (scrollContainerRef.current) {
+        const { scrollHeight, clientHeight } = scrollContainerRef.current;
+        setCanExpand(scrollHeight > clientHeight);
+      }
+    };
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [auditTrail]);
+
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
   };
+
+  const isProcessed = incident.status === 'Processed';
+  const showExpandButton = canExpand && isProcessed;
 
   if (!auditTrail || auditTrail.length === 0) {
     return (
@@ -49,7 +69,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
+      sx={{ p: 3, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}
     >
       <Box sx={{ flexShrink: 0 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -77,7 +97,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                 <ListItemText
                   primary={
                     <React.Fragment>
-                       <Typography component="span" variant="body1" sx={{ 
+                      <Typography component="span" variant="body1" sx={{ 
                           display: "block", 
                           fontWeight: "bold", 
                           color: isResolvedEntry ? "#4CAF50" : "text.primary" 
@@ -89,7 +109,6 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                         author={entry.author}
                         isEdited={entry.isEdited}
                         onSave={(newComment) => onCommentEdit(index, newComment)}
-                        // --- NEW: Passing incident status down to the comment component ---
                         incidentStatus={incident.status}
                       />
                       {entry.rating && (
@@ -109,10 +128,33 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail({
                 />
               </ListItem>
               {index < auditTrail.length - 1 && <Divider component="li" />}
-             </React.Fragment>
+            </React.Fragment>
           );
         })}
       </List>
+      
+      {showExpandButton && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: -20,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bgcolor: 'background.paper',
+            borderRadius: '50%',
+            p: 0.25,
+          }}
+        >
+          <IconButton
+            size="medium"
+            onClick={onToggleExpand}
+            sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'background.default' }}
+            aria-label={isExpanded ? "Collapse audit trail" : "Expand audit trail"}
+          >
+            {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </Box>
+      )}
     </Paper>
   );
 });

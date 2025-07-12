@@ -1,4 +1,3 @@
-// File: components/RaiseIncidentForm.jsx
 'use client';
 
 import * as React from 'react';
@@ -29,13 +28,11 @@ const contactTooltipText = (
     </ul>
   </Box>
 );
-
 const jobTitleTooltipText = (
   <Typography color="inherit">
     Think of this as the <b>Subject Line</b> of an email. Provide a short, clear summary of the issue.
   </Typography>
 );
-
 const descriptionTooltipText = (
   <Typography color="inherit">
     Think of this as the <b>Body</b> of an email. Provide all the details, error messages, and steps you've already tried.
@@ -46,7 +43,8 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const { data: session } = useSession();
   const user = session?.user;
 
-  const isExecutive = user?.ticketNo?.startsWith('4');
+  // UPDATED: Changed user.ticketNo to user.id
+  const isExecutive = user?.id?.startsWith('4');
 
   const [formData, setFormData] = React.useState({
     incidentType: '',
@@ -57,7 +55,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     jobTitle: '',
     description: '',
   });
-
   const [errors, setErrors] = React.useState({});
 
   const validateField = (name, value) => {
@@ -218,7 +215,8 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             fullWidth
             disabled
             label="Ticket No."
-            value={user?.ticketNo || ''}
+            // UPDATED: Changed user.ticketNo to user.id
+            value={user?.id || ''}
           />
           <TextField
             fullWidth

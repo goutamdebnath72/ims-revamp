@@ -7,7 +7,22 @@ import { isSystemIncident } from '@/lib/incident-helpers';
 import { getCurrentShift } from '@/lib/date-helpers';
 import { formatISO, startOfWeek, startOfMonth, endOfDay, format, isWithinInterval, parse, isValid, getHours, startOfDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { Stack, Button, Menu, MenuItem, Divider, Box, CardActionArea, ToggleButtonGroup, ToggleButton, Typography, Card, CardContent, Chip } from '@mui/material';
+// The 'Paper' import has been removed as it's no longer needed
+import {
+  Stack,
+  Button,
+  Menu,
+  MenuItem,
+  Divider,
+  Box,
+  CardActionArea,
+  ToggleButtonGroup,
+  ToggleButton,
+  Typography,
+  Card,
+  CardContent,
+  Chip,
+} from "@mui/material";
 import CountUp from 'react-countup';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import EventIcon from '@mui/icons-material/Event';
@@ -31,10 +46,12 @@ export default function AdminDashboard() {
     React.useEffect(() => {
         setShift(getCurrentShift());
     }, []);
+
     const handleViewChange = (event, newView) => { if (newView !== null) setView(newView); };
     const handleShiftChange = (event, newShift) => { if (newShift !== null) setShift(newShift); };
     const handleClick = (event) => setAnchorEl(event.currentTarget);
     const handleClose = () => setAnchorEl(null);
+
     const setPresetRange = (rangeName) => {
         const now = new Date();
         if (rangeName === 'today') setDateRange({ start: now, end: now });
@@ -51,7 +68,7 @@ export default function AdminDashboard() {
             if (category === 'system') return isSys;
             if (category === 'general') return !isSys;
             return true;
-        });
+         });
     }, [incidents, user, view]);
 
     const filteredIncidents = React.useMemo(() => {
@@ -60,7 +77,7 @@ export default function AdminDashboard() {
         const dateFiltered = dateRange.start && dateRange.end 
             ? incidentsToDisplay.filter(i => {
                 const reportedDate = parseDateForRange(i.reportedOn);
-                return isValid(reportedDate) && isWithinInterval(reportedDate, { start: startOfDay(dateRange.start), end: endOfDay(dateRange.end) });
+                 return isValid(reportedDate) && isWithinInterval(reportedDate, { start: startOfDay(dateRange.start), end: endOfDay(dateRange.end) });
               })
             : incidentsToDisplay;
         
@@ -69,7 +86,7 @@ export default function AdminDashboard() {
         }
         
         return dateFiltered.filter(i => {
-            const parsedDate = parse(i.reportedOn, 'dd MMM yy, hh:mm a', new Date(), { locale: enUS });
+             const parsedDate = parse(i.reportedOn, 'dd MMM yy, hh:mm a', new Date(), { locale: enUS });
             if (!isValid(parsedDate)) return false;
             const hour = getHours(parsedDate);
             
@@ -109,7 +126,7 @@ export default function AdminDashboard() {
         { name: 'Resolved', count: filteredIncidents.filter(i => i.status === 'Resolved').length },
         { name: 'Closed', count: filteredIncidents.filter(i => i.status === 'Closed').length },
     ];
-    
+
     const openIncidentsList = filteredIncidents.filter(i => i.status === 'New' || i.status === 'Processed');
 
     const priorityChartData = [
@@ -137,7 +154,7 @@ export default function AdminDashboard() {
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>Dashboard</Typography>
           {user?.role === 'sys_admin' && (
             <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-              <ToggleButtonGroup value={view} exclusive onChange={handleViewChange} aria-label="Dashboard view">
+               <ToggleButtonGroup value={view} exclusive onChange={handleViewChange} aria-label="Dashboard view">
                 <ToggleButton value="system" aria-label="system view">System View</ToggleButton>
                 <ToggleButton value="general" aria-label="general view">General View</ToggleButton>
               </ToggleButtonGroup>
@@ -159,7 +176,7 @@ export default function AdminDashboard() {
           <Box sx={{ p: 2, pt: 1 }}>
             <Typography variant="overline" display="block" sx={{ mb: 2 }}>Custom Range</Typography>
             <Stack spacing={2}>
-              <DatePicker label="Start Date" value={dateRange.start} onChange={(newValue) => setDateRange(prev => ({...prev, start: newValue}))} />
+               <DatePicker label="Start Date" value={dateRange.start} onChange={(newValue) => setDateRange(prev => ({...prev, start: newValue}))} />
               <DatePicker label="End Date" value={dateRange.end} onChange={(newValue) => setDateRange(prev => ({...prev, end: newValue}))} />
             </Stack>
           </Box>
@@ -201,14 +218,15 @@ export default function AdminDashboard() {
         </Stack>
 
         {/* Charts and Cards */}
-        {showTeamAvailability ? (
+        {showTeamAvailability ?
+        (
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
             <Stack sx={{ flex: 7 }} spacing={3}>
               <StatusChart data={statusChartData} />
               <RecentIncidentsCard incidents={filteredIncidents} />
             </Stack>
             <Stack sx={{ flex: 5 }} spacing={3}>
-              <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
+               <PriorityChart key={`${shift}-${String(dateRange.start)}-${String(dateRange.end)}`} data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
               <TeamAvailabilityCard />
             </Stack>
           </Stack>
@@ -217,7 +235,7 @@ export default function AdminDashboard() {
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
               <Box sx={{ flex: 7 }}><StatusChart data={statusChartData} /></Box>
               <Box sx={{ flex: 5 }}>
-                <PriorityChart data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
+                <PriorityChart key={`${shift}-${String(dateRange.start)}-${String(dateRange.end)}`} data={priorityChartData} view={view} dateRange={dateRange} userRole={user?.role} shift={shift} />
               </Box>
             </Stack>
             <RecentIncidentsCard incidents={filteredIncidents} />

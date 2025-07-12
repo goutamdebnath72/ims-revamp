@@ -9,7 +9,6 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 
 function DetailItem({ label, value, component = "div" }) {
-  //... (this helper component is unchanged)
   return (
     <Box sx={{ width: '25%', minWidth: 0, pr: 2 }}>
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold', display: 'block', textTransform: 'uppercase' }}>
@@ -26,16 +25,6 @@ export default function IncidentDetailsCard({ incident }) {
   if (!incident) {
     return null;
   }
-
-  // --- DEBUGGING LOG ---
-  // This will print the exact data object to your browser's console.
-  console.log('%c[DEBUG] Data received by IncidentDetailsCard:', 'color: #8A2BE2; font-weight: bold;', incident);
-  console.log('--- Checking for new fields: ---');
-  console.log(`  - Has 'emailSail' field? -> ${incident.hasOwnProperty('emailSail')}`);
-  console.log(`  - Has 'emailNic' field? -> ${incident.hasOwnProperty('emailNic')}`);
-  console.log(`  - Has 'ipAddress' field? -> ${incident.hasOwnProperty('ipAddress')}`);
-  console.log(`  - Has 'jobFrom' field? -> ${incident.hasOwnProperty('jobFrom')}`);
-  // --- END DEBUGGING LOG ---
 
   const getStatusChipColor = (status) => { /* ... */ };
   const getPriorityChipColor = (priority) => { /* ... */ };
@@ -93,7 +82,8 @@ export default function IncidentDetailsCard({ incident }) {
                 <Stack direction="row">
                   <DetailItem label="Email ID" value={displayEmailSail} />
                   <DetailItem label="Email ID (NIC)" value={displayEmailNic} />
-                  <DetailItem label="SAIL P/No" value={incident.sailPNo} />
+                  {/* UPDATED to use 'sailpno' (all lowercase) */}
+                  <DetailItem label="SAIL P/No" value={incident.sailpno} />
                   <DetailItem label="Location" value={incident.location} />
                 </Stack>
                 <Divider />
