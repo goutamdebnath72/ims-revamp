@@ -65,7 +65,7 @@ export async function POST(request) {
 
     incidents.unshift(newIncident);
 
-    await fs.writeFile(dataFilePath, JSON.stringify(incidents, null, 2));
+    // await fs.writeFile(dataFilePath, JSON.stringify(incidents, null, 2));
 
     return NextResponse.json(newIncident, { status: 201 });
   } catch (error) {
