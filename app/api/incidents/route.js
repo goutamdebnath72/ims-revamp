@@ -2,23 +2,15 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { headers } from 'next/headers';
-import path from 'path';
-import { promises as fs } from 'fs';
-
-const dataFilePath = path.join(process.cwd(), 'lib/incidents.json');
-
-async function getIncidents() {
-  const fileContents = await fs.readFile(dataFilePath, 'utf8');
-  return JSON.parse(fileContents);
-}
+import { getAllIncidents, createIncident } from '@/lib/incident-repo';
 
 export async function GET() {
   try {
-    const incidents = await getIncidents();
+    const incidents = await getAllIncidents();
     return NextResponse.json(incidents);
   } catch (error) {
-    console.error('Failed to read incidents data:', error);
-    return NextResponse.json({ error: 'Failed to read incidents data' }, { status: 500 });
+    console.error('Failed in GET /api/incidents:', error);
+    return NextResponse.json({ error: 'Failed to fetch incidents' }, { status: 500 });
   }
 }
 
@@ -34,40 +26,36 @@ export async function POST(request) {
     const user = session.user;
     
     let ip = headers().get('x-forwarded-for') || '127.0.0.1';
-
     if (ip === '::1') {
       ip = '127.0.0.1';
     }
 
-    let incidents = await getIncidents();
-
     const newIncident = {
+      id: Date.now(),
+      status: 'New',
+      reportedOn: new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).replace(/,/g, ''),
+      auditTrail: [],
+      // Data from the form
       incidentType: formData.incidentType,
       priority: formData.priority,
       location: formData.location,
       jobTitle: formData.jobTitle,
       description: formData.description,
       contactNumber: formData.contactNumber,
-      id: Date.now(),
-      status: 'New',
-      reportedOn: new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).replace(/,/g, ''),
+      // Data from the user's session
       requestor: user.name,
       ticketNo: user.id,
       department: user.department,
       emailSail: user.emailSail,
       emailNic: user.emailNic,
-      // UPDATED to use 'sailpno' (all lowercase)
       sailpno: user.sailpno,
       jobFrom: user.name,
       ipAddress: ip,
-      auditTrail: [],
     };
 
-    incidents.unshift(newIncident);
+    const createdIncident = await createIncident(newIncident);
 
-    // await fs.writeFile(dataFilePath, JSON.stringify(incidents, null, 2));
-
-    return NextResponse.json(newIncident, { status: 201 });
+    return NextResponse.json(createdIncident, { status: 201 });
   } catch (error) {
     console.error('Failed to create incident:', error);
     return NextResponse.json({ error: 'Failed to create incident' }, { status: 500 });

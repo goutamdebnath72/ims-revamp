@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
-import path from 'path';
-import { promises as fs } from 'fs';
-
-const dataFilePath = path.join(process.cwd(), 'lib/incidents.json');
-
-async function getIncidents() {
-  const fileContents = await fs.readFile(dataFilePath, 'utf8');
-  return JSON.parse(fileContents);
-}
+import { getAllIncidents, updateIncident } from '@/lib/incident-repo';
 
 // This is the PATCH function that will handle updates
 export async function PATCH(request, { params }) {
@@ -20,31 +12,24 @@ export async function PATCH(request, { params }) {
 
   try {
     const { id } = params;
-    const body = await request.json();
-    const user = session.user;
+    const updatePayload = await request.json(); // This is the data from the form
     
-    let incidents = await getIncidents();
-    const incidentIndex = incidents.findIndex(inc => inc.id.toString() === id);
+    // To check the current status, we must first get the full incident list
+    const allIncidents = await getAllIncidents();
+    const incidentToUpdate = allIncidents.find(inc => inc.id.toString() === id.toString());
 
-    if (incidentIndex === -1) {
-      return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
+    if (!incidentToUpdate) {
+        return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
     }
 
-    let incidentToUpdate = incidents[incidentIndex];
-
-    // Check if status should be changed from "New" to "Processed"
+    // Now, check the status of the incident we found
     if (incidentToUpdate.status === 'New') {
-      body.status = 'Processed';
+      // If it's 'New', add the 'Processed' status to our update payload
+      updatePayload.status = 'Processed';
     }
 
-    // Combine the old data with the new updated data
-    const updatedIncident = { ...incidentToUpdate, ...body };
-
-    // Replace the old incident with the updated one in the array
-    incidents[incidentIndex] = updatedIncident;
-
-    // Write the entire updated list back to the file
-    await fs.writeFile(dataFilePath, JSON.stringify(incidents, null, 2));
+    // Use our repository function to update the incident with the full payload
+    const updatedIncident = await updateIncident(id, updatePayload);
 
     return NextResponse.json(updatedIncident);
 
