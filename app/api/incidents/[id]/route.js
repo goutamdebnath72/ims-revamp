@@ -11,25 +11,21 @@ export async function PATCH(request, { params }) {
   }
 
   try {
-    const { id } = params;
-    const updatePayload = await request.json(); // This is the data from the form
+    // The 'id' is now directly accessed from params.id
+    const updatePayload = await request.json();
     
-    // To check the current status, we must first get the full incident list
     const allIncidents = await getAllIncidents();
-    const incidentToUpdate = allIncidents.find(inc => inc.id.toString() === id.toString());
+    const incidentToUpdate = allIncidents.find(inc => inc.id.toString() === params.id.toString());
 
     if (!incidentToUpdate) {
         return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
     }
 
-    // Now, check the status of the incident we found
     if (incidentToUpdate.status === 'New') {
-      // If it's 'New', add the 'Processed' status to our update payload
       updatePayload.status = 'Processed';
     }
 
-    // Use our repository function to update the incident with the full payload
-    const updatedIncident = await updateIncident(id, updatePayload);
+    const updatedIncident = await updateIncident(params.id, updatePayload);
 
     return NextResponse.json(updatedIncident);
 

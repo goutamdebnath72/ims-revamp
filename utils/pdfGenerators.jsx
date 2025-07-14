@@ -3,7 +3,8 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 function formatComment(comment) {
-  return comment ? comment.toString() : '';
+  return comment ?
+    comment.toString() : '';
 }
 
 export function generateIncidentPdf(incident, auditTrail) {
@@ -28,7 +29,7 @@ export function generateIncidentPdf(incident, auditTrail) {
   // CORRECTED: Simplified email logic to be more robust.
   const displayEmailSail = incident.emailSail || 'N/A';
   const displayEmailNic = incident.emailNic || 'N/A';
-
+  
   const leftColumnDetails = [
       { label: "Incident No.", value: incident.id },
       { label: "Incident Type", value: incident.incidentType },
@@ -40,13 +41,13 @@ export function generateIncidentPdf(incident, auditTrail) {
       { label: "IP Address", value: incident.ipAddress },
   ];
   
+  // CORRECTED: The layout is now rearranged exactly as you requested.
   const rightColumnDetails = [
+      { label: "Reported On", value: incident.reportedOn },
       { label: "Status", value: incident.status },
       { label: "Priority", value: incident.priority },
-      { label: "", value: "" }, // Placeholder to align with Job Title
       { label: "", value: "" }, // Placeholder to align with Description
       { label: "Ticket No.", value: incident.ticketNo },
-      // CORRECTED: This now uses the standardized 'sailpno' property
       { label: "SAIL P/No", value: incident.sailpno },
       { label: "Email ID (NIC)", value: displayEmailNic },
       { label: "Job From", value: incident.jobFrom },
@@ -69,11 +70,12 @@ export function generateIncidentPdf(incident, auditTrail) {
       const leftValueText = doc.splitTextToSize(String(leftItem.value || 'N/A'), valueWidth - (padding * 2));
       const rightValueText = doc.splitTextToSize(String(rightItem.value || 'N/A'), valueWidth - (padding * 2));
       const rowHeight = Math.max(leftValueText.length, rightValueText.length) * lineHeight + (padding * 2);
-
+      
       // Draw Left Column
       doc.setFillColor(240, 240, 240);
       doc.rect(margin, currentY, labelWidth, rowHeight, 'F');
       doc.text(leftItem.label, margin + padding, currentY + padding + lineHeight - 1);
+      
       doc.setFillColor(255, 255, 255);
       doc.rect(margin + labelWidth, currentY, valueWidth, rowHeight, 'F');
       doc.text(leftValueText, margin + labelWidth + padding, currentY + padding + lineHeight - 1);
@@ -83,6 +85,7 @@ export function generateIncidentPdf(incident, auditTrail) {
           doc.setFillColor(240, 240, 240);
           doc.rect(rightColX, currentY, labelWidth, rowHeight, 'F');
           doc.text(rightItem.label, rightColX + padding, currentY + padding + lineHeight - 1);
+          
           doc.setFillColor(255, 255, 255);
           doc.rect(rightColX + labelWidth, currentY, valueWidth, rowHeight, 'F');
           doc.text(rightValueText, rightColX + labelWidth + padding, currentY + padding + lineHeight - 1);
@@ -95,7 +98,7 @@ export function generateIncidentPdf(incident, auditTrail) {
   
   currentY += 10;
 
-  // --- Audit Trail Table ---
+  // --- Audit Trail Table (Unchanged) ---
   autoTable(doc, {
     startY: currentY,
     head: [["Timestamp", "Author", "Action", "Comment"]],
@@ -114,7 +117,7 @@ export function generateIncidentPdf(incident, auditTrail) {
       2: { fontStyle: "normal", cellWidth: 35 },
     },
   });
-
+  
   // --- Page numbers ---
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {

@@ -2,17 +2,18 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { IncidentContext } from '@/context/IncidentContext';
 import { Paper, Typography, List, ListItemText, Chip, Divider, Box, ListItemButton } from '@mui/material';
+import { parse } from 'date-fns';
 
-export default function RecentIncidentsCard({ incidents: incidentsProp }) {
-  const { incidents: allIncidents } = React.useContext(IncidentContext);
+export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
 
-  const incidentsToDisplay = incidentsProp || allIncidents;
-
-  const recentIncidents = [...incidentsToDisplay]
-    .sort((a, b) => b.id - a.id)
+  const recentIncidents = [...(incidents || [])]
+    .sort((a, b) => {
+      const dateA = parse(a.reportedOn, 'dd MMM yy, hh:mm a', new Date());
+      const dateB = parse(b.reportedOn, 'dd MMM yy, hh:mm a', new Date());
+      return dateB - dateA;
+    })
     .slice(0, 5);
 
   const getStatusChipColor = (status) => {
@@ -39,12 +40,11 @@ export default function RecentIncidentsCard({ incidents: incidentsProp }) {
         Recent Activity
       </Typography>
       <Divider sx={{ mb: 1 }} />
-      {/* --- FIX: Reduced maxHeight to make the card more compact --- */}
       <List sx={{ 
           width: '100%', 
           bgcolor: 'background.paper', 
           p: 0, 
-          maxHeight: 220, // Reduced from 350 to 220
+          maxHeight: 220,
           overflowY: 'auto' 
       }}>
         {recentIncidents.map((incident, index) => (
