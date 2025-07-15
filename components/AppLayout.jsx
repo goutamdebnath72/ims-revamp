@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -104,7 +104,8 @@ export default function AppLayout({ children }) {
   const { data: session, status } = useSession();
   const user = session?.user;
   const logout = () => signOut({ callbackUrl: "/login" });
-  const { isSpellcheckEnabled, toggleSpellcheck } = React.useContext(SettingsContext);
+  const { isSpellcheckEnabled, toggleSpellcheck } =
+    React.useContext(SettingsContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
@@ -118,8 +119,8 @@ export default function AppLayout({ children }) {
   const visibleMenuItems = allMenuItems.filter((item) =>
     item.roles.includes(user?.role)
   );
-  
-  const isCnIT = user?.role === "admin" || user?.role === "sys_admin";
+
+  const isCnIT = user?.role === "admin";
   const [currentShift, setCurrentShift] = React.useState(getCurrentShift());
 
   // This effect keeps the shift display chip up to date
@@ -129,7 +130,7 @@ export default function AppLayout({ children }) {
       if (newShift !== currentShift) {
         setCurrentShift(newShift);
       }
-    }, 60000); 
+    }, 60000);
 
     return () => clearInterval(intervalId);
   }, [currentShift]);
@@ -137,20 +138,19 @@ export default function AppLayout({ children }) {
   // This effect handles the conditional auto-logout for admin users
   React.useEffect(() => {
     const logoutTimer = setInterval(() => {
-      if (user?.role === 'admin' && user?.loginShift) {
+      if (user?.role === "admin" && user?.loginShift) {
         const latestShift = getCurrentShift();
         if (latestShift !== user.loginShift) {
           logout();
         }
       }
-    }, 60000); 
+    }, 60000);
 
     return () => clearInterval(logoutTimer);
   }, [user, logout]);
 
-
   if (status === "loading") {
-    return null; 
+    return null;
   }
 
   if (!user) {
@@ -175,16 +175,30 @@ export default function AppLayout({ children }) {
             {isCnIT && (
               <Chip
                 label={
-                  <Box component="span" sx={{ display: "flex", alignItems: "baseline" }}>
+                  <Box
+                    component="span"
+                    sx={{ display: "flex", alignItems: "baseline" }}
+                  >
                     Current Shift:&nbsp;
-                    <Typography sx={{ fontSize: "14px", fontWeight: "bold", lineHeight: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        lineHeight: 1,
+                      }}
+                    >
                       {currentShift}
                     </Typography>
                   </Box>
                 }
                 color="secondary"
                 size="small"
-                sx={{ mt: 0.5, color: "white", fontWeight: 500, height: "24px" }}
+                sx={{
+                  mt: 0.5,
+                  color: "white",
+                  fontWeight: 500,
+                  height: "24px",
+                }}
               />
             )}
           </Box>
@@ -207,10 +221,14 @@ export default function AppLayout({ children }) {
               <InfoTooltip title={spellCheckTooltipText} placement="left">
                 <MenuItem onClick={toggleSpellcheck}>
                   <ListItemIcon>
-                     <SpellcheckIcon fontSize="small" />
+                    <SpellcheckIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText>Spell Check</ListItemText>
-                  <Switch checked={isSpellcheckEnabled} edge="end" size="small" />
+                  <Switch
+                    checked={isSpellcheckEnabled}
+                    edge="end"
+                    size="small"
+                  />
                 </MenuItem>
               </InfoTooltip>
               <Divider />

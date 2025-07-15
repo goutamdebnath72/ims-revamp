@@ -10,7 +10,7 @@ import Stack from "@mui/material/Stack";
 
 function DetailItem({ label, value, component = "div" }) {
   return (
-    <Box sx={{ width: "25%", minWidth: 0, pr: 2 }}>
+    <Box>
       <Typography
         variant="caption"
         color="text.secondary"
@@ -76,7 +76,6 @@ export default function IncidentDetailsCard({ incident }) {
       elevation={3}
       sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}
     >
-      {/* UPDATED: Header section now includes the "Reported On" date */}
       <Box
         sx={{
           display: "flex",
@@ -96,32 +95,48 @@ export default function IncidentDetailsCard({ incident }) {
       </Box>
       <Divider sx={{ mb: 3 }} />
 
-      <Box sx={{ overflowY: "auto", pr: 2 }}>
+      <Box
+        sx={{
+          overflowY: "auto",
+          pr: 2,
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Stack spacing={2.5}>
-          <Stack direction="row">
-            <DetailItem label="Incident No." value={incident.id} />
-            <DetailItem label="Incident Type" value={incident.incidentType} />
-            <DetailItem
-              label="Priority"
-              value={
-                <Chip
-                  label={incident.priority}
-                  color={getPriorityChipColor(incident.priority)}
-                  size="small"
-                />
-              }
-            />
-            <DetailItem
-              label="Status"
-              value={
-                <Chip
-                  label={incident.status}
-                  color={getStatusChipColor(incident.status)}
-                  variant={incident.status === "New" ? "outlined" : "filled"}
-                  size="small"
-                />
-              }
-            />
+          <Stack direction="row" spacing={2}>
+            <Box sx={{ flex: "2 1 0px", minWidth: 0 }}>
+              <DetailItem label="Incident No." value={incident.id} />
+            </Box>
+            <Box sx={{ flex: "2 1 0px", minWidth: 0 }}>
+              <DetailItem label="Incident Type" value={incident.incidentType} />
+            </Box>
+            <Box sx={{ flex: "1 1 0px", minWidth: 0 }}>
+              <DetailItem
+                label="Priority"
+                value={
+                  <Chip
+                    label={incident.priority}
+                    color={getPriorityChipColor(incident.priority)}
+                    size="small"
+                  />
+                }
+              />
+            </Box>
+            <Box sx={{ flex: "1 1 0px", minWidth: 0 }}>
+              <DetailItem
+                label="Status"
+                value={
+                  <Chip
+                    label={incident.status}
+                    color={getStatusChipColor(incident.status)}
+                    variant={incident.status === "New" ? "outlined" : "filled"}
+                    size="small"
+                  />
+                }
+              />
+            </Box>
           </Stack>
           <Divider />
           <Box>
@@ -164,6 +179,8 @@ export default function IncidentDetailsCard({ incident }) {
               {incident.description || "N/A"}
             </Typography>
           </Box>
+
+          {/* --- CORRECTED REQUESTOR INFORMATION SECTION --- */}
           <Box
             sx={{
               position: "relative",
@@ -190,26 +207,48 @@ export default function IncidentDetailsCard({ incident }) {
               Requestor Information
             </Typography>
             <Stack spacing={2.5}>
-              <Stack direction="row">
-                <DetailItem label="Requestor" value={incident.requestor} />
-                <DetailItem label="Ticket No." value={incident.ticketNo} />
-                <DetailItem label="Department" value={incident.department} />
-                <DetailItem
-                  label="Contact No."
-                  value={incident.contactNumber}
-                />
+              <Stack direction="row" spacing={2}>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Requestor" value={incident.requestor} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Ticket No." value={incident.ticketNo} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Department" value={incident.department} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem
+                    label="Contact No."
+                    value={incident.contactNumber}
+                  />
+                </Box>
               </Stack>
               <Divider />
-              <Stack direction="row">
-                <DetailItem label="Email ID" value={displayEmailSail} />
-                <DetailItem label="Email ID (NIC)" value={displayEmailNic} />
-                <DetailItem label="SAIL P/No" value={incident.sailpno} />
-                <DetailItem label="Location" value={incident.location} />
+              <Stack direction="row" spacing={2}>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Email ID" value={displayEmailSail} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Email ID (NIC)" value={displayEmailNic} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="SAIL P/No" value={incident.sailpno} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Location" value={incident.location} />
+                </Box>
               </Stack>
               <Divider />
-              <Stack direction="row">
-                <DetailItem label="IP Address" value={ipAddress} />
-                <DetailItem label="Job From" value={jobFrom} />
+              <Stack direction="row" spacing={2}>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="IP Address" value={ipAddress} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
+                  <DetailItem label="Job From" value={jobFrom} />
+                </Box>
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }} />
+                <Box sx={{ flex: '1 1 0', minWidth: 0 }} />
               </Stack>
             </Stack>
           </Box>

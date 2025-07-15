@@ -1,51 +1,63 @@
 // File: components/IncidentDataGrid.jsx
 // UPDATED: Changed 'Closed' status chip to a solid grey background for distinction.
-'use client';
+"use client";
 
-import React, { memo } from 'react';
-import { useRouter } from 'next/navigation';
-import Box from '@mui/material/Box';
-import { DataGrid } from '@mui/x-data-grid';
-import { Chip } from '@mui/material';
+import React, { memo } from "react";
+import { useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import { DataGrid } from "@mui/x-data-grid";
+import { Chip } from "@mui/material";
 
 const columns = [
-  { field: 'id', headerName: 'Incident No.', width: 130 },
-  { field: 'incidentType', headerName: 'Incident Type', width: 200 },
-  { field: 'location', headerName: 'Location', width: 250, flex: 1 },
-  { field: 'requestor', headerName: 'Requestor', width: 200 },
+  { field: "id", headerName: "Incident No.", flex: 1.5, minWidth: 200 },
   {
-    field: 'priority',
-    headerName: 'Priority',
+    field: "incidentType",
+    headerName: "Incident Type",
+    flex: 1.5,
+    minWidth: 200,
+  },
+  { field: "location", headerName: "Location", flex: 1.5, minWidth: 200 },
+  { field: "requestor", headerName: "Requestor", flex: 1.2, minWidth: 180 },
+  {
+    field: "priority",
+    headerName: "Priority",
     width: 120,
     renderCell: (params) => {
       const priority = params.value;
-      let color = 'default';
-      if (priority === 'High') color = 'error';
-      if (priority === 'Medium') color = 'warning';
+      let color = "default";
+      if (priority === "High") color = "error";
+      if (priority === "Medium") color = "warning";
       return <Chip label={priority} color={color} size="small" />;
     },
   },
   {
-    field: 'status',
-    headerName: 'Status',
+    field: "status",
+    headerName: "Status",
     width: 120,
     renderCell: (params) => {
-        const status = params.value;
-        let color = 'default';
-        if (status === 'New') color = 'success';
-        if (status === 'Processed') color = 'info';
-        if (status === 'Resolved') color = 'success';
-        // The 'Closed' status will now use the 'default' grey color with a solid background.
-        if (status === 'Closed') color = 'default'; 
-        
-        const variant = status === 'New' ? 'outlined' : 'filled';
-        
-        const chipStyles = (status === 'Resolved' || status === 'Processed' ) ? { color: '#fff' } : {};
-
-        return <Chip label={status} color={color} size="small" variant={variant} sx={chipStyles} />;
+      const status = params.value;
+      let color = "default";
+      if (status === "New") color = "success";
+      if (status === "Processed") color = "info";
+      if (status === "Resolved") color = "success";
+      if (status === "Closed") color = "default";
+      const variant = status === "New" ? "outlined" : "filled";
+      const chipStyles =
+        status === "Resolved" || status === "Processed"
+          ? { color: "#fff" }
+          : {};
+      return (
+        <Chip
+          label={status}
+          color={color}
+          size="small"
+          variant={variant}
+          sx={chipStyles}
+        />
+      );
     },
   },
-  { field: 'reportedOn', headerName: 'Reported On', width: 180 },
+  { field: "reportedOn", headerName: "Reported On", width: 180 },
 ];
 
 function IncidentDataGrid({ rows, loading }) {
@@ -57,20 +69,24 @@ function IncidentDataGrid({ rows, loading }) {
   };
 
   return (
-    <Box sx={{ height: '70vh', width: '100%' }}>
+    <Box sx={{ height: "70vh", width: "100%" }}>
       <DataGrid
         rows={rows}
         columns={columns}
         loading={loading}
         onRowClick={handleRowClick}
         sx={{
-            '& .MuiDataGrid-row:hover': {
-                cursor: 'pointer',
-            },
+          "& .MuiDataGrid-row:hover": {
+            cursor: "pointer",
+          },
         }}
         initialState={{
           pagination: {
             paginationModel: { page: 0, pageSize: 20 },
+          },
+          // CORRECTED: This now sets the default sort order to be the ID column, descending
+          sorting: {
+            sortModel: [{ field: "id", sort: "desc" }],
           },
         }}
         pageSizeOptions={[10, 20, 50]}
