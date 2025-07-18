@@ -76,7 +76,7 @@ const allMenuItems = [
   {
     text: "Search & Archive",
     icon: <SearchIcon />,
-    href: "/search",
+    href: "/search?reset=true",
     roles: ["admin", "standard", "sys_admin"],
   },
   {

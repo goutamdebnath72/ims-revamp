@@ -13,9 +13,6 @@ export const authOptions = {
       },
       authorize(credentials) {
         const user = MOCK_USER_DB[credentials.userId];
-        
-        // --- DEBUG POINT 1 ---
-        console.log("[DEBUG] Authorize Step: User role from citusers.js is:", user?.role);
 
         if (user && user.password === credentials.password) {
           return {
@@ -32,18 +29,26 @@ export const authOptions = {
             mobileNo: user.mobileNo,
           };
         }
-        
+
         if (
           credentials.userId === "111111" &&
           credentials.password === "password"
         ) {
           return {
-            id: "111111", name: "Standard User", role: "standard",
-            emailSail: '', emailNic: '', sailpno: 'N/A', departmentCode: 0,
-            loginShift: getCurrentShift(), designation: 'N/A', department: 'N/A', mobileNo: 'N/A',
+            id: "111111",
+            name: "Standard User",
+            role: "standard",
+            emailSail: "",
+            emailNic: "",
+            sailpno: "N/A",
+            departmentCode: 0,
+            loginShift: getCurrentShift(),
+            designation: "N/A",
+            department: "N/A",
+            mobileNo: "N/A",
           };
         }
-        
+
         return null;
       },
     }),
@@ -65,10 +70,7 @@ export const authOptions = {
         token.department = user.department;
         token.mobileNo = user.mobileNo;
       }
-      
-      // --- DEBUG POINT 2 ---
-      console.log("[DEBUG] JWT Step: Value of role being added to token is:", token?.role);
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -83,10 +85,7 @@ export const authOptions = {
       session.user.designation = token.designation;
       session.user.department = token.department;
       session.user.mobileNo = token.mobileNo;
-      
-      // --- DEBUG POINT 3 ---
-      console.log("[DEBUG] Session Step: Value of role in final session.user is:", session?.user?.role);
-      
+
       return session;
     },
   },

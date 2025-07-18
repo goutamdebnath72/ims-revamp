@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { NotificationContext } from '@/context/NotificationContext';
-import { IncidentContext } from '@/context/IncidentContext';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import IncidentDetailsCard from '@/components/IncidentDetailsCard';
-import IncidentAuditTrail from '@/components/IncidentAuditTrail';
-import IncidentActionForm from '@/components/IncidentActionForm';
-import ResolutionDialog from '@/components/ResolutionDialog';
+import * as React from "react";
+import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { NotificationContext } from "@/context/NotificationContext";
+import { IncidentContext } from "@/context/IncidentContext";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import IncidentDetailsCard from "@/components/IncidentDetailsCard";
+import IncidentAuditTrail from "@/components/IncidentAuditTrail";
+import IncidentActionForm from "@/components/IncidentActionForm";
+import ResolutionDialog from "@/components/ResolutionDialog";
+import { DateTime } from "luxon";
 
 const C_AND_IT_DEPT_CODES = [98500, 98540];
 
@@ -22,10 +23,10 @@ export default function IncidentDetailsPage() {
   const { data: session } = useSession();
   const user = session?.user;
 
-  const incident = incidents.find(inc => inc.id.toString() === params.id);
+  const incident = incidents.find((inc) => inc.id.toString() === params.id);
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const auditTrailRef = React.useRef(null);
-  
+
   // This new state manages the expand/collapse feature
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
 
@@ -42,16 +43,22 @@ export default function IncidentDetailsPage() {
     let actionDescription = [];
 
     const newStatus =
-      incident.status === 'New' && user && C_AND_IT_DEPT_CODES.includes(user.departmentCode)
-      ? 'Processed'
-      : incident.status;
+      incident.status === "New" &&
+      user &&
+      C_AND_IT_DEPT_CODES.includes(user.departmentCode)
+        ? "Processed"
+        : incident.status;
 
     if (newStatus !== incident.status) {
       updatedFields.status = newStatus;
     }
-    
-    const typeChanged = newType && newType !== incident.incidentType && !incident.isTypeLocked;
-    const priorityChanged = newPriority && newPriority !== incident.priority && !incident.isPriorityLocked;
+
+    const typeChanged =
+      newType && newType !== incident.incidentType && !incident.isTypeLocked;
+    const priorityChanged =
+      newPriority &&
+      newPriority !== incident.priority &&
+      !incident.isPriorityLocked;
 
     if (typeChanged) {
       updatedFields.incidentType = newType;
@@ -65,43 +72,54 @@ export default function IncidentDetailsPage() {
       actionDescription.push(`Priority changed to "${newPriority}".`);
     }
 
-    const finalComment = actionDescription.length > 0 
-      ? actionDescription.join('\n') + '\n---\n' + comment
-      : comment;
-      
-    let actionText = 'Action Taken';
+    const finalComment =
+      actionDescription.length > 0
+        ? actionDescription.join("\n") + "\n---\n" + comment
+        : comment;
+
+    let actionText = "Action Taken";
     if (typeChanged && priorityChanged) {
-      actionText = 'Details Updated';
+      actionText = "Details Updated";
     } else if (typeChanged) {
-      actionText = 'Incident Type Changed';
+      actionText = "Incident Type Changed";
     } else if (priorityChanged) {
-      actionText = 'Priority Changed';
+      actionText = "Priority Changed";
     }
 
     const newAuditEntry = {
-      timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
+      timestamp: DateTime.now()
+        .setZone("Asia/Kolkata")
+        .toFormat("ccc LLL d yyyy h:mm a"),
       author: user.name,
       action: actionText,
       comment: finalComment,
-      isEdited: false, 
+      isEdited: false,
     };
 
     updateIncident(params.id, {
       ...updatedFields,
-      auditTrail: [...(incident.auditTrail || []), newAuditEntry]
+      auditTrail: [...(incident.auditTrail || []), newAuditEntry],
     });
-    showNotification({ title: 'Update Submitted', message: 'Your update has been added to the audit trail.' }, 'success');
+    showNotification(
+      {
+        title: "Update Submitted",
+        message: "Your update has been added to the audit trail.",
+      },
+      "success"
+    );
   };
 
   const handleConfirmResolve = ({ action, comment, rating, closingReason }) => {
     if (!comment || !user || !incident) return;
-    const isClosing = action === 'close';
-    const newStatus = isClosing ? 'Closed' : 'Resolved';
-    const finalComment = isClosing 
+    const isClosing = action === "close";
+    const newStatus = isClosing ? "Closed" : "Resolved";
+    const finalComment = isClosing
       ? `Reason for closing: ${closingReason}.\n---\n${comment}`
       : comment;
     const finalAuditEntry = {
-      timestamp: new Date().toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/,/g, ''),
+      timestamp: DateTime.now()
+        .setZone("Asia/Kolkata")
+        .toFormat("ccc LLL d yyyy h:mm a"),
       author: user.name,
       action: `(${newStatus} By ${user.name})`,
       comment: finalComment,
@@ -109,14 +127,20 @@ export default function IncidentDetailsPage() {
     };
     updateIncident(params.id, {
       status: newStatus,
-      auditTrail: [...(incident.auditTrail || []), finalAuditEntry]
+      auditTrail: [...(incident.auditTrail || []), finalAuditEntry],
     });
-    showNotification({ title: `Incident ${newStatus}`, message: `The incident has been successfully ${newStatus.toLowerCase()}.` }, 'success');
+    showNotification(
+      {
+        title: `Incident ${newStatus}`,
+        message: `The incident has been successfully ${newStatus.toLowerCase()}.`,
+      },
+      "success"
+    );
   };
 
   const handleCommentEdit = (entryIndex, newComment) => {
     if (!incident) return;
-    
+
     const newAuditTrail = [...incident.auditTrail];
     newAuditTrail[entryIndex] = {
       ...newAuditTrail[entryIndex],
@@ -124,30 +148,47 @@ export default function IncidentDetailsPage() {
       isEdited: true,
     };
     updateIncident(params.id, { auditTrail: newAuditTrail });
-    showNotification({ title: "Comment Updated", message: "Your comment has been saved." }, "info");
+    showNotification(
+      { title: "Comment Updated", message: "Your comment has been saved." },
+      "info"
+    );
   };
 
-  if (!user) { return null; }
+  if (!user) {
+    return null;
+  }
 
   if (!incident) {
     return (
-      <Box sx={{ textAlign: 'center', mt: 10 }}>
-        <Typography variant="h4" color="error">Incident Not Found</Typography>
-        <Typography>The incident with ID "{params.id}" could not be found in the system.</Typography>
+      <Box sx={{ textAlign: "center", mt: 10 }}>
+        <Typography variant="h4" color="error">
+          Incident Not Found
+        </Typography>
+        <Typography>
+          The incident with ID "{params.id}" could not be found in the system.
+        </Typography>
       </Box>
     );
   }
 
-  const isResolved = incident.status === 'Resolved' || incident.status === 'Closed';
+  const isResolved =
+    incident.status === "Resolved" || incident.status === "Closed";
 
   return (
-    <> 
-      <Box sx={{ display: 'flex', gap: 3, alignItems: 'stretch', height: 'calc(100vh - 112px)'}}>
+    <>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 3,
+          alignItems: "stretch",
+          height: "calc(100vh - 112px)",
+        }}
+      >
         <Box sx={{ flex: 7, minWidth: 0 }}>
           <IncidentDetailsCard incident={incident} />
         </Box>
         {isResolved ? (
-          <Box sx={{ flex: 5, minWidth: 0, display: 'flex' }}>
+          <Box sx={{ flex: 5, minWidth: 0, display: "flex" }}>
             <IncidentAuditTrail
               ref={auditTrailRef}
               auditTrail={incident.auditTrail || []}
@@ -159,26 +200,40 @@ export default function IncidentDetailsPage() {
             />
           </Box>
         ) : (
-          <Stack 
-            spacing={isAuditTrailExpanded ? 0 : 3} 
-            sx={{ flex: 5, minWidth: 0 }}
+          <Stack
+            spacing={0}
+            sx={{ flex: 5, minWidth: 0, position: 'relative' }}
           >
-            <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex', position: 'relative' }}>
-               <IncidentAuditTrail
-                  ref={auditTrailRef}
-                  auditTrail={incident.auditTrail || []}
-                  incident={incident}
-                  isResolved={isResolved}
-                  onCommentEdit={handleCommentEdit}
-                  isExpanded={isAuditTrailExpanded}
-                  onToggleExpand={() => setIsAuditTrailExpanded(prev => !prev)}
-               />
+            <Box
+              sx={{
+                flexGrow: 1,
+                minHeight: 0,
+                display: "flex",
+                position: "relative",
+                 zIndex: 2,
+              }}
+            >
+              <IncidentAuditTrail
+                ref={auditTrailRef}
+                auditTrail={incident.auditTrail || []}
+                incident={incident}
+                isResolved={isResolved}
+                onCommentEdit={handleCommentEdit}
+                isExpanded={isAuditTrailExpanded}
+                onToggleExpand={() => setIsAuditTrailExpanded((prev) => !prev)}
+              />
             </Box>
             {!isAuditTrailExpanded && (
-              <IncidentActionForm 
+              <IncidentActionForm
                 incident={incident}
-                onUpdate={handleUpdate} 
+                onUpdate={handleUpdate}
                 onOpenResolveDialog={() => setDialogOpen(true)}
+                sx={{
+                  // Use visibility instead of display to maintain layout stability
+                  visibility: isAuditTrailExpanded ? "hidden" : "visible",
+                  // Add padding top to account for the overlapping button
+                  pt: 4,
+                }}
               />
             )}
           </Stack>

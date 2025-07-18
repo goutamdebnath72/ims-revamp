@@ -386,42 +386,20 @@ export default function AdminDashboard() {
       {showTeamAvailability ? (
         <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
           <Stack sx={{ flex: 7 }} spacing={3}>
-            {/* Wrap StatusChart in a Card with a minimum height */}
-            <Card
-              elevation={3}
-              sx={{
-                minHeight: 400,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <StatusChart data={statusChartData} />
-            </Card>
+            <StatusChart data={statusChartData} />
             <RecentIncidentsCard incidents={filteredIncidents} />
           </Stack>
           <Stack sx={{ flex: 5 }} spacing={3}>
-            {/* Wrap PriorityChart in a Card with a minimum height */}
-            <Card
-              elevation={3}
-              sx={{
-                minHeight: 400,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <PriorityChart
-                key={`${shift}-${String(dateRange.start)}-${String(
-                  dateRange.end
-                )}`}
-                data={priorityChartData}
-                view={view}
-                dateRange={dateRange}
-                userRole={user?.role}
-                shift={shift}
-              />
-            </Card>
+            <PriorityChart
+              key={`${shift}-${String(dateRange.start)}-${String(
+                dateRange.end
+              )}`}
+              data={priorityChartData}
+              view={view}
+              dateRange={dateRange}
+              userRole={user?.role}
+              shift={shift}
+            />
             <TeamAvailabilityCard />
           </Stack>
         </Stack>

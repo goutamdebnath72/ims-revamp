@@ -1,18 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
-import { isSystemIncident, filterIncidents } from '@/lib/incident-helpers';
-import {
-  startOfDay,
-  endOfDay,
-  isWithinInterval,
-  parse,
-  isValid,
-  parseISO,
-  getHours,
-  format,
-} from "date-fns";
+import { useSearchParams, useRouter } from "next/navigation";
+import { isSystemIncident, filterIncidents } from "@/lib/incident-helpers";
+import { DateTime } from "luxon";
 import {
   Box,
   Typography,
@@ -30,6 +21,7 @@ export default function SearchPage() {
   const { data: session } = useSession();
   const { incidents } = React.useContext(IncidentContext);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const user = session?.user;
 
@@ -66,6 +58,28 @@ export default function SearchPage() {
   );
 
   React.useEffect(() => {
+    // --- NEW: Logic to reset the page ---
+    if (searchParams.get("reset") === "true") {
+      const initialCriteria = {
+        incidentId: "",
+        requestor: "",
+        status: "Any",
+        priority: "Any",
+        incidentType: "Any",
+        category: "Any",
+        shift: "Any",
+        department: "Any",
+        dateRange: { start: null, end: null },
+      };
+      setCriteria(initialCriteria);
+      setSearchResults([]);
+      setHasSearched(false);
+      // Clean the URL to remove ?reset=true
+      router.replace("/search", { scroll: false });
+      return; // Stop the rest of the effect from running
+    }
+    // --- End of new logic ---
+
     if (!user || incidents.length === 0) return;
 
     const urlCategory = searchParams.get("category");
@@ -80,8 +94,8 @@ export default function SearchPage() {
 
       if (urlStartDate && urlEndDate) {
         dateRangeFromUrl = {
-          start: parseISO(urlStartDate),
-          end: parseISO(urlEndDate),
+          start: DateTime.fromISO(urlStartDate).toJSDate(),
+          end: DateTime.fromISO(urlEndDate).toJSDate(),
         };
       }
 
@@ -111,7 +125,7 @@ export default function SearchPage() {
       setCriteria(formCriteria);
       performSearch(criteriaFromLink);
     }
-  }, [user, incidents, searchParams, performSearch]);
+  }, [user, incidents, searchParams, performSearch, router]);
 
   const isScrolled = useScrollTrigger({
     disableHysteresis: true,
@@ -135,14 +149,15 @@ export default function SearchPage() {
 
     let dateText = "";
     if (startDateParam && endDateParam) {
-      const start = parseISO(startDateParam);
-      const end = parseISO(endDateParam);
-      if (format(start, "yyyy-MM-dd") === format(end, "yyyy-MM-dd")) {
-        dateText = `Date: ${format(start, "do MMM, yyyy")}`;
+      // MODIFIED: Use Luxon to format dates for display
+      const start = DateTime.fromISO(startDateParam);
+      const end = DateTime.fromISO(endDateParam);
+
+      if (start.toISODate() === end.toISODate()) {
+        dateText = `Date: ${start.toFormat("d MMM, yyyy")}`;
       } else {
-        dateText = `Date Range: ${format(start, "do MMM")} - ${format(
-          end,
-          "do MMM, yyyy"
+        dateText = `Date Range: ${start.toFormat("d MMM")} - ${end.toFormat(
+          "d MMM, yyyy"
         )}`;
       }
     }
