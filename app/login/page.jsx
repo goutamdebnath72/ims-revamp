@@ -31,8 +31,10 @@ export default function LoginPage() {
     });
 
     if (res.ok) {
-      router.replace('/');
-    } else {
+  // This tells Next.js to refresh the page state.
+  // The AuthGuard will then handle the redirect.
+  router.refresh();
+} else {
       setError('Invalid User ID or Password');
     }
   };

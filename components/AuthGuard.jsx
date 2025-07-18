@@ -12,6 +12,13 @@ export default function AuthGuard({ children }) {
   const user = session?.user;
 
   React.useEffect(() => {
+  // If authenticated and on the login page, redirect away
+  if (status === 'authenticated' && pathname === '/login') {
+    router.replace('/');
+  }
+}, [status, pathname, router]);
+
+  React.useEffect(() => {
     // If not authenticated and not already on /login, redirect
     if (status === 'unauthenticated' && pathname !== '/login') {
       router.push('/login');
