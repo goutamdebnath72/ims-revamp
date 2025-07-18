@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState('');
   const router = useRouter();
+  const { status } = useSession();
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -26,9 +27,9 @@ export default function LoginPage() {
     const res = await signIn('credentials', {
       redirect: false,
       userId,
-      password
+      password,
     });
-    
+
     if (res.ok) {
       router.replace('/');
     } else {
@@ -36,11 +37,29 @@ export default function LoginPage() {
     }
   };
 
-  React.useEffect(() => {
-    const userIdInput = document.getElementById('userId');
-    if (userIdInput) userIdInput.focus();
-  }, []);
+  // Stage 1: Force full-screen loading fallback
+  if (status === 'loading') {
+    return (
+      <Box
+        sx={{
+          height: '100vh',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.8rem',
+          fontWeight: 600,
+          letterSpacing: '1px',
+          background: 'linear-gradient(to top, #eef2f3, #ffffff)',
+          transition: 'opacity 0.3s ease',
+        }}
+      >
+        Loading . . .
+      </Box>
+    );
+  }
 
+  // Stage 2: Actual UI with smooth fade-in
   return (
     <Box
       sx={{
@@ -51,6 +70,11 @@ export default function LoginPage() {
         alignItems: 'center',
         background: 'linear-gradient(to top, #eef2f3, #ffffff)',
         padding: 0,
+        opacity: 0,
+        animation: 'fadeIn 0.5s ease 0.1s forwards',
+        '@keyframes fadeIn': {
+          to: { opacity: 1 },
+        },
       }}
     >
       {/* Left Column */}
@@ -89,18 +113,17 @@ export default function LoginPage() {
           alignItems: 'center',
           flex: '0 0 50%',
           px: 0,
-          '& > *': {
-            marginLeft: 'auto',
-            marginRight: 'auto',
-          },
         }}
       >
         <Box
           sx={{
             width: '475px',
-            // UPDATED: Changed height to minHeight to allow the card to grow
             minHeight: '505px',
             position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
           }}
         >
           <Paper
@@ -109,7 +132,6 @@ export default function LoginPage() {
               px: 4,
               py: 3,
               width: '100%',
-              // UPDATED: Height is now flexible to fit the content
               minHeight: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -176,8 +198,19 @@ export default function LoginPage() {
                   error={!!error}
                   variant="outlined"
                   sx={{
-                    '& .MuiOutlinedInput-root': { height: '56px', fontSize: '1rem', backgroundColor: 'white', '& fieldset': { borderColor: '#ddd', borderWidth: '1px' }, '&:hover fieldset': { borderColor: '#4A90E2' }, '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' } },
-                    '& .MuiInputLabel-root': { fontSize: '1rem', color: '#666', '&.Mui-focused': { color: '#4A90E2' } },
+                    '& .MuiOutlinedInput-root': {
+                      height: '56px',
+                      fontSize: '1rem',
+                      backgroundColor: 'white',
+                      '& fieldset': { borderColor: '#ddd', borderWidth: '1px' },
+                      '&:hover fieldset': { borderColor: '#4A90E2' },
+                      '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      color: '#666',
+                      '&.Mui-focused': { color: '#4A90E2' },
+                    },
                   }}
                 />
                 <TextField
@@ -193,8 +226,19 @@ export default function LoginPage() {
                   error={!!error}
                   variant="outlined"
                   sx={{
-                    '& .MuiOutlinedInput-root': { height: '56px', fontSize: '1rem', backgroundColor: 'white', '& fieldset': { borderColor: '#ddd', borderWidth: '1px' }, '&:hover fieldset': { borderColor: '#4A90E2' }, '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' } },
-                    '& .MuiInputLabel-root': { fontSize: '1rem', color: '#666', '&.Mui-focused': { color: '#4A90E2' } },
+                    '& .MuiOutlinedInput-root': {
+                      height: '56px',
+                      fontSize: '1rem',
+                      backgroundColor: 'white',
+                      '& fieldset': { borderColor: '#ddd', borderWidth: '1px' },
+                      '&:hover fieldset': { borderColor: '#4A90E2' },
+                      '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: '1rem',
+                      color: '#666',
+                      '&.Mui-focused': { color: '#4A90E2' },
+                    },
                   }}
                 />
                 {error && (

@@ -18,7 +18,13 @@ export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
 
   const recentIncidents = [...(incidents || [])]
-    .sort((a, b) => String(b.id).localeCompare(String(a.id)))
+    .sort((a, b) => {
+      const format = "d MMM yyyy HH:mm";
+      const dateA = parse(a.reportedOn, format, new Date());
+      const dateB = parse(b.reportedOn, format, new Date());
+      // Subtracting timestamps gives a reliable descending sort
+      return dateB.getTime() - dateA.getTime();
+    })
     .slice(0, 5);
 
   const getStatusChipColor = (status) => {
