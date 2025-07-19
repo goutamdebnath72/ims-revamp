@@ -13,7 +13,7 @@ import Alert from "@mui/material/Alert";
 import Image from "next/image";
 import LoginInfoPanel from "@/components/LoginInfoPanel";       // Test deployment
 
-export default function LoginPage() {
+export default function LoginPage() {                           // Trigger new deployment          
   const [userId, setUserId] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
