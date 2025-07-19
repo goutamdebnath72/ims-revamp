@@ -1,5 +1,4 @@
 // File: components/IncidentDataGrid.jsx
-// UPDATED: Changed 'Closed' status chip to a solid grey background for distinction.
 "use client";
 
 import React, { memo } from "react";
@@ -7,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
 import { Chip } from "@mui/material";
+import { DateTime } from "luxon"; // <-- 1. IMPORT LUXON
 
 const columns = [
   { field: "id", headerName: "Incident No.", flex: 1.5, minWidth: 200 },
@@ -57,7 +57,15 @@ const columns = [
       );
     },
   },
-  { field: "reportedOn", headerName: "Reported On", width: 180 },
+  // --- 2. UPDATE THE 'reportedOn' COLUMN DEFINITION ---
+  { 
+    field: "reportedOn", 
+    headerName: "Reported On", 
+    width: 180,
+    type: 'dateTime', // Tell the grid this is a date/time column
+    // Convert the string to a real Date object for correct sorting
+    valueGetter: (value) => value ? DateTime.fromFormat(value, "dd MMM yyyy HH:mm").toJSDate() : null,
+  },
 ];
 
 function IncidentDataGrid({ rows, loading }) {
@@ -84,9 +92,9 @@ function IncidentDataGrid({ rows, loading }) {
           pagination: {
             paginationModel: { page: 0, pageSize: 20 },
           },
-          // CORRECTED: This now sets the default sort order to be the ID column, descending
+          // --- 3. SET THE DEFAULT SORT TO THE CORRECT COLUMN ---
           sorting: {
-            sortModel: [{ field: "id", sort: "desc" }],
+            sortModel: [{ field: "reportedOn", sort: "desc" }],
           },
         }}
         pageSizeOptions={[10, 20, 50]}
