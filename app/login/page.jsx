@@ -11,7 +11,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Alert from "@mui/material/Alert";
 import Image from "next/image";
-import LoginInfoPanel from "@/components/LoginInfoPanel";
+import LoginInfoPanel from "@/components/LoginInfoPanel";       // Test deployment
 
 export default function LoginPage() {
   const [userId, setUserId] = React.useState("");
