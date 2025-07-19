@@ -48,9 +48,16 @@ export default function SearchPage() {
       setHasSearched(true);
 
       setTimeout(() => {
-        // The search page now uses the exact same shared utility.
-        const results = filterIncidents(incidents, searchCriteria, user);
-        setSearchResults(results);
+        const filteredResults = filterIncidents(incidents, searchCriteria, user);
+        
+        // *** FIX: ADDED SORTING LOGIC HERE ***
+        const sortedResults = [...filteredResults].sort((a, b) => {
+          const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
+          const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
+          return dateB - dateA; // Sorts newest first
+        });
+
+        setSearchResults(sortedResults);
         setLoading(false);
       }, 500);
     },
@@ -58,7 +65,6 @@ export default function SearchPage() {
   );
 
   React.useEffect(() => {
-    // --- NEW: Logic to reset the page ---
     if (searchParams.get("reset") === "true") {
       const initialCriteria = {
         incidentId: "",
@@ -74,11 +80,9 @@ export default function SearchPage() {
       setCriteria(initialCriteria);
       setSearchResults([]);
       setHasSearched(false);
-      // Clean the URL to remove ?reset=true
       router.replace("/search", { scroll: false });
-      return; // Stop the rest of the effect from running
+      return;
     }
-    // --- End of new logic ---
 
     if (!user || incidents.length === 0) return;
 
@@ -149,7 +153,6 @@ export default function SearchPage() {
 
     let dateText = "";
     if (startDateParam && endDateParam) {
-      // MODIFIED: Use Luxon to format dates for display
       const start = DateTime.fromISO(startDateParam);
       const end = DateTime.fromISO(endDateParam);
 
