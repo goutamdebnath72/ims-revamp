@@ -1,59 +1,58 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { signIn, useSession } from 'next-auth/react';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import Alert from '@mui/material/Alert';
-import Image from 'next/image';
-import LoginInfoPanel from '@/components/LoginInfoPanel';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Alert from "@mui/material/Alert";
+import Image from "next/image";
+import LoginInfoPanel from "@/components/LoginInfoPanel";
 
 export default function LoginPage() {
-  const [userId, setUserId] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [error, setError] = React.useState('');
+  const [userId, setUserId] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [error, setError] = React.useState("");
+  // Add this line
   const router = useRouter();
   const { status } = useSession();
 
   const handleLogin = async (event) => {
     event.preventDefault();
-    setError('');
+    setError("");
 
-    const res = await signIn('credentials', {
+    const res = await signIn("credentials", {
       redirect: false,
       userId,
       password,
     });
 
     if (res.ok) {
-  // This tells Next.js to refresh the page state.
-  // The AuthGuard will then handle the redirect.
-  router.refresh();
-} else {
-      setError('Invalid User ID or Password');
+      window.location.href = "/";
+    } else {
+      setError("Invalid User ID or Password");
     }
   };
 
   // Stage 1: Force full-screen loading fallback
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <Box
         sx={{
-          height: '100vh',
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1.8rem',
+          height: "100vh",
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.8rem",
           fontWeight: 600,
-          letterSpacing: '1px',
-          background: 'linear-gradient(to top, #eef2f3, #ffffff)',
-          transition: 'opacity 0.3s ease',
+          letterSpacing: "1px",
+          background: "linear-gradient(to top, #eef2f3, #ffffff)",
+          transition: "opacity 0.3s ease",
         }}
       >
         Loading . . .
@@ -65,16 +64,16 @@ export default function LoginPage() {
   return (
     <Box
       sx={{
-        height: '100vh',
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        background: 'linear-gradient(to top, #eef2f3, #ffffff)',
+        height: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        background: "linear-gradient(to top, #eef2f3, #ffffff)",
         padding: 0,
-        opacity: 0,
-        animation: 'fadeIn 0.5s ease 0.1s forwards',
-        '@keyframes fadeIn': {
+        opacity: 0, 
+        animation: "fadeIn 0.5s ease 0.1s forwards",
+        "@keyframes fadeIn": {
           to: { opacity: 1 },
         },
       }}
@@ -82,12 +81,12 @@ export default function LoginPage() {
       {/* Left Column */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: '0 0 50%',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flex: "0 0 50%",
           px: 2,
-          minWidth: '0',
+          minWidth: "0",
         }}
       >
         <LoginInfoPanel />
@@ -96,13 +95,13 @@ export default function LoginPage() {
       {/* Vertical Divider */}
       <Box
         sx={{
-          display: { xs: 'none', lg: 'flex' },
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: '0 0 1px',
-          height: '700px',
-          backgroundColor: 'rgba(0, 0, 0, 0.2)',
-          alignSelf: 'center',
+          display: { xs: "none", lg: "flex" },
+          alignItems: "center",
+          justifyContent: "center",
+          flex: "0 0 1px",
+          height: "700px",
+          backgroundColor: "rgba(0, 0, 0, 0.2)",
+          alignSelf: "center",
           mx: 0,
         }}
       />
@@ -110,22 +109,22 @@ export default function LoginPage() {
       {/* Right Column */}
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flex: '0 0 50%',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flex: "0 0 50%",
           px: 0,
         }}
       >
         <Box
           sx={{
-            width: '475px',
-            minHeight: '505px',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            transition: 'all 0.3s ease',
+            width: "475px",
+            minHeight: "505px",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            transition: "all 0.3s ease",
           }}
         >
           <Paper
@@ -133,14 +132,14 @@ export default function LoginPage() {
             sx={{
               px: 4,
               py: 3,
-              width: '100%',
-              minHeight: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: "100%",
+              minHeight: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               borderRadius: 2,
-              boxSizing: 'border-box',
+              boxSizing: "border-box",
             }}
           >
             {/* Logo */}
@@ -151,7 +150,7 @@ export default function LoginPage() {
                 width={130}
                 height={0}
                 priority
-                style={{ height: 'auto', width: '130px' }}
+                style={{ height: "auto", width: "130px" }}
               />
             </Box>
 
@@ -162,9 +161,9 @@ export default function LoginPage() {
               sx={{
                 mb: 1,
                 fontWeight: 400,
-                color: '#1a1a1a',
-                fontSize: '2rem',
-                textAlign: 'center',
+                color: "#1a1a1a",
+                fontSize: "2rem",
+                textAlign: "center",
               }}
             >
               IMS Login
@@ -175,9 +174,9 @@ export default function LoginPage() {
               variant="h6"
               sx={{
                 mb: 3,
-                color: '#666',
-                fontSize: '1rem',
-                textAlign: 'center',
+                color: "#666",
+                fontSize: "1rem",
+                textAlign: "center",
                 fontWeight: 400,
               }}
             >
@@ -185,7 +184,11 @@ export default function LoginPage() {
             </Typography>
 
             {/* Form */}
-            <Box component="form" onSubmit={handleLogin} sx={{ width: '100%', maxWidth: '395px' }}>
+            <Box
+              component="form"
+              onSubmit={handleLogin}
+              sx={{ width: "100%", maxWidth: "395px" }}
+            >
               <Stack spacing={2.25}>
                 <TextField
                   required
@@ -200,18 +203,21 @@ export default function LoginPage() {
                   error={!!error}
                   variant="outlined"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      height: '56px',
-                      fontSize: '1rem',
-                      backgroundColor: 'white',
-                      '& fieldset': { borderColor: '#ddd', borderWidth: '1px' },
-                      '&:hover fieldset': { borderColor: '#4A90E2' },
-                      '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' },
+                    "& .MuiOutlinedInput-root": {
+                      height: "56px",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      "& fieldset": { borderColor: "#ddd", borderWidth: "1px" },
+                      "&:hover fieldset": { borderColor: "#4A90E2" },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#4A90E2",
+                        borderWidth: "2px",
+                      },
                     },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '1rem',
-                      color: '#666',
-                      '&.Mui-focused': { color: '#4A90E2' },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "1rem",
+                      color: "#666",
+                      "&.Mui-focused": { color: "#4A90E2" },
                     },
                   }}
                 />
@@ -228,23 +234,26 @@ export default function LoginPage() {
                   error={!!error}
                   variant="outlined"
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      height: '56px',
-                      fontSize: '1rem',
-                      backgroundColor: 'white',
-                      '& fieldset': { borderColor: '#ddd', borderWidth: '1px' },
-                      '&:hover fieldset': { borderColor: '#4A90E2' },
-                      '&.Mui-focused fieldset': { borderColor: '#4A90E2', borderWidth: '2px' },
+                    "& .MuiOutlinedInput-root": {
+                      height: "56px",
+                      fontSize: "1rem",
+                      backgroundColor: "white",
+                      "& fieldset": { borderColor: "#ddd", borderWidth: "1px" },
+                      "&:hover fieldset": { borderColor: "#4A90E2" },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#4A90E2",
+                        borderWidth: "2px",
+                      },
                     },
-                    '& .MuiInputLabel-root': {
-                      fontSize: '1rem',
-                      color: '#666',
-                      '&.Mui-focused': { color: '#4A90E2' },
+                    "& .MuiInputLabel-root": {
+                      fontSize: "1rem",
+                      color: "#666",
+                      "&.Mui-focused": { color: "#4A90E2" },
                     },
                   }}
                 />
                 {error && (
-                  <Alert severity="error" sx={{ fontSize: '0.9rem', py: 1 }}>
+                  <Alert severity="error" sx={{ fontSize: "0.9rem", py: 1 }}>
                     {error}
                   </Alert>
                 )}
@@ -254,20 +263,20 @@ export default function LoginPage() {
                   variant="contained"
                   sx={{
                     py: 1.5,
-                    fontSize: '1rem',
+                    fontSize: "1rem",
                     fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    backgroundColor: '#4A90E2',
-                    borderRadius: '6px',
-                    height: '48px',
-                    boxShadow: '0 4px 12px rgba(74, 144, 226, 0.3)',
-                    '&:hover': {
-                      backgroundColor: '#357ABD',
-                      boxShadow: '0 6px 16px rgba(74, 144, 226, 0.4)',
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    backgroundColor: "#4A90E2",
+                    borderRadius: "6px",
+                    height: "48px",
+                    boxShadow: "0 4px 12px rgba(74, 144, 226, 0.3)",
+                    "&:hover": {
+                      backgroundColor: "#357ABD",
+                      boxShadow: "0 6px 16px rgba(74, 144, 226, 0.4)",
                     },
-                    '&:active': {
-                      boxShadow: '0 2px 8px rgba(74, 144, 226, 0.3)',
+                    "&:active": {
+                      boxShadow: "0 2px 8px rgba(74, 144, 226, 0.3)",
                     },
                   }}
                 >

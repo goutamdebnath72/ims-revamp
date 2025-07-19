@@ -12,9 +12,17 @@ export const authOptions = {
         password: { label: "SAIL P/No", type: "password" },
       },
       authorize(credentials) {
+        console.log("[SERVER] 1. Authorize function started.");
+        console.log("[SERVER] 2. Received credentials:", credentials);
         const user = MOCK_USER_DB[credentials.userId];
+        console.log(
+          "[SERVER] 3. User lookup result:",
+          user ? user.name : "No user found"
+        );
 
         if (user && user.password === credentials.password) {
+          console.log("[SERVER] 4. Password match! Returning user object.");
+
           return {
             id: user.ticketNo,
             name: user.name,
@@ -48,6 +56,7 @@ export const authOptions = {
             mobileNo: "N/A",
           };
         }
+        console.log("[SERVER] 4. No valid user found. Returning null.");
 
         return null;
       },
