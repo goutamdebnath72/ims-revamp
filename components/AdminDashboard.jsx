@@ -48,20 +48,16 @@ export default function AdminDashboard() {
   const open = Boolean(anchorEl);
 
   React.useEffect(() => {
-    // This effect runs once when the component mounts to set the defaults
     if (user) {
-      // Default to "Today" for everyone
       const now = DateTime.local().setZone("Asia/Kolkata");
       setDateRange({ start: now.toJSDate(), end: now.toJSDate() });
-
-      // Set shift based on role
       if (user.role === "sys_admin") {
-        setShift("All"); // For sys_admin, default to "All" shifts
+        setShift("All");
       } else {
-        setShift(getCurrentShift()); // For admin, default to the current shift
+        setShift(getCurrentShift());
       }
     }
-  }, [user]); // Rerun if the user object changes
+  }, [user]);
 
   const handleViewChange = (event, newView) => {
     if (newView !== null) setView(newView);
@@ -102,12 +98,23 @@ export default function AdminDashboard() {
     });
   }, [incidents, user, view]);
 
-  // CORRECTED: The entire filtering logic now uses the incident ID for date and shift checks.
   const filteredIncidents = React.useMemo(() => {
     const criteria = { dateRange, shift };
-    // Pass the user object for consistency and add it to the dependency array.
     return filterIncidents(incidentsToDisplay, criteria, user);
   }, [incidentsToDisplay, dateRange, shift, user]);
+
+  const sortedIncidents = React.useMemo(() => {
+    return [...filteredIncidents].sort((a, b) => {
+      const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", {
+        zone: "Asia/Kolkata",
+      });
+      const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", {
+        zone: "Asia/Kolkata",
+      });
+      return dateB - dateA;
+    });
+  }, [filteredIncidents]);
+
   const newIncidents = filteredIncidents.filter(
     (i) => i.status === "New"
   ).length;
@@ -205,16 +212,12 @@ export default function AdminDashboard() {
   const formatDateRange = () => {
     const { start, end } = dateRange;
     if (!start || !end) return "All Time";
-
     const startDt = DateTime.fromJSDate(start);
     const endDt = DateTime.fromJSDate(end);
     const today = DateTime.local().setZone("Asia/Kolkata");
-
-    // Check if the selected range is today
     if (startDt.hasSame(today, "day") && endDt.hasSame(today, "day")) {
       return "Today";
     }
-
     if (startDt.toISODate() === endDt.toISODate()) {
       return startDt.toFormat("d MMM, yy");
     }
@@ -230,10 +233,7 @@ export default function AdminDashboard() {
       <Typography variant="body2" sx={{ fontWeight: "bold" }}>
         System Incident Types
       </Typography>
-
-      {/* Change the borderColor to make the line more prominent */}
       <Divider sx={{ my: 1, borderColor: "grey.500" }} />
-
       {SYSTEM_INCIDENT_TYPES.map((type) => (
         <Typography key={type} variant="caption" display="block">
           {type}
@@ -244,7 +244,6 @@ export default function AdminDashboard() {
 
   return (
     <Stack spacing={3}>
-      {/* Header */}
       <Stack
         direction="row"
         justifyContent="space-between"
@@ -259,7 +258,6 @@ export default function AdminDashboard() {
             <ViewToggle selectedView={view} onChange={setView} />
           </Box>
         )}
-
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
           {shift !== "All" && (
             <Chip
@@ -279,8 +277,6 @@ export default function AdminDashboard() {
           </Button>
         </Box>
       </Stack>
-
-      {/* Menu & Filters */}
       <Menu
         id="date-range-menu"
         anchorEl={anchorEl}
@@ -341,8 +337,6 @@ export default function AdminDashboard() {
           </ToggleButtonGroup>
         </Box>
       </Menu>
-
-      {/* Stat Cards */}
       <Stack direction="row" spacing={3}>
         {statCardsData.map((card, index) => (
           <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
@@ -381,12 +375,9 @@ export default function AdminDashboard() {
           </Box>
         ))}
       </Stack>
-
-      {/* Charts and Cards */}
       {showTeamAvailability ? (
         <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
           <Stack sx={{ flex: 7 }} spacing={3}>
-            {/* Wrap StatusChart in a Card with a minimum height */}
             <Card
               elevation={3}
               sx={{
@@ -398,10 +389,9 @@ export default function AdminDashboard() {
             >
               <StatusChart data={statusChartData} />
             </Card>
-            <RecentIncidentsCard incidents={filteredIncidents} />
+            <RecentIncidentsCard incidents={sortedIncidents} />
           </Stack>
           <Stack sx={{ flex: 5 }} spacing={3}>
-            {/* Wrap PriorityChart in a Card with a minimum height */}
             <Card
               elevation={3}
               sx={{
@@ -444,7 +434,7 @@ export default function AdminDashboard() {
               />
             </Box>
           </Stack>
-          <RecentIncidentsCard incidents={filteredIncidents} />
+          <RecentIncidentsCard incidents={sortedIncidents} />
         </Stack>
       )}
     </Stack>
