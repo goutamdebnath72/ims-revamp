@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MOCK_USER_DB } from "@/lib/citusers";
+import { MOCK_VENDOR_DB } from "@/lib/network-vendors"; // <-- 1. IMPORT THE NEW VENDOR FILE
 import { getCurrentShift } from "@/lib/date-helpers";
 
 export const authOptions = {
@@ -8,36 +9,29 @@ export const authOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        userId: { label: "Ticket No", type: "text" },
-        password: { label: "SAIL P/No", type: "password" },
+        userId: { label: "User ID", type: "text" },
+        password: { label: "Password", type: "password" },
       },
       authorize(credentials) {
-        console.log("[SERVER] 1. Authorize function started.");
-        console.log("[SERVER] 2. Received credentials:", credentials);
-        const user = MOCK_USER_DB[credentials.userId];
-        console.log(
-          "[SERVER] 3. User lookup result:",
-          user ? user.name : "No user found"
-        );
-
-        if (user && user.password === credentials.password) {
-          console.log("[SERVER] 4. Password match! Returning user object.");
-
+        // --- CHECK 1: C&IT Employees ---
+        const citUser = MOCK_USER_DB[credentials.userId];
+        if (citUser && citUser.password === credentials.password) {
           return {
-            id: user.ticketNo,
-            name: user.name,
-            role: user.role,
-            emailSail: user.emailSail,
-            emailNic: user.emailNic,
-            sailpno: user.sailpno,
-            departmentCode: user.departmentCode,
+            id: citUser.ticketNo,
+            name: citUser.name,
+            role: citUser.role,
+            emailSail: citUser.emailSail,
+            emailNic: citUser.emailNic,
+            sailpno: citUser.sailpno,
+            departmentCode: citUser.departmentCode,
             loginShift: getCurrentShift(),
-            designation: user.designation,
-            department: user.department,
-            mobileNo: user.mobileNo,
+            designation: citUser.designation,
+            department: citUser.department,
+            mobileNo: citUser.mobileNo,
           };
         }
 
+        // --- CHECK 2: Standard User ---
         if (
           credentials.userId === "111111" &&
           credentials.password === "password"
@@ -56,8 +50,20 @@ export const authOptions = {
             mobileNo: "N/A",
           };
         }
-        console.log("[SERVER] 4. No valid user found. Returning null.");
 
+        // --- 2. ADD NEW CHECK: Network Vendor ---
+        const vendorUser = MOCK_VENDOR_DB[credentials.userId];
+        if (vendorUser && vendorUser.password === credentials.password) {
+          return {
+            id: vendorUser.id,
+            name: vendorUser.name,
+            role: vendorUser.role,
+            // Vendors don't have these other details
+            department: "Network Vendor", 
+          };
+        }
+
+        // If no user is found in any database
         return null;
       },
     }),
@@ -70,6 +76,7 @@ export const authOptions = {
       if (user) {
         token.role = user.role;
         token.name = user.name;
+        // Add other user properties to the token if they exist
         token.emailSail = user.emailSail;
         token.emailNic = user.emailNic;
         token.sailpno = user.sailpno;
@@ -79,13 +86,13 @@ export const authOptions = {
         token.department = user.department;
         token.mobileNo = user.mobileNo;
       }
-
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.sub;
       session.user.role = token.role;
       session.user.name = token.name;
+      // Add other properties to the session if they exist
       session.user.emailSail = token.emailSail;
       session.user.emailNic = token.emailNic;
       session.user.sailpno = token.sailpno;
@@ -94,7 +101,6 @@ export const authOptions = {
       session.user.designation = token.designation;
       session.user.department = token.department;
       session.user.mobileNo = token.mobileNo;
-
       return session;
     },
   },

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { isSystemIncident, filterIncidents } from "@/lib/incident-helpers";
+import { filterIncidents } from "@/lib/incident-helpers";
 import { DateTime } from "luxon";
 import {
   Box,
@@ -22,7 +22,6 @@ export default function SearchPage() {
   const { incidents } = React.useContext(IncidentContext);
   const searchParams = useSearchParams();
   const router = useRouter();
-
   const user = session?.user;
 
   const [searchResults, setSearchResults] = React.useState([]);
@@ -43,20 +42,23 @@ export default function SearchPage() {
   const performSearch = React.useCallback(
     (searchCriteria) => {
       if (!user || !incidents || incidents.length === 0) return;
-
       setLoading(true);
       setHasSearched(true);
-
       setTimeout(() => {
-        const filteredResults = filterIncidents(incidents, searchCriteria, user);
-        
-        // *** FIX: ADDED SORTING LOGIC HERE ***
+        const filteredResults = filterIncidents(
+          incidents,
+          searchCriteria,
+          user
+        );
         const sortedResults = [...filteredResults].sort((a, b) => {
-          const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
-          const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
-          return dateB - dateA; // Sorts newest first
+          const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", {
+            zone: "Asia/Kolkata",
+          });
+          const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", {
+            zone: "Asia/Kolkata",
+          });
+          return dateB - dateA;
         });
-
         setSearchResults(sortedResults);
         setLoading(false);
       }, 500);
@@ -92,21 +94,26 @@ export default function SearchPage() {
     const urlShift = searchParams.get("shift");
     const urlStartDate = searchParams.get("startDate");
     const urlEndDate = searchParams.get("endDate");
+    const urlIncidentType = searchParams.get("incidentType");
 
-    if (urlCategory || urlStatus || urlPriority || urlShift) {
+    if (
+      urlCategory ||
+      urlStatus ||
+      urlPriority ||
+      urlShift ||
+      urlIncidentType
+    ) {
       let dateRangeFromUrl = { start: null, end: null };
-
       if (urlStartDate && urlEndDate) {
         dateRangeFromUrl = {
           start: DateTime.fromISO(urlStartDate).toJSDate(),
           end: DateTime.fromISO(urlEndDate).toJSDate(),
         };
       }
-
       const criteriaFromLink = {
         incidentId: "",
         requestor: "",
-        incidentType: "Any",
+        incidentType: urlIncidentType || "Any",
         status: urlStatus || "Any",
         priority: urlPriority || "Any",
         shift: urlShift || "Any",
@@ -115,7 +122,6 @@ export default function SearchPage() {
           urlCategory || (user.role === "sys_admin" ? "Any" : "general"),
         dateRange: dateRangeFromUrl,
       };
-
       const formCriteria = {
         ...criteriaFromLink,
         category:
@@ -125,7 +131,6 @@ export default function SearchPage() {
             ? "General"
             : "Any",
       };
-
       setCriteria(formCriteria);
       performSearch(criteriaFromLink);
     }
@@ -138,9 +143,8 @@ export default function SearchPage() {
 
   const getHeading = () => {
     const category = searchParams.get("category");
-    if (user?.role === "sys_admin" && category === "system") {
+    if (user?.role === "sys_admin" && category === "system")
       return "Search & Archive (SYS)";
-    }
     return "Search & Archive";
   };
 
@@ -148,14 +152,11 @@ export default function SearchPage() {
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
     const shiftParam = searchParams.get("shift");
-
     if (!startDateParam && !shiftParam) return null;
-
     let dateText = "";
     if (startDateParam && endDateParam) {
       const start = DateTime.fromISO(startDateParam);
       const end = DateTime.fromISO(endDateParam);
-
       if (start.toISODate() === end.toISODate()) {
         dateText = `Date: ${start.toFormat("d MMM, yyyy")}`;
       } else {
@@ -164,7 +165,6 @@ export default function SearchPage() {
         )}`;
       }
     }
-
     const shiftText = shiftParam ? `Shift: ${shiftParam}` : "";
     return [dateText, shiftText].filter(Boolean).join("  |  ");
   };
@@ -172,7 +172,15 @@ export default function SearchPage() {
   const filterContextText = getFilterContextText();
 
   return (
-    <Stack spacing={2}>
+    <Stack
+      spacing={2}
+      sx={{
+        // This ensures the container fills the screen vertically
+        minHeight: "calc(100vh - 64px)", // Assuming a 64px tall AppBar
+        // This sets a single, clean background color
+        bgcolor: "grey.100",
+      }}
+    >
       <Paper
         elevation={isScrolled ? 4 : 2}
         sx={{
@@ -195,16 +203,27 @@ export default function SearchPage() {
       </Paper>
 
       {hasSearched && (
-        <Paper elevation={2} sx={{ p: 2 }}>
+        <Paper
+          elevation={2}
+          sx={{
+            p: 2,
+            display: "flex", // The conditional display is no longer needed here
+            flexDirection: "column",
+            height: "75vh",
+          }}
+        >
           {filterContextText && (
-            <Alert severity="info" sx={{ mb: 2 }}>
+            <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
               Showing results based on dashboard selection — {filterContextText}
             </Alert>
           )}
-          <Typography variant="h5" sx={{ mb: 2 }}>
+          <Typography variant="h5" sx={{ mb: 2, flexShrink: 0 }}>
             Search Results
           </Typography>
-          <IncidentDataGrid rows={searchResults} loading={loading} />
+
+          <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+            <IncidentDataGrid rows={searchResults} loading={loading} />
+          </Box>
         </Paper>
       )}
     </Stack>

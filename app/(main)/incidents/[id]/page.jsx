@@ -26,8 +26,6 @@ export default function IncidentDetailsPage() {
   const incident = incidents.find((inc) => inc.id.toString() === params.id);
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const auditTrailRef = React.useRef(null);
-
-  // This new state manages the expand/collapse feature
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
 
   React.useEffect(() => {
@@ -174,6 +172,12 @@ export default function IncidentDetailsPage() {
   const isResolved =
     incident.status === "Resolved" || incident.status === "Closed";
 
+  // --- FIX: ADD LOGIC TO DETERMINE IF THE ACTION FORM SHOULD BE SHOWN ---
+  const canTakeAction = 
+    (user.role === 'admin' || user.role === 'sys_admin' || user.role === 'network_vendor') &&
+    !isResolved;
+
+
   return (
     <>
       <Box
@@ -187,19 +191,9 @@ export default function IncidentDetailsPage() {
         <Box sx={{ flex: 7, minWidth: 0 }}>
           <IncidentDetailsCard incident={incident} />
         </Box>
-        {isResolved ? (
-          <Box sx={{ flex: 5, minWidth: 0, display: "flex" }}>
-            <IncidentAuditTrail
-              ref={auditTrailRef}
-              auditTrail={incident.auditTrail || []}
-              incident={incident}
-              isResolved={isResolved}
-              onCommentEdit={handleCommentEdit}
-              isExpanded={false}
-              onToggleExpand={() => {}}
-            />
-          </Box>
-        ) : (
+        
+        {/* --- FIX: USE THE NEW 'canTakeAction' VARIABLE TO RENDER THE RIGHT-SIDE COLUMN --- */}
+        {canTakeAction ? (
           <Stack
             spacing={0}
             sx={{ flex: 5, minWidth: 0, position: 'relative' }}
@@ -229,14 +223,25 @@ export default function IncidentDetailsPage() {
                 onUpdate={handleUpdate}
                 onOpenResolveDialog={() => setDialogOpen(true)}
                 sx={{
-                  // Use visibility instead of display to maintain layout stability
                   visibility: isAuditTrailExpanded ? "hidden" : "visible",
-                  // Add padding top to account for the overlapping button
                   pt: 4,
                 }}
               />
             )}
           </Stack>
+        ) : (
+          // If the user cannot take action, just show the audit trail
+          <Box sx={{ flex: 5, minWidth: 0, display: "flex" }}>
+            <IncidentAuditTrail
+              ref={auditTrailRef}
+              auditTrail={incident.auditTrail || []}
+              incident={incident}
+              isResolved={isResolved}
+              onCommentEdit={handleCommentEdit}
+              isExpanded={false}
+              onToggleExpand={() => {}}
+            />
+          </Box>
         )}
       </Box>
 

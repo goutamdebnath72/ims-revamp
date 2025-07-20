@@ -66,24 +66,25 @@ const spellCheckTooltipText = (
 
 const drawerWidth = 240;
 
+// --- FIX: ADDED 'network_vendor' TO THE ROLES THAT CAN SEE THESE MENU ITEMS ---
 const allMenuItems = [
   {
     text: "Dashboard",
     icon: <DashboardIcon />,
     href: "/",
-    roles: ["admin", "standard", "sys_admin"],
+    roles: ["admin", "standard", "sys_admin", "network_vendor"],
   },
   {
     text: "Search & Archive",
     icon: <SearchIcon />,
     href: "/search?reset=true",
-    roles: ["admin", "standard", "sys_admin"],
+    roles: ["admin", "standard", "sys_admin", "network_vendor"],
   },
   {
     text: "Raise Incident",
     icon: <PostAddIcon />,
     href: "/raise",
-    roles: ["admin", "standard", "sys_admin"],
+    roles: ["admin", "standard", "sys_admin"], // Vendor cannot raise incidents
   },
   {
     text: "Pending Incidents (SYS)",
@@ -123,7 +124,6 @@ export default function AppLayout({ children }) {
   const isCnIT = user?.role === "admin";
   const [currentShift, setCurrentShift] = React.useState(getCurrentShift());
 
-  // This effect keeps the shift display chip up to date
   React.useEffect(() => {
     const intervalId = setInterval(() => {
       const newShift = getCurrentShift();
@@ -135,7 +135,6 @@ export default function AppLayout({ children }) {
     return () => clearInterval(intervalId);
   }, [currentShift]);
 
-  // This effect handles the conditional auto-logout for admin users
   React.useEffect(() => {
     const logoutTimer = setInterval(() => {
       if (user?.role === "admin" && user?.loginShift) {
@@ -209,7 +208,7 @@ export default function AppLayout({ children }) {
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
               <Avatar sx={{ bgcolor: "secondary.main" }}>
-                {user.initials}
+                {user.name ? user.name.charAt(0) : '?'}
               </Avatar>
             </IconButton>
             <Menu

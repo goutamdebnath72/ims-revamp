@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useSession } from 'next-auth/react'; // Import useSession from NextAuth
+import { useSession } from 'next-auth/react';
 import { SettingsContext } from "@/context/SettingsContext";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -17,12 +17,9 @@ import Box from '@mui/material/Box';
 import { incidentTypes } from '@/lib/incident-types';
 
 const priorities = ['Low', 'Medium', 'High'];
-
-// Corrected department codes to be consistent with other components
 const C_AND_IT_DEPT_CODES = [98540, 98500];
 
 export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDialog }) {
-  // Replaced UserContext with the useSession hook
   const { data: session } = useSession();
   const user = session?.user;
   
@@ -40,6 +37,8 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
   }, [incident]);
 
   const isCITEmployee = user && C_AND_IT_DEPT_CODES.includes(user.departmentCode);
+  // --- 1. ADD A CHECK FOR THE NEW VENDOR ROLE ---
+  const isNetworkVendor = user?.role === 'network_vendor';
 
   const handleSubmitUpdate = () => {
     onUpdate({ comment, newType, newPriority });
@@ -58,6 +57,7 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
       <Divider sx={{ mb: 2 }} />
       <Stack spacing={2}>
         
+        {/* This section is already correctly hidden for non-C&IT users, including the vendor */}
         {isCITEmployee && (
             <Stack direction="row" spacing={2}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -91,24 +91,39 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
           spellCheck={isSpellcheckEnabled}
           required
         />
-        <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-          <Button
-            variant="outlined"
-            color="success"
-            onClick={handleResolveClick}
-            sx={{ flex: 1, letterSpacing: "1px" }}
-          >
-            Resolve Incident
-          </Button>
+        
+        {/* --- 2. ADD CONDITIONAL LOGIC FOR BUTTONS --- */}
+        {isNetworkVendor ? (
+          // For Network Vendor: Show only one full-width button
           <Button
             variant="contained"
             onClick={handleSubmitUpdate}
-            sx={{ flex: 1, letterSpacing: "1px" }}
+            sx={{ width: "100%", letterSpacing: "1px" }}
             disabled={!comment.trim()}
           >
             Submit Update
           </Button>
-        </Stack>
+        ) : (
+          // For all other users: Show the original two buttons
+          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+            <Button
+              variant="outlined"
+              color="success"
+              onClick={handleResolveClick}
+              sx={{ flex: 1, letterSpacing: "1px" }}
+            >
+              Resolve Incident
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubmitUpdate}
+              sx={{ flex: 1, letterSpacing: "1px" }}
+              disabled={!comment.trim()}
+            >
+              Submit Update
+            </Button>
+          </Stack>
+        )}
       </Stack>
     </Paper>
   );

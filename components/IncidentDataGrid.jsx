@@ -1,4 +1,3 @@
-// File: components/IncidentDataGrid.jsx
 "use client";
 
 import React, { memo } from "react";
@@ -6,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
 import { Chip } from "@mui/material";
-import { DateTime } from "luxon"; // <-- 1. IMPORT LUXON
+import { DateTime } from "luxon";
 
 const columns = [
   { field: "id", headerName: "Incident No.", flex: 1.5, minWidth: 200 },
@@ -57,14 +56,13 @@ const columns = [
       );
     },
   },
-  // --- 2. UPDATE THE 'reportedOn' COLUMN DEFINITION ---
-  { 
-    field: "reportedOn", 
-    headerName: "Reported On", 
+  {
+    field: "reportedOn",
+    headerName: "Reported On",
     width: 180,
-    type: 'dateTime', // Tell the grid this is a date/time column
-    // Convert the string to a real Date object for correct sorting
-    valueGetter: (value) => value ? DateTime.fromFormat(value, "dd MMM yyyy HH:mm").toJSDate() : null,
+    type: "dateTime",
+    valueGetter: (value) =>
+      value ? DateTime.fromFormat(value, "dd MMM yyyy HH:mm").toJSDate() : null,
   },
 ];
 
@@ -77,31 +75,29 @@ function IncidentDataGrid({ rows, loading }) {
   };
 
   return (
-    <Box sx={{ height: "70vh", width: "100%" }}>
-      <DataGrid
-        rows={rows}
-        columns={columns}
-        loading={loading}
-        onRowClick={handleRowClick}
-        sx={{
-          "& .MuiDataGrid-row:hover": {
-            cursor: "pointer",
-          },
-        }}
-        initialState={{
-          pagination: {
-            paginationModel: { page: 0, pageSize: 20 },
-          },
-          // --- 3. SET THE DEFAULT SORT TO THE CORRECT COLUMN ---
-          sorting: {
-            sortModel: [{ field: "reportedOn", sort: "desc" }],
-          },
-        }}
-        pageSizeOptions={[10, 20, 50]}
-        checkboxSelection
-        disableRowSelectionOnClick
-      />
-    </Box>
+    // *** FIX: CHANGED THE BOX TO TAKE UP 100% OF ITS PARENT'S HEIGHT ***
+    <DataGrid
+      rows={rows}
+      columns={columns}
+      loading={loading}
+      onRowClick={handleRowClick}
+      sx={{
+        "& .MuiDataGrid-row:hover": {
+          cursor: "pointer",
+        },
+      }}
+      initialState={{
+        pagination: {
+          paginationModel: { page: 0, pageSize: 20 },
+        },
+        sorting: {
+          sortModel: [{ field: "reportedOn", sort: "desc" }],
+        },
+      }}
+      pageSizeOptions={[10, 20, 50]}
+      checkboxSelection
+      disableRowSelectionOnClick
+    />
   );
 }
 
