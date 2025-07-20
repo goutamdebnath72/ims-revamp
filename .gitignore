@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# One-time use admin scripts
+/app/api/admin/cleanup-incidents/route.js
