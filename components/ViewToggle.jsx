@@ -32,6 +32,8 @@ export default function ViewToggle({ selectedView, onChange }) {
         width: "fit-content",
         fontSize: "16px",
         fontWeight: 600,
+            boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.15)', // The shadow
+
       }}
     >
       {/* Moving pill */}

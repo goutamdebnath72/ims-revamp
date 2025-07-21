@@ -173,10 +173,12 @@ export default function IncidentDetailsPage() {
     incident.status === "Resolved" || incident.status === "Closed";
 
   // --- FIX: ADD LOGIC TO DETERMINE IF THE ACTION FORM SHOULD BE SHOWN ---
-  const canTakeAction = 
-    (user.role === 'admin' || user.role === 'sys_admin' || user.role === 'network_vendor') &&
+  const canTakeAction =
+    (user.role === "admin" ||
+      user.role === "sys_admin" ||
+      user.role === "network_vendor" ||
+      user.role === "biometric_vendor") &&
     !isResolved;
-
 
   return (
     <>
@@ -191,12 +193,12 @@ export default function IncidentDetailsPage() {
         <Box sx={{ flex: 7, minWidth: 0 }}>
           <IncidentDetailsCard incident={incident} />
         </Box>
-        
+
         {/* --- FIX: USE THE NEW 'canTakeAction' VARIABLE TO RENDER THE RIGHT-SIDE COLUMN --- */}
         {canTakeAction ? (
           <Stack
             spacing={0}
-            sx={{ flex: 5, minWidth: 0, position: 'relative' }}
+            sx={{ flex: 5, minWidth: 0, position: "relative" }}
           >
             <Box
               sx={{
@@ -204,7 +206,7 @@ export default function IncidentDetailsPage() {
                 minHeight: 0,
                 display: "flex",
                 position: "relative",
-                 zIndex: 2,
+                zIndex: 2,
               }}
             >
               <IncidentAuditTrail

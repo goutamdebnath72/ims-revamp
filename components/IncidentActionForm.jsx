@@ -38,8 +38,7 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
 
   const isCITEmployee = user && C_AND_IT_DEPT_CODES.includes(user.departmentCode);
   // --- 1. ADD A CHECK FOR THE NEW VENDOR ROLE ---
-  const isNetworkVendor = user?.role === 'network_vendor';
-
+const isVendor = user?.role === 'network_vendor' || user?.role === 'biometric_vendor';
   const handleSubmitUpdate = () => {
     onUpdate({ comment, newType, newPriority });
     setComment("");
@@ -93,7 +92,7 @@ export default function IncidentActionForm({ incident, onUpdate, onOpenResolveDi
         />
         
         {/* --- 2. ADD CONDITIONAL LOGIC FOR BUTTONS --- */}
-        {isNetworkVendor ? (
+        {isVendor ? (
           // For Network Vendor: Show only one full-width button
           <Button
             variant="contained"
