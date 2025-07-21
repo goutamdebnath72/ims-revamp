@@ -32,6 +32,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from "@mui/icons-material/Spellcheck";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useSession, signOut } from "next-auth/react";
+import PersonIcon from "@mui/icons-material/Person";
 
 const spellCheckTooltipText = (
   <Stack spacing={1.5}>
@@ -72,13 +73,25 @@ const allMenuItems = [
     text: "Dashboard",
     icon: <DashboardIcon />,
     href: "/",
-    roles: ["admin", "standard", "sys_admin", "network_vendor"],
+    roles: [
+      "admin",
+      "standard",
+      "sys_admin",
+      "network_vendor",
+      "biometric_vendor",
+    ],
   },
   {
     text: "Search & Archive",
     icon: <SearchIcon />,
     href: "/search?reset=true",
-    roles: ["admin", "standard", "sys_admin", "network_vendor"],
+    roles: [
+      "admin",
+      "standard",
+      "sys_admin",
+      "network_vendor",
+      "biometric_vendor",
+    ],
   },
   {
     text: "Raise Incident",
@@ -207,8 +220,19 @@ export default function AppLayout({ children }) {
               Welcome {user.name?.toUpperCase()}
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-              <Avatar sx={{ bgcolor: "secondary.main" }}>
-                {user.name ? user.name.charAt(0) : '?'}
+              <Avatar
+                sx={{
+                  bgcolor: "secondary.main",
+                }}
+              >
+                {["admin", "sys_admin", "standard"].includes(user?.role) ? (
+                  // Apply fontSize directly to the icon
+                  <PersonIcon sx={{ fontSize: "1.9rem" }} />
+                ) : user.name ? (
+                  user.name.charAt(0)
+                ) : (
+                  "?"
+                )}
               </Avatar>
             </IconButton>
             <Menu

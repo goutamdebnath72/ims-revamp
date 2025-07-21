@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MOCK_USER_DB } from "@/lib/citusers";
-import { MOCK_VENDOR_DB } from "@/lib/network-vendors"; // <-- 1. IMPORT THE NEW VENDOR FILE
+import { MOCK_VENDOR_DB } from "@/lib/network-vendors";
+import { MOCK_BIOMETRIC_VENDOR_DB } from "@/lib/biometric-vendors";
 import { getCurrentShift } from "@/lib/date-helpers";
 
 export const authOptions = {
@@ -51,19 +52,36 @@ export const authOptions = {
           };
         }
 
-        // --- 2. ADD NEW CHECK: Network Vendor ---
-        const vendorUser = MOCK_VENDOR_DB[credentials.userId];
-        if (vendorUser && vendorUser.password === credentials.password) {
+        // --- CHECK 3: Network Vendor ---
+        const networkVendorUser = MOCK_VENDOR_DB[credentials.userId];
+        if (
+          networkVendorUser &&
+          networkVendorUser.password === credentials.password
+        ) {
           return {
-            id: vendorUser.id,
-            name: vendorUser.name,
-            role: vendorUser.role,
-            // Vendors don't have these other details
-            department: "Network Vendor", 
+            id: networkVendorUser.id,
+            name: networkVendorUser.name,
+            role: networkVendorUser.role,
+            department: "Network Vendor",
           };
         }
 
-        // If no user is found in any database
+        // --- 4. ADD NEW CHECK: Biometric Vendor ---
+        const biometricVendorUser =
+          MOCK_BIOMETRIC_VENDOR_DB[credentials.userId];
+        if (
+          biometricVendorUser &&
+          biometricVendorUser.password === credentials.password
+        ) {
+          return {
+            id: biometricVendorUser.id,
+            name: biometricVendorUser.name,
+            role: biometricVendorUser.role,
+            department: "Biometric Vendor",
+          };
+        }
+
+        // If no user is found
         return null;
       },
     }),

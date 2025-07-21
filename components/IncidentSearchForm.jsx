@@ -24,6 +24,125 @@ const statuses = ["Any", "New", "Processed", "open", "Resolved", "Closed"];
 const priorities = ["Any", "Low", "Medium", "High"];
 const categories = ["Any", "System", "General"];
 
+// This is the new, reusable component for both vendor forms.
+// It removes code duplication and makes maintenance much easier.
+const VendorSearchForm = ({
+  incidentType,
+  criteria,
+  handleChange,
+  handleDateChange,
+  isLoading,
+}) => {
+  return (
+    <Stack spacing={2}>
+      {/* --- FIRST ROW --- */}
+      <Stack direction="row" spacing={2}>
+        <TextField
+          sx={{ flex: 1 }}
+          label="Incident ID"
+          name="incidentId"
+          value={criteria.incidentId}
+          onChange={handleChange}
+          size="small"
+        />
+        <TextField
+          sx={{ flex: 1 }}
+          label="Requestor"
+          name="requestor"
+          value={criteria.requestor}
+          onChange={handleChange}
+          size="small"
+        />
+        <TextField
+          select
+          sx={{ flex: 1 }}
+          label="Department"
+          name="department"
+          value={criteria.department}
+          onChange={handleChange}
+          size="small"
+        >
+          <MenuItem value="Any">Any</MenuItem>
+          {departments.map((dept) => (
+            <MenuItem key={dept.code} value={dept.name}>
+              {dept.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          sx={{ flex: 1 }}
+          label="Incident Type"
+          name="incidentType"
+          value={incidentType}
+          size="small"
+          disabled
+        />
+      </Stack>
+
+      {/* --- SECOND ROW --- */}
+      <Stack direction="row" spacing={2} alignItems="center">
+        <TextField
+          select
+          sx={{ flex: 1 }}
+          label="Status"
+          name="status"
+          value={criteria.status}
+          onChange={handleChange}
+          size="small"
+        >
+          {statuses.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </TextField>
+        <DatePicker
+          sx={{ flex: 1 }}
+          label="Start Date"
+          value={criteria.dateRange.start}
+          onChange={(val) => handleDateChange("start", val)}
+          slotProps={{ textField: { size: "small", fullWidth: true } }}
+        />
+        <DatePicker
+          sx={{ flex: 1 }}
+          label="End Date"
+          value={criteria.dateRange.end}
+          onChange={(val) => handleDateChange("end", val)}
+          slotProps={{ textField: { size: "small", fullWidth: true } }}
+        />
+        <Box
+          sx={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Tooltip
+            title="By default, search is limited to the last 30 days."
+            placement="top"
+            arrow
+          >
+            <IconButton size="small">
+              <InfoOutlinedIcon color="action" fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Button
+            type="submit"
+            variant="contained"
+            startIcon={<SearchIcon />}
+            size="large"
+            disabled={isLoading}
+            sx={{ height: "40px" }}
+          >
+            {isLoading ? "Searching..." : "Search"}
+          </Button>
+        </Box>
+      </Stack>
+    </Stack>
+  );
+};
+
 function IncidentSearchForm({
   criteria,
   onCriteriaChange,
@@ -33,12 +152,18 @@ function IncidentSearchForm({
   const { data: session } = useSession();
   const user = session?.user;
 
+  // This hook is now corrected to handle both vendor roles.
   React.useEffect(() => {
     if (
       user?.role === "network_vendor" &&
       criteria.incidentType !== "NETWORK"
     ) {
       onCriteriaChange({ ...criteria, incidentType: "NETWORK" });
+    } else if (
+      user?.role === "biometric_vendor" &&
+      criteria.incidentType !== "BIOMETRIC"
+    ) {
+      onCriteriaChange({ ...criteria, incidentType: "BIOMETRIC" });
     }
   }, [user, criteria, onCriteriaChange]);
 
@@ -71,121 +196,13 @@ function IncidentSearchForm({
   };
 
   const renderFormContent = () => {
-    // And REPLACE the entire block with this:
+    // Define the common props once to pass to the reusable component
+    const commonProps = { criteria, handleChange, handleDateChange, isLoading };
+
     if (user?.role === "network_vendor") {
-      return (
-        <Stack spacing={2}>
-          {/* --- FIRST ROW --- */}
-          <Stack direction="row" spacing={2}>
-            <TextField
-              sx={{ flex: 1 }} // flex: 1 is great for balance
-              label="Incident ID"
-              name="incidentId"
-              value={criteria.incidentId}
-              onChange={handleChange}
-              size="small"
-            />
-            <TextField
-              sx={{ flex: 1 }}
-              label="Requestor"
-              name="requestor"
-              value={criteria.requestor}
-              onChange={handleChange}
-              size="small"
-            />
-            <TextField
-              select
-              sx={{ flex: 1 }}
-              label="Department"
-              name="department"
-              value={criteria.department}
-              onChange={handleChange}
-              size="small"
-            >
-              <MenuItem key="any-dept" value="Any">
-                Any
-              </MenuItem>
-              {departments.map((dept) => (
-                <MenuItem key={dept.code} value={dept.name}>
-                  {dept.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              sx={{ flex: 1 }}
-              label="Incident Type"
-              name="incidentType"
-              value="NETWORK"
-              size="small"
-              disabled
-            />
-          </Stack>
-
-          {/* --- SECOND ROW (Corrected) --- */}
-          <Stack direction="row" spacing={2} alignItems="center">
-            <TextField
-              select
-              sx={{ flex: 1 }} // Changed for better balance
-              label="Status"
-              name="status"
-              value={criteria.status}
-              onChange={handleChange}
-              size="small"
-            >
-              {statuses.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </TextField>
-            <DatePicker
-              sx={{ flex: 1 }} // Changed for better balance
-              label="Start Date"
-              value={criteria.dateRange.start}
-              onChange={(val) => handleDateChange("start", val)}
-              slotProps={{ textField: { size: "small", fullWidth: true } }}
-            />
-            <DatePicker
-              sx={{ flex: 1 }} // Changed for better balance
-              label="End Date"
-              value={criteria.dateRange.end}
-              onChange={(val) => handleDateChange("end", val)}
-              slotProps={{ textField: { size: "small", fullWidth: true } }}
-            />
-
-            {/* This Box aligns the icon and button to the far right */}
-            <Box
-              sx={{
-                marginLeft: "auto", // This pushes the group to the right
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              {/* The missing icon and tooltip */}
-              <Tooltip
-                title="By default, search is limited to the last 30 days."
-                placement="top"
-                arrow
-              >
-                <IconButton size="small">
-                  <InfoOutlinedIcon color="action" fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={<SearchIcon />}
-                size="large"
-                disabled={isLoading}
-                sx={{ height: "40px" }} // No need for fixed width now
-              >
-                {isLoading ? "Searching..." : "Search"}
-              </Button>
-            </Box>
-          </Stack>
-        </Stack>
-      );
+      return <VendorSearchForm incidentType="NETWORK" {...commonProps} />;
+    } else if (user?.role === "biometric_vendor") {
+      return <VendorSearchForm incidentType="BIOMETRIC" {...commonProps} />;
     } else if (user?.role === "admin" || user?.role === "sys_admin") {
       return (
         <Stack spacing={2}>
@@ -338,6 +355,7 @@ function IncidentSearchForm({
         </Stack>
       );
     } else {
+      // Standard User Form
       return (
         <Stack direction="row" spacing={2} alignItems="center">
           <TextField
