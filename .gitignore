@@ -43,3 +43,4 @@ next-env.d.ts
 
 # One-time use admin scripts
 /app/api/admin/cleanup-incidents/route.js
+/lib/generated/prisma

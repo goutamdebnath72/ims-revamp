@@ -17,6 +17,25 @@ import IncidentDataGrid from "@/components/IncidentDataGrid";
 import { IncidentContext } from "@/context/IncidentContext";
 import { useSession } from "next-auth/react";
 
+// Helper function to create a default criteria object with valid Luxon dates
+const createDefaultCriteria = () => {
+  const now = DateTime.now().setZone("Asia/Kolkata");
+  return {
+    incidentId: "",
+    requestor: "",
+    status: "Any",
+    priority: "Any",
+    incidentType: "Any",
+    category: "Any",
+    shift: "Any",
+    department: "Any",
+    dateRange: {
+      start: now.startOf("day"),
+      end: now.endOf("day"),
+    },
+  };
+};
+
 export default function SearchPage() {
   const { data: session } = useSession();
   const { incidents } = React.useContext(IncidentContext);
@@ -27,17 +46,9 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
   const [hasSearched, setHasSearched] = React.useState(false);
-  const [criteria, setCriteria] = React.useState({
-    incidentId: "",
-    requestor: "",
-    status: "Any",
-    priority: "Any",
-    incidentType: "Any",
-    category: "Any",
-    shift: "Any",
-    department: "Any",
-    dateRange: { start: null, end: null },
-  });
+
+  // Initialize state using the new helper function for consistency
+  const [criteria, setCriteria] = React.useState(createDefaultCriteria());
 
   const performSearch = React.useCallback(
     (searchCriteria) => {
@@ -67,26 +78,17 @@ export default function SearchPage() {
   );
 
   React.useEffect(() => {
+    // This entire effect is simplified and made more robust
+    if (!user || incidents.length === 0) return;
+
+    // Handle reset clicks
     if (searchParams.get("reset") === "true") {
-      const initialCriteria = {
-        incidentId: "",
-        requestor: "",
-        status: "Any",
-        priority: "Any",
-        incidentType: "Any",
-        category: "Any",
-        shift: "Any",
-        department: "Any",
-        dateRange: { start: null, end: null },
-      };
-      setCriteria(initialCriteria);
+      setCriteria(createDefaultCriteria()); // Resets to a valid default state
       setSearchResults([]);
       setHasSearched(false);
       router.replace("/search", { scroll: false });
       return;
     }
-
-    if (!user || incidents.length === 0) return;
 
     const urlCategory = searchParams.get("category");
     const urlStatus = searchParams.get("status");
@@ -96,6 +98,7 @@ export default function SearchPage() {
     const urlEndDate = searchParams.get("endDate");
     const urlIncidentType = searchParams.get("incidentType");
 
+    // Only perform a search if at least one search parameter is in the URL
     if (
       urlCategory ||
       urlStatus ||
@@ -103,13 +106,9 @@ export default function SearchPage() {
       urlShift ||
       urlIncidentType
     ) {
-      let dateRangeFromUrl = { start: null, end: null };
-      if (urlStartDate && urlEndDate) {
-        dateRangeFromUrl = {
-          start: DateTime.fromISO(urlStartDate).toJSDate(),
-          end: DateTime.fromISO(urlEndDate).toJSDate(),
-        };
-      }
+      // Use the default date range as a fallback if none is provided in the URL
+      const defaultDateRange = createDefaultCriteria().dateRange;
+
       const criteriaFromLink = {
         incidentId: "",
         requestor: "",
@@ -120,18 +119,16 @@ export default function SearchPage() {
         department: "Any",
         category:
           urlCategory || (user.role === "sys_admin" ? "Any" : "general"),
-        dateRange: dateRangeFromUrl,
+        dateRange:
+          urlStartDate && urlEndDate
+            ? {
+                start: DateTime.fromISO(urlStartDate),
+                end: DateTime.fromISO(urlEndDate),
+              }
+            : defaultDateRange,
       };
-      const formCriteria = {
-        ...criteriaFromLink,
-        category:
-          criteriaFromLink.category === "system"
-            ? "System"
-            : criteriaFromLink.category === "general"
-            ? "General"
-            : "Any",
-      };
-      setCriteria(formCriteria);
+
+      setCriteria(criteriaFromLink);
       performSearch(criteriaFromLink);
     }
   }, [user, incidents, searchParams, performSearch, router]);
@@ -175,9 +172,7 @@ export default function SearchPage() {
     <Stack
       spacing={2}
       sx={{
-        // This ensures the container fills the screen vertically
-        minHeight: "calc(100vh - 64px)", // Assuming a 64px tall AppBar
-        // This sets a single, clean background color
+        minHeight: "calc(100vh - 64px)",
         bgcolor: "grey.100",
       }}
     >
@@ -207,7 +202,7 @@ export default function SearchPage() {
           elevation={2}
           sx={{
             p: 2,
-            display: "flex", // The conditional display is no longer needed here
+            display: "flex",
             flexDirection: "column",
             height: "75vh",
           }}

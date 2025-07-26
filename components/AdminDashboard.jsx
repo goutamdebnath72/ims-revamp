@@ -3,14 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { IncidentContext } from "@/context/IncidentContext";
-import { getCurrentShift } from "@/lib/date-helpers";
-import ViewToggle from "@/components/ViewToggle";
+import { DashboardFilterContext } from "@/context/DashboardFilterContext";
 import {
   isSystemIncident,
   filterIncidents,
   SYSTEM_INCIDENT_TYPES,
 } from "@/lib/incident-helpers";
-import { DateTime } from "luxon";
 import {
   Stack,
   Button,
@@ -26,65 +24,60 @@ import {
   CardContent,
   Chip,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import EventIcon from "@mui/icons-material/Event";
+import ReplayIcon from "@mui/icons-material/Replay";
 import StatusChart from "@/components/StatusChart";
 import PriorityChart from "@/components/PriorityChart";
 import TeamAvailabilityCard from "@/components/TeamAvailabilityCard";
 import RecentIncidentsCard from "@/components/RecentIncidentsCard";
+import ViewToggle from "@/components/ViewToggle";
 import { useSession } from "next-auth/react";
+import { DateTime } from "luxon";
 
 export default function AdminDashboard() {
   const { incidents } = React.useContext(IncidentContext);
   const { data: session } = useSession();
   const user = session?.user;
 
+  // Get all filter state and functions from the global context
+  const { filters, setFilters, resetFilters } = React.useContext(
+    DashboardFilterContext
+  );
+  const { dateRange, shift } = filters;
+
   const [view, setView] = React.useState("general");
-  const [dateRange, setDateRange] = React.useState({ start: null, end: null });
-  const [shift, setShift] = React.useState("All");
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
-  React.useEffect(() => {
-    if (user) {
-      const now = DateTime.local().setZone("Asia/Kolkata");
-      setDateRange({ start: now.toJSDate(), end: now.toJSDate() });
-      if (user.role === "sys_admin") {
-        setShift("All");
-      } else {
-        setShift(getCurrentShift());
-      }
-    }
-  }, [user]);
-
-  const handleViewChange = (event, newView) => {
-    if (newView !== null) setView(newView);
-  };
   const handleShiftChange = (event, newShift) => {
-    if (newShift !== null) setShift(newShift);
+    if (newShift !== null) {
+      setFilters((prev) => ({ ...prev, shift: newShift }));
+    }
   };
+
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
   const setPresetRange = (rangeName) => {
     const now = DateTime.local().setZone("Asia/Kolkata");
+    let newDateRange;
+
     if (rangeName === "today") {
-      setDateRange({ start: now.toJSDate(), end: now.toJSDate() });
+      newDateRange = { start: now.startOf("day"), end: now.endOf("day") };
     } else if (rangeName === "week") {
-      setDateRange({
-        start: now.startOf("week").toJSDate(),
-        end: now.toJSDate(),
-      });
+      newDateRange = { start: now.startOf("week"), end: now.endOf("day") };
     } else if (rangeName === "month") {
-      setDateRange({
-        start: now.startOf("month").toJSDate(),
-        end: now.toJSDate(),
-      });
+      newDateRange = { start: now.startOf("month"), end: now.endOf("day") };
     } else if (rangeName === "all") {
-      setDateRange({ start: null, end: null });
+      const veryOldDate = DateTime.fromISO("2020-01-01");
+      newDateRange = { start: veryOldDate, end: now };
     }
+
+    setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
 
@@ -99,9 +92,8 @@ export default function AdminDashboard() {
   }, [incidents, user, view]);
 
   const filteredIncidents = React.useMemo(() => {
-    const criteria = { dateRange, shift };
-    return filterIncidents(incidentsToDisplay, criteria, user);
-  }, [incidentsToDisplay, dateRange, shift, user]);
+    return filterIncidents(incidentsToDisplay, filters, user);
+  }, [incidentsToDisplay, filters, user]);
 
   const sortedIncidents = React.useMemo(() => {
     return [...filteredIncidents].sort((a, b) => {
@@ -162,15 +154,9 @@ export default function AdminDashboard() {
     params.append("status", status);
     params.append("category", category);
     if (shift !== "All") params.append("shift", shift);
-    if (dateRange.start) {
-      params.append(
-        "startDate",
-        DateTime.fromJSDate(dateRange.start).toISODate()
-      );
-    }
-    if (dateRange.end) {
-      params.append("endDate", DateTime.fromJSDate(dateRange.end).toISODate());
-    }
+    if (dateRange?.start)
+      params.append("startDate", dateRange.start.toISODate());
+    if (dateRange?.end) params.append("endDate", dateRange.end.toISODate());
     return `/search?${params.toString()}`;
   };
 
@@ -190,7 +176,6 @@ export default function AdminDashboard() {
   const openIncidentsList = filteredIncidents.filter(
     (i) => i.status === "New" || i.status === "Processed"
   );
-
   const priorityChartData = [
     {
       name: "High",
@@ -209,56 +194,60 @@ export default function AdminDashboard() {
   const getNumberVariant = (value) =>
     value.toString().length > 4 ? "h4" : "h3";
 
-  const formatDateRange = () => {
-    const { start, end } = dateRange;
-    if (!start || !end) return "All Time";
-    const startDt = DateTime.fromJSDate(start);
-    const endDt = DateTime.fromJSDate(end);
-    const today = DateTime.local().setZone("Asia/Kolkata");
-    if (startDt.hasSame(today, "day") && endDt.hasSame(today, "day")) {
-      return "Today";
+  const formatDateRange = (currentDateRange) => {
+    const { start, end } = currentDateRange;
+    const now = DateTime.local().setZone("Asia/Kolkata");
+    if (start && end) {
+      if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
+      if (
+        start.hasSame(now.startOf("week"), "day") &&
+        end.hasSame(now.endOf("day"), "day")
+      )
+        return "This Week";
+      if (
+        start.hasSame(now.startOf("month"), "day") &&
+        end.hasSame(now.endOf("day"), "day")
+      )
+        return "This Month";
+      if (start.toISODate() === "2020-01-01") return "All Time";
+      if (start.toISODate() === end.toISODate())
+        return start.toFormat("d MMM, yy");
+      return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
     }
-    if (startDt.toISODate() === endDt.toISODate()) {
-      return startDt.toFormat("d MMM, yy");
-    }
-    return `${startDt.toFormat("d MMM")} - ${endDt.toFormat("d MMM, yy")}`;
+    return "Select Range";
   };
 
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && view === "general");
 
-  const systemTooltipContent = (
-    <Box sx={{ textAlign: "left", p: 0.5 }}>
-      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-        System Incident Types
-      </Typography>
-      <Divider sx={{ my: 1, borderColor: "grey.500" }} />
-      {SYSTEM_INCIDENT_TYPES.map((type) => (
-        <Typography key={type} variant="caption" display="block">
-          {type}
-        </Typography>
-      ))}
-    </Box>
-  );
-
   return (
     <Stack spacing={3}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={2}
-      >
-        <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
-          Dashboard
-        </Typography>
-        {user?.role === "sys_admin" && (
-          <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
+          <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
+            Dashboard
+          </Typography>
+        </Box>
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          {user?.role === "sys_admin" && (
             <ViewToggle selectedView={view} onChange={setView} />
-          </Box>
-        )}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
+          )}
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <Tooltip title="Reset Filters">
+            <IconButton onClick={resetFilters} size="small">
+              <ReplayIcon />
+            </IconButton>
+          </Tooltip>
           {shift !== "All" && (
             <Chip
               label={`Shift: ${shift}`}
@@ -273,7 +262,7 @@ export default function AdminDashboard() {
             onClick={handleClick}
             startIcon={<EventIcon />}
           >
-            {formatDateRange()}
+            {formatDateRange(dateRange)}
           </Button>
         </Box>
       </Stack>
@@ -295,16 +284,22 @@ export default function AdminDashboard() {
           <Stack spacing={2}>
             <DatePicker
               label="Start Date"
-              value={dateRange.start}
+              value={dateRange.start || null}
               onChange={(newValue) =>
-                setDateRange((prev) => ({ ...prev, start: newValue }))
+                setFilters((prev) => ({
+                  ...prev,
+                  dateRange: { ...prev.dateRange, start: newValue },
+                }))
               }
             />
             <DatePicker
               label="End Date"
-              value={dateRange.end}
+              value={dateRange.end || null}
               onChange={(newValue) =>
-                setDateRange((prev) => ({ ...prev, end: newValue }))
+                setFilters((prev) => ({
+                  ...prev,
+                  dateRange: { ...prev.dateRange, end: newValue },
+                }))
               }
             />
           </Stack>
@@ -322,18 +317,10 @@ export default function AdminDashboard() {
             size="small"
             sx={{ mt: 1 }}
           >
-            <ToggleButton value="All" aria-label="all shifts">
-              All
-            </ToggleButton>
-            <ToggleButton value="A" aria-label="a shift">
-              A
-            </ToggleButton>
-            <ToggleButton value="B" aria-label="b shift">
-              B
-            </ToggleButton>
-            <ToggleButton value="C" aria-label="c shift">
-              C
-            </ToggleButton>
+            <ToggleButton value="All">All</ToggleButton>
+            <ToggleButton value="A">A</ToggleButton>
+            <ToggleButton value="B">B</ToggleButton>
+            <ToggleButton value="C">C</ToggleButton>
           </ToggleButtonGroup>
         </Box>
       </Menu>

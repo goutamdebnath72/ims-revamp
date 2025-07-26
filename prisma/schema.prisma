@@ -1,0 +1,84 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id    String @id @default(cuid())
+  code  Int    @unique
+  name  String
+  users User[]
+
+  @@map("departments") // Map to the 'departments' table
+}
+
+model IncidentType {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  incidents Incident[]
+
+  @@map("incident_types") // Map to the 'incident_types' table
+}
+
+model User {
+  id           String    @id @default(cuid())
+  role         String
+  name         String
+  password     String
+  ticketNo     String    @unique
+  contactNo    String?
+  emailId      String?
+  emailIdNic   String?
+  sailPNo      String?   @unique
+  incidents    Incident[]
+
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId String
+
+  @@map("users") // Map to the 'users' table
+}
+
+model AuditEntry {
+  id          String   @id @default(cuid())
+  timestamp   String
+  author      String
+  action      String
+  comment     String
+  rating      Int?
+  isEdited    Boolean  @default(false)
+  
+  incident    Incident @relation(fields: [incidentId], references: [id])
+  incidentId  String
+
+  @@map("audit_entries") // Map to the 'audit_entries' table
+}
+
+model Incident {
+  id               String    @id
+  shiftDate        DateTime
+  jobTitle         String
+  description      String
+  priority         String
+  status           String
+  location         String?
+  ipAddress        String?
+  jobFrom          String?
+  reportedOn       String
+  isTypeLocked     Boolean?
+  isPriorityLocked Boolean?
+
+  incidentType   IncidentType @relation(fields: [incidentTypeId], references: [id])
+  incidentTypeId String
+
+  requestor   User   @relation(fields: [requestorId], references: [id])
+  requestorId String
+  
+  auditTrail  AuditEntry[]
+
+  @@map("incidents") // Map to the 'incidents' table
+}

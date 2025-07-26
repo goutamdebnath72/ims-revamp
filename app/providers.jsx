@@ -1,12 +1,13 @@
 // app/providers.jsx
-'use client';
+"use client";
 
-import AuthSessionProvider from '@/components/SessionProvider';
-import NotificationProvider from '@/context/NotificationContext';
-import SettingsProvider from '@/context/SettingsContext';
-import IncidentProvider from '@/context/IncidentContext';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import AuthSessionProvider from "@/components/SessionProvider";
+import NotificationProvider from "@/context/NotificationContext";
+import SettingsProvider from "@/context/SettingsContext";
+import IncidentProvider from "@/context/IncidentContext";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterLuxon } from "@mui/x-date-pickers/AdapterLuxon";
+import DashboardFilterProvider from "@/context/DashboardFilterContext";
 
 export function AppProviders({ children }) {
   return (
@@ -14,9 +15,11 @@ export function AppProviders({ children }) {
       <NotificationProvider>
         <SettingsProvider>
           <IncidentProvider>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              {children}
-            </LocalizationProvider>
+            <DashboardFilterProvider>
+              <LocalizationProvider dateAdapter={AdapterLuxon}>
+                {children}
+              </LocalizationProvider>
+            </DashboardFilterProvider>
           </IncidentProvider>
         </SettingsProvider>
       </NotificationProvider>

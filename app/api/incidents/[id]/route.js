@@ -1,22 +1,23 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import { getAllIncidents, updateIncident } from "@/lib/incident-repo";
+import { getIncidentById, updateIncident } from "@/lib/incident-repo";
 
 // This is the PATCH function that will handle updates
-export async function PATCH(request, { params }) {
+export async function PATCH(request, context) {
+  // <-- The only change is here
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const incidentId = params.id; // Access params BEFORE awaiting the request body
-    const updatePayload = await request.json(); // Now, read the body
-    const allIncidents = await getAllIncidents();
-    const incidentToUpdate = allIncidents.find(
-      (inc) => inc.id.toString() === incidentId.toString()
-    );
+    const updatePayload = await request.json();
+    const { id: incidentId } = await context.params;
+    const user = session.user;
+
+    // Your existing, correct logic is preserved below
+    const incidentToUpdate = await getIncidentById(incidentId);
 
     if (!incidentToUpdate) {
       return NextResponse.json(
@@ -29,11 +30,15 @@ export async function PATCH(request, { params }) {
       updatePayload.status = "Processed";
     }
 
-    const updatedIncident = await updateIncident(incidentId, updatePayload);
+    const updatedIncident = await updateIncident(
+      incidentId,
+      updatePayload,
+      user
+    );
 
     return NextResponse.json(updatedIncident);
   } catch (error) {
-    console.error(`Failed to update incident ${incidentId}:`, error);
+    console.error(`Failed to update incident:`, error);
     return NextResponse.json(
       { error: "Failed to update incident" },
       { status: 500 }

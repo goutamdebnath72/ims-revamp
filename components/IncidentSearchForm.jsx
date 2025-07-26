@@ -16,9 +16,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 const statuses = ["Any", "New", "Processed", "open", "Resolved", "Closed"];
 const priorities = ["Any", "Low", "Medium", "High"];
@@ -427,11 +425,9 @@ function IncidentSearchForm({
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        {renderFormContent()}
-      </Box>
-    </LocalizationProvider>
+    <Box component="form" onSubmit={handleSubmit} noValidate>
+      {renderFormContent()}
+    </Box>
   );
 }
 

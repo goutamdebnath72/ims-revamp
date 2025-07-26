@@ -9,6 +9,14 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [...compat.extends("next/core-web-vitals")];
-
-export default eslintConfig;
+export default [
+  // This includes all the default Next.js rules
+  ...compat.extends("next/core-web-vitals"),
+  
+  // Add your new object with custom rules here
+  {
+    rules: {
+      'no-redeclare': 'error',
+    },
+  },
+];

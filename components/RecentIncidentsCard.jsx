@@ -12,7 +12,7 @@ import {
   Box,
   ListItemButton,
 } from "@mui/material";
-import { parse } from "date-fns";
+import { DateTime } from "luxon";
 
 export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
@@ -20,10 +20,10 @@ export default function RecentIncidentsCard({ incidents }) {
   const recentIncidents = [...(incidents || [])]
     .sort((a, b) => {
       const format = "d MMM yyyy HH:mm";
-      const dateA = parse(a.reportedOn, format, new Date());
-      const dateB = parse(b.reportedOn, format, new Date());
+      const dateA = DateTime.fromFormat(a.reportedOn, format);
+      const dateB = DateTime.fromFormat(b.reportedOn, format);
       // Subtracting timestamps gives a reliable descending sort
-      return dateB.getTime() - dateA.getTime();
+      return dateB.toMillis() - dateA.toMillis();
     })
     .slice(0, 5);
 
@@ -72,9 +72,9 @@ export default function RecentIncidentsCard({ incidents }) {
           >
             <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
               <ListItemText
-                primary={incident.incidentType}
+                primary={incident.incidentType?.name}
                 secondary={`#${incident.id} - Reported by ${
-                  incident.requestor || "Unknown"
+                  incident.requestor?.name || "Unknown"
                 }`}
                 sx={{ m: 0 }}
               />
@@ -106,7 +106,10 @@ export default function RecentIncidentsCard({ incidents }) {
                     display: { xs: "none", md: "block" },
                   }}
                 >
-                  {incident.reportedOn}
+                  {DateTime.fromFormat(
+                    incident.reportedOn,
+                    "dd MMM yyyy HH:mm"
+                  ).toFormat("dd MMM, h:mm a")}
                 </Typography>
                 <Box sx={{ width: "95px" }}>
                   <Chip
