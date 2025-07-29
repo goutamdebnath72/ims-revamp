@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { DateTime } from "luxon";
 import { NotificationContext } from "./NotificationContext";
 
 export const IncidentContext = React.createContext(null);
@@ -16,6 +17,7 @@ export default function IncidentProvider({ children }) {
       const response = await fetch("/api/incidents");
       if (!response.ok) throw new Error("Failed to fetch incidents");
       const data = await response.json();
+      console.log("--- CLIENT CONTEXT --- Data received from API:", data);
       setIncidents(data);
     } catch (error) {
       console.error(error);
@@ -32,24 +34,65 @@ export default function IncidentProvider({ children }) {
     fetchIncidents();
   }, [fetchIncidents]);
 
-  const updateIncident = async (incidentId, updatedData) => {
+  const updateIncident = async (incidentId, updatedData, user) => {
     const originalIncidents = incidents;
+
     // Optimistically update UI
     setIncidents((prevIncidents) =>
       prevIncidents.map((inc) => {
         if (inc.id !== incidentId) return inc;
+
+        // --- START: Replicate backend logic for the optimistic update ---
+        const auditActionDescription = [];
+        let optimisticAction = "Action Taken";
+
+        if (updatedData.newType) {
+          auditActionDescription.push(
+            `Incident Type changed to "${updatedData.newType}".`
+          );
+          optimisticAction = "Incident Type Changed";
+        }
+
+        if (updatedData.newPriority) {
+          auditActionDescription.push(
+            `Priority changed to "${updatedData.newPriority}".`
+          );
+          optimisticAction = updatedData.newType
+            ? "Details Updated"
+            : "Priority Changed";
+        }
+
+        if (updatedData.status === "Resolved") {
+          optimisticAction = "Resolved";
+        } else if (updatedData.status === "Closed") {
+          optimisticAction = "Closed";
+        }
+
+        const optimisticComment = [
+          ...auditActionDescription,
+          updatedData.comment,
+        ]
+          .filter(Boolean)
+          .join("\n---\n");
+        // --- END: Replicated logic ---
+
         const optimisticEntry = {
           id: `temp-${Date.now()}`,
-          comment: updatedData.comment,
-          author: "You",
-          timestamp: "Just now...",
-          action: "Action Taken",
+          comment: optimisticComment, // Use the new detailed comment
+          author: user?.name || "You",
+          timestamp: DateTime.now().toISO(),
+          action: optimisticAction, // Use the new detailed action
           isEdited: false,
-          rating: null,
+          rating: updatedData.rating || null,
         };
+
         return {
           ...inc,
           status: updatedData.status || inc.status,
+          isTypeLocked: updatedData.newType ? true : inc.isTypeLocked,
+          isPriorityLocked: updatedData.newPriority
+            ? true
+            : inc.isPriorityLocked,
           auditTrail: [...inc.auditTrail, optimisticEntry],
         };
       })
@@ -61,14 +104,19 @@ export default function IncidentProvider({ children }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
       });
+
       if (!response.ok) throw new Error("Server responded with an error");
 
       const finalUpdatedIncident = await response.json();
-      // Re-sync with server data
+
       setIncidents((prevIncidents) =>
-        prevIncidents.map((inc) =>
-          inc.id === incidentId ? finalUpdatedIncident : inc
-        )
+        prevIncidents.map((inc) => {
+          if (inc.id !== incidentId) return inc;
+          return {
+            ...inc,
+            ...finalUpdatedIncident,
+          };
+        })
       );
     } catch (error) {
       console.error("Failed to update incident:", error);
@@ -76,7 +124,7 @@ export default function IncidentProvider({ children }) {
         { title: "Error", message: "Failed to save update. Reverting." },
         "error"
       );
-      setIncidents(originalIncidents); // Roll back
+      setIncidents(originalIncidents);
     }
   };
 

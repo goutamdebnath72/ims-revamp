@@ -14,9 +14,16 @@ const columns = [
     headerName: "Incident Type",
     flex: 1.5,
     minWidth: 200,
+    valueGetter: (_value, row) => row.incidentType?.name || "", //  common convention for unused parameters is to prefix with an underscore (_).
   },
   { field: "location", headerName: "Location", flex: 1.5, minWidth: 200 },
-  { field: "requestor", headerName: "Requestor", flex: 1.2, minWidth: 180 },
+  {
+    field: "requestor",
+    headerName: "Requestor",
+    flex: 1.2,
+    minWidth: 180,
+    valueGetter: (_value, row) => row.requestor?.name || "",
+  },
   {
     field: "priority",
     headerName: "Priority",
@@ -61,8 +68,7 @@ const columns = [
     headerName: "Reported On",
     width: 180,
     type: "dateTime",
-    valueGetter: (value) =>
-      value ? DateTime.fromFormat(value, "dd MMM yyyy HH:mm").toJSDate() : null,
+    valueGetter: (value) => (value ? DateTime.fromISO(value).toJSDate() : null),
   },
 ];
 

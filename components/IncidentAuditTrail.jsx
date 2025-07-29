@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { DateTime } from "luxon";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import List from "@mui/material/List";
@@ -58,6 +59,13 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
 
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
+  };
+
+  const formatTimestamp = (isoString) => {
+    if (!isoString) return "";
+    return DateTime.fromISO(isoString)
+      .setZone("Asia/Kolkata")
+      .toFormat("ccc LLL d yyyy h:mm a");
   };
 
   const showExpandButton = canExpand && !isResolved;
@@ -144,10 +152,13 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         sx={{
                           display: "block",
                           fontWeight: "bold",
+                          // Style restored from your old file
                           color: isResolvedEntry ? "#4CAF50" : "text.primary",
                         }}
                       >
-                        {entry.action}
+                        {isFinalEntry
+                          ? `(${entry.action} By ${entry.author.toUpperCase()})`
+                          : entry.action}
                       </Typography>
                       <EditableComment
                         comment={entry.comment}
@@ -158,6 +169,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         }
                         incidentStatus={incident.status}
                       />
+                      {/* This part for showing the rating is correct */}
                       {entry.rating && (
                         <Box
                           sx={{ display: "flex", alignItems: "center", mt: 1 }}
@@ -185,6 +197,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         display: "block",
                         textAlign: "right",
                         mt: 1,
+                        // Style restored from your old file
                         fontWeight: isFinalEntry ? "bold" : "normal",
                         color: "text.secondary",
                       }}
@@ -192,10 +205,14 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                       <span>{`${entry.author} — `}</span>
                       <span
                         style={{
+                          // Style restored from your old file
                           textDecoration: isFinalEntry ? "underline" : "none",
                         }}
                       >
-                        {entry.timestamp}
+                        {/* Correct date formatting from your new file */}
+                        {entry.isEdited && entry.editedAt
+                          ? `(edited) ${formatTimestamp(entry.editedAt)}`
+                          : formatTimestamp(entry.timestamp)}
                       </span>
                     </Typography>
                   }

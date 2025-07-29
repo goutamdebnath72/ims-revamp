@@ -80,25 +80,51 @@ export default function NetworkVendorDashboard() {
     const criteria = { dateRange, shift };
     return filterIncidents(networkIncidents, criteria, user);
   }, [networkIncidents, dateRange, shift, user]);
-  
+
   const sortedIncidents = React.useMemo(() => {
     return [...filteredIncidents].sort((a, b) => {
-      const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
-      const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
+      const dateA = DateTime.fromISO(a.reportedOn, { zone: "Asia/Kolkata" });
+      const dateB = DateTime.fromISO(b.reportedOn, { zone: "Asia/Kolkata" });
       return dateB - dateA;
     });
   }, [filteredIncidents]);
 
-  const processedIncidents = filteredIncidents.filter((i) => i.status === "Processed").length;
-  const resolvedIncidents = filteredIncidents.filter((i) => i.status === "Resolved").length;
-  const closedIncidents = filteredIncidents.filter((i) => i.status === "Closed").length;
+  const processedIncidents = filteredIncidents.filter(
+    (i) => i.status === "Processed"
+  ).length;
+  const resolvedIncidents = filteredIncidents.filter(
+    (i) => i.status === "Resolved"
+  ).length;
+  const closedIncidents = filteredIncidents.filter(
+    (i) => i.status === "Closed"
+  ).length;
   const allOpenIncidents = processedIncidents;
 
   const statCardsData = [
-    { title: "Assigned (Processed)", value: processedIncidents, color: "info", filterStatus: "Processed" },
-    { title: "All Open", value: allOpenIncidents, color: "secondary", filterStatus: "open"},
-    { title: "Resolved Incidents", value: resolvedIncidents, color: "success", filterStatus: "Resolved" },
-    { title: "Closed", value: closedIncidents, color: "default", filterStatus: "Closed" },
+    {
+      title: "Assigned (Processed)",
+      value: processedIncidents,
+      color: "info",
+      filterStatus: "Processed",
+    },
+    {
+      title: "All Open",
+      value: allOpenIncidents,
+      color: "secondary",
+      filterStatus: "open",
+    },
+    {
+      title: "Resolved Incidents",
+      value: resolvedIncidents,
+      color: "success",
+      filterStatus: "Resolved",
+    },
+    {
+      title: "Closed",
+      value: closedIncidents,
+      color: "default",
+      filterStatus: "Closed",
+    },
   ];
 
   // *** FIX: THIS FUNCTION NOW CORRECTLY ADDS ALL FILTERS TO THE URL ***
@@ -111,7 +137,10 @@ export default function NetworkVendorDashboard() {
     }
     // Pass the dashboard's current date range to the search page
     if (dateRange.start) {
-      params.append("startDate", DateTime.fromJSDate(dateRange.start).toISODate());
+      params.append(
+        "startDate",
+        DateTime.fromJSDate(dateRange.start).toISODate()
+      );
     }
     if (dateRange.end) {
       params.append("endDate", DateTime.fromJSDate(dateRange.end).toISODate());
@@ -126,12 +155,22 @@ export default function NetworkVendorDashboard() {
   ];
 
   const priorityChartData = [
-    { name: "High", value: filteredIncidents.filter((i) => i.priority === "High").length },
-    { name: "Medium", value: filteredIncidents.filter((i) => i.priority === "Medium").length },
-    { name: "Low", value: filteredIncidents.filter((i) => i.priority === "Low").length },
+    {
+      name: "High",
+      value: filteredIncidents.filter((i) => i.priority === "High").length,
+    },
+    {
+      name: "Medium",
+      value: filteredIncidents.filter((i) => i.priority === "Medium").length,
+    },
+    {
+      name: "Low",
+      value: filteredIncidents.filter((i) => i.priority === "Low").length,
+    },
   ].filter((item) => item.value > 0);
 
-  const getNumberVariant = (value) => value.toString().length > 4 ? "h4" : "h3";
+  const getNumberVariant = (value) =>
+    value.toString().length > 4 ? "h4" : "h3";
 
   const formatDateRange = () => {
     const { start, end } = dateRange;
@@ -150,37 +189,83 @@ export default function NetworkVendorDashboard() {
 
   return (
     <Stack spacing={3}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        spacing={2}
+      >
         <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
           Network Incidents Dashboard
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
-          <Button id="date-range-button" variant="outlined" onClick={handleClick} startIcon={<EventIcon />}>
+          <Button
+            id="date-range-button"
+            variant="outlined"
+            onClick={handleClick}
+            startIcon={<EventIcon />}
+          >
             {formatDateRange()}
           </Button>
         </Box>
       </Stack>
-      <Menu id="date-range-menu" anchorEl={anchorEl} open={open} onClose={handleClose}>
+      <Menu
+        id="date-range-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+      >
         <MenuItem onClick={() => setPresetRange("today")}>Today</MenuItem>
         <MenuItem onClick={() => setPresetRange("week")}>This Week</MenuItem>
         <MenuItem onClick={() => setPresetRange("month")}>This Month</MenuItem>
         <MenuItem onClick={() => setPresetRange("all")}>All Time</MenuItem>
         <Divider />
         <Box sx={{ p: 2, pt: 1 }}>
-          <Typography variant="overline" display="block" sx={{ mb: 2 }}>Custom Range</Typography>
+          <Typography variant="overline" display="block" sx={{ mb: 2 }}>
+            Custom Range
+          </Typography>
           <Stack spacing={2}>
-            <DatePicker label="Start Date" value={dateRange.start} onChange={(newValue) => setDateRange((prev) => ({ ...prev, start: newValue }))} />
-            <DatePicker label="End Date" value={dateRange.end} onChange={(newValue) => setDateRange((prev) => ({ ...prev, end: newValue }))} />
+            <DatePicker
+              label="Start Date"
+              value={dateRange.start}
+              onChange={(newValue) =>
+                setDateRange((prev) => ({ ...prev, start: newValue }))
+              }
+            />
+            <DatePicker
+              label="End Date"
+              value={dateRange.end}
+              onChange={(newValue) =>
+                setDateRange((prev) => ({ ...prev, end: newValue }))
+              }
+            />
           </Stack>
         </Box>
         <Divider />
         <Box sx={{ p: 2, pt: 1 }}>
-          <Typography variant="overline" display="block">Filter by Shift</Typography>
-          <ToggleButtonGroup value={shift} exclusive onChange={handleShiftChange} aria-label="Shift filter" size="small" sx={{ mt: 1 }}>
-            <ToggleButton value="All" aria-label="all shifts">All</ToggleButton>
-            <ToggleButton value="A" aria-label="a shift">A</ToggleButton>
-            <ToggleButton value="B" aria-label="b shift">B</ToggleButton>
-            <ToggleButton value="C" aria-label="c shift">C</ToggleButton>
+          <Typography variant="overline" display="block">
+            Filter by Shift
+          </Typography>
+          <ToggleButtonGroup
+            value={shift}
+            exclusive
+            onChange={handleShiftChange}
+            aria-label="Shift filter"
+            size="small"
+            sx={{ mt: 1 }}
+          >
+            <ToggleButton value="All" aria-label="all shifts">
+              All
+            </ToggleButton>
+            <ToggleButton value="A" aria-label="a shift">
+              A
+            </ToggleButton>
+            <ToggleButton value="B" aria-label="b shift">
+              B
+            </ToggleButton>
+            <ToggleButton value="C" aria-label="c shift">
+              C
+            </ToggleButton>
           </ToggleButtonGroup>
         </Box>
       </Menu>
@@ -188,10 +273,32 @@ export default function NetworkVendorDashboard() {
         {statCardsData.map((card, index) => (
           <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
             <Card elevation={3} sx={{ height: "100%" }}>
-              <CardActionArea component={Link} href={constructCardUrl(card.filterStatus)} sx={{ height: "100%" }}>
-                <CardContent sx={{ textAlign: "center", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>{card.title}</Typography>
-                  <Typography variant={getNumberVariant(card.value)} component="div" color={`${card.color}.main`}>
+              <CardActionArea
+                component={Link}
+                href={constructCardUrl(card.filterStatus)}
+                sx={{ height: "100%" }}
+              >
+                <CardContent
+                  sx={{
+                    textAlign: "center",
+                    minHeight: 120,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: 14 }}
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    {card.title}
+                  </Typography>
+                  <Typography
+                    variant={getNumberVariant(card.value)}
+                    component="div"
+                    color={`${card.color}.main`}
+                  >
                     <CountUp end={card.value} duration={1.5} separator="," />
                   </Typography>
                 </CardContent>
@@ -202,8 +309,12 @@ export default function NetworkVendorDashboard() {
       </Stack>
       <Stack spacing={3}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
-          <Box sx={{ flex: 7 }}><StatusChart data={statusChartData} /></Box>
-          <Box sx={{ flex: 5 }}><PriorityChart data={priorityChartData} /></Box>
+          <Box sx={{ flex: 7 }}>
+            <StatusChart data={statusChartData} />
+          </Box>
+          <Box sx={{ flex: 5 }}>
+            <PriorityChart data={priorityChartData} />
+          </Box>
         </Stack>
         <RecentIncidentsCard incidents={sortedIncidents} />
       </Stack>

@@ -17,7 +17,6 @@ import IncidentDataGrid from "@/components/IncidentDataGrid";
 import { IncidentContext } from "@/context/IncidentContext";
 import { useSession } from "next-auth/react";
 
-// Helper function to create a default criteria object with valid Luxon dates
 const createDefaultCriteria = () => {
   const now = DateTime.now().setZone("Asia/Kolkata");
   return {
@@ -30,11 +29,12 @@ const createDefaultCriteria = () => {
     shift: "Any",
     department: "Any",
     dateRange: {
-      start: now.startOf("day"),
-      end: now.endOf("day"),
+      start: null,
+      end: null,
     },
   };
 };
+
 
 export default function SearchPage() {
   const { data: session } = useSession();
@@ -62,10 +62,10 @@ export default function SearchPage() {
           user
         );
         const sortedResults = [...filteredResults].sort((a, b) => {
-          const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", {
+          const dateA = DateTime.fromISO(a.reportedOn, {
             zone: "Asia/Kolkata",
           });
-          const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", {
+          const dateB = DateTime.fromISO(b.reportedOn, {
             zone: "Asia/Kolkata",
           });
           return dateB - dateA;
@@ -83,7 +83,7 @@ export default function SearchPage() {
 
     // Handle reset clicks
     if (searchParams.get("reset") === "true") {
-      setCriteria(createDefaultCriteria()); // Resets to a valid default state
+      setCriteria(createDefaultCriteria());
       setSearchResults([]);
       setHasSearched(false);
       router.replace("/search", { scroll: false });
@@ -108,7 +108,6 @@ export default function SearchPage() {
     ) {
       // Use the default date range as a fallback if none is provided in the URL
       const defaultDateRange = createDefaultCriteria().dateRange;
-
       const criteriaFromLink = {
         incidentId: "",
         requestor: "",
@@ -122,8 +121,8 @@ export default function SearchPage() {
         dateRange:
           urlStartDate && urlEndDate
             ? {
-                start: DateTime.fromISO(urlStartDate),
-                end: DateTime.fromISO(urlEndDate),
+                start: DateTime.fromISO(urlStartDate, { zone: "Asia/Kolkata" }),
+                end: DateTime.fromISO(urlEndDate, { zone: "Asia/Kolkata" }),
               }
             : defaultDateRange,
       };
@@ -152,8 +151,8 @@ export default function SearchPage() {
     if (!startDateParam && !shiftParam) return null;
     let dateText = "";
     if (startDateParam && endDateParam) {
-      const start = DateTime.fromISO(startDateParam);
-      const end = DateTime.fromISO(endDateParam);
+      const start = DateTime.fromISO(startDateParam, { zone: "Asia/Kolkata" });
+      const end = DateTime.fromISO(endDateParam, { zone: "Asia/Kolkata" });
       if (start.toISODate() === end.toISODate()) {
         dateText = `Date: ${start.toFormat("d MMM, yyyy")}`;
       } else {

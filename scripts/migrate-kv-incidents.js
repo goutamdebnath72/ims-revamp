@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const { createClient } = require('@vercel/kv');
-const { DateTime } = require('luxon');
+const { PrismaClient } = require("@prisma/client");
+const { createClient } = require("@vercel/kv");
+const { DateTime } = require("luxon");
 
 const prisma = new PrismaClient();
 const kv = createClient({
@@ -9,37 +9,40 @@ const kv = createClient({
 });
 
 async function main() {
-  console.log('Starting migration from Vercel KV to PostgreSQL...');
+  console.log("Starting migration from Vercel KV to PostgreSQL...");
 
-  // 1. Fetch all incidents from Vercel KV.
-  // We assume the incidents are stored under the key 'incidents'.
-  const incidentsFromKV = await kv.get('incidents');
+  const incidentsFromKV = await kv.get("incidents");
 
   if (!incidentsFromKV || incidentsFromKV.length === 0) {
-    console.log('No incidents found in Vercel KV. Migration finished.');
+    console.log("No incidents found in Vercel KV. Migration finished.");
     return;
   }
 
   let migratedCount = 0;
-  // 2. Loop through each incident and insert it into the new database.
   for (const incident of incidentsFromKV) {
-    // Find the corresponding user and incident type in our new database
-    const requestor = await prisma.user.findUnique({ where: { ticketNo: incident.ticketNo } });
-    const incidentType = await prisma.incidentType.findUnique({ where: { name: incident.incidentType } });
+    const requestor = await prisma.user.findUnique({
+      where: { ticketNo: incident.ticketNo },
+    });
+    const incidentType = await prisma.incidentType.findUnique({
+      where: { name: incident.incidentType },
+    });
 
     if (requestor && incidentType) {
-      // Calculate the shiftDate from the reportedOn string
-      const reportedOnDt = DateTime.fromFormat(incident.reportedOn, "dd MMM yyyy HH:mm", { zone: 'Asia/Kolkata' });
+      // Parse the 'reportedOn' string into a Luxon DateTime object
+      const reportedOnDt = DateTime.fromISO(incident.reportedOn, {
+        zone: "Asia/Kolkata",
+      });
+
       let shiftDate = reportedOnDt;
       if (reportedOnDt.hour < 6) {
         shiftDate = reportedOnDt.minus({ days: 1 });
       }
 
-      // Create the incident in the PostgreSQL database
       await prisma.incident.create({
         data: {
           id: incident.id,
-          reportedOn: incident.reportedOn,
+          // CHANGED: Convert the Luxon object to a JS Date for Prisma
+          reportedOn: reportedOnDt.toJSDate(),
           shiftDate: shiftDate.toJSDate(),
           jobTitle: incident.jobTitle,
           description: incident.description,
@@ -53,24 +56,31 @@ async function main() {
           requestorId: requestor.id,
           incidentTypeId: incidentType.id,
           auditTrail: {
-            create: incident.auditTrail.map(entry => ({
-              timestamp: entry.timestamp,
+            create: incident.auditTrail.map((entry) => ({
+              // CHANGED: Convert the timestamp string to a JS Date for Prisma
+              // NOTE: Assumes the old audit timestamp format was 'ccc LLL d yyyy h:mm a'
+              timestamp: DateTime.fromISO(entry.timestamp).toJSDate(),
               author: entry.author,
               action: entry.action,
               comment: entry.comment,
               rating: entry.rating,
               isEdited: entry.isEdited,
+              // The new 'editedAt' field will be left null, which is correct
             })),
           },
         },
       });
       migratedCount++;
     } else {
-      console.warn(`--> Skipping incident ${incident.id} due to missing requestor or type.`);
+      console.warn(
+        `--> Skipping incident ${incident.id} due to missing requestor or type.`
+      );
     }
   }
-  
-  console.log(`Migration finished. Successfully migrated ${migratedCount} incidents.`);
+
+  console.log(
+    `Migration finished. Successfully migrated ${migratedCount} incidents.`
+  );
 }
 
 main()

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { SettingsContext } from "@/context/SettingsContext";
 import Paper from "@mui/material/Paper";
@@ -14,10 +15,11 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
-import { incidentTypes } from "@/lib/incident-types";
 
 const priorities = ["Low", "Medium", "High"];
 const C_AND_IT_DEPT_CODES = [98540, 98500];
+
+const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function IncidentActionForm({
   incident,
@@ -61,6 +63,12 @@ export default function IncidentActionForm({
     onOpenResolveDialog();
   };
 
+  const {
+    data: incidentTypes,
+    error,
+    isLoading: isLoadingTypes,
+  } = useSWR("/api/incident-types", fetcher);
+
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
@@ -74,7 +82,11 @@ export default function IncidentActionForm({
               <FormControl
                 fullWidth
                 size="small"
-                disabled={incident.status === "New" || incident.isTypeLocked}
+                disabled={
+                  isLoadingTypes ||
+                  incident.status === "New" ||
+                  incident.isTypeLocked
+                }
               >
                 <InputLabel>Change Incident Type</InputLabel>
                 <Select
@@ -82,9 +94,10 @@ export default function IncidentActionForm({
                   label="Change Incident Type"
                   onChange={(e) => setNewType(e.target.value)}
                 >
-                  {incidentTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
+                  {/* Map over the incidentTypes array from the API, handling the loading state */}
+                  {incidentTypes?.map((type) => (
+                    <MenuItem key={type.id} value={type.name}>
+                      {type.name}
                     </MenuItem>
                   ))}
                 </Select>

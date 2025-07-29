@@ -70,10 +70,9 @@ export default function IncidentDetailsCard({ incident }) {
   // Updated to use the nested requestor object
   const requestor = incident.requestor || {};
 
-  const formattedReportedOn = DateTime.fromFormat(
-    incident.reportedOn,
-    "dd MMM yyyy HH:mm"
-  ).toFormat("dd MMM yyyy, h:mm a");
+  const formattedReportedOn = DateTime.fromISO(incident.reportedOn, {
+    zone: "Asia/Kolkata",
+  }).toFormat("dd MMM yyyy, h:mm a");
 
   return (
     <Paper
@@ -95,7 +94,8 @@ export default function IncidentDetailsCard({ incident }) {
           sx={{ fontWeight: "medium", fontSize: "0.9em" }}
         >
           {/* Display the newly formatted date */}
-          Reported On: {formattedReportedOn}
+          Reported On:{" "}
+          {incident.reportedOn ? formattedReportedOn : "Not available"}
         </Typography>
       </Box>
       <Divider sx={{ mb: 3 }} />

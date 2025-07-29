@@ -5,10 +5,17 @@ import { getAllIncidents, createIncident } from "@/lib/incident-repo";
 import { getShiftTimestamps } from "@/lib/date-helpers";
 import { DateTime } from "luxon";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
+  console.log("--- API GET /api/incidents: Request received ---");
   // This function is for fetching incidents
   try {
     const incidents = await getAllIncidents();
+    console.log(
+      `--- API GET /api/incidents: Found ${incidents.length} incidents. ---`
+    );
+
     return NextResponse.json(incidents);
   } catch (error) {
     console.error("Failed in GET /api/incidents:", error);
@@ -29,8 +36,7 @@ export async function POST(request) {
     const formData = await request.json();
     const user = session.user; // Get the full user object from the session
 
-    const { idTimestamp, reportedOnString, shiftDateObject } =
-      getShiftTimestamps();
+    const { idTimestamp, shiftDateObject } = getShiftTimestamps();
     const randomHex = Math.floor(Math.random() * 0xffff)
       .toString(16)
       .toUpperCase()
@@ -41,7 +47,7 @@ export async function POST(request) {
 
     const newIncidentData = {
       id: `${idTimestamp}-${randomHex}`,
-      reportedOn: reportedOnString,
+      reportedOn: shiftDateObject,
       shiftDate: shiftDateObject,
       ...formData, // Spread the form data
       requestor: user.name,
@@ -54,6 +60,7 @@ export async function POST(request) {
 
     // Pass both the incident data and the user session to the repository function
     const createdIncident = await createIncident(newIncidentData, user);
+    console.log("--- BACKEND LOG --- Incident created:", createdIncident);
 
     return NextResponse.json(createdIncident, { status: 201 });
   } catch (error) {

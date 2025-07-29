@@ -22,7 +22,12 @@ export default function IncidentDetailsPage() {
   const user = session?.user;
 
   const incident = incidents.find((inc) => inc.id.toString() === params.id);
+  console.log("--- FRONTEND LOG --- Incident data:", incident);
+
   const [isDialogOpen, setDialogOpen] = React.useState(false);
+  const [isOptimisticallyResolved, setOptimisticallyResolved] =
+    React.useState(false); // <-- ADD THIS LINE
+
   const auditTrailRef = React.useRef(null);
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
 
@@ -34,14 +39,30 @@ export default function IncidentDetailsPage() {
 
   const handleUpdate = (updateData) => {
     if (!updateData.comment || !updateData.comment.trim()) return;
-    updateIncident(params.id, updateData);
+
+    // Create a new payload from the form data
+    const payload = { ...updateData };
+
+    // If the incident is currently "New", we know this update will change
+    // its status to "Processed". We add this to the payload so the
+    // optimistic update can work instantly.
+    if (incident?.status === "New") {
+      payload.status = "Processed";
+    }
+
+    updateIncident(params.id, payload, user);
   };
 
   const handleConfirmResolve = (resolutionData) => {
-    updateIncident(params.id, {
-      ...resolutionData,
-      status: resolutionData.action === "close" ? "Closed" : "Resolved",
-    });
+    setOptimisticallyResolved(true);
+    updateIncident(
+      params.id,
+      {
+        ...resolutionData,
+        status: resolutionData.action === "close" ? "Closed" : "Resolved",
+      },
+      user
+    );
     showNotification(
       {
         title: `Incident ${
@@ -73,7 +94,10 @@ export default function IncidentDetailsPage() {
   }
 
   const isResolved =
-    incident.status === "Resolved" || incident.status === "Closed";
+    incident.status === "Resolved" ||
+    incident.status === "Closed" ||
+    isOptimisticallyResolved;
+
   const canTakeAction =
     (user.role === "admin" ||
       user.role === "sys_admin" ||

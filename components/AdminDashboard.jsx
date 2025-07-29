@@ -73,7 +73,9 @@ export default function AdminDashboard() {
     } else if (rangeName === "month") {
       newDateRange = { start: now.startOf("month"), end: now.endOf("day") };
     } else if (rangeName === "all") {
-      const veryOldDate = DateTime.fromISO("2020-01-01");
+      const veryOldDate = DateTime.fromISO("2020-01-01", {
+        zone: "Asia/Kolkata",
+      });
       newDateRange = { start: veryOldDate, end: now };
     }
 
@@ -97,12 +99,8 @@ export default function AdminDashboard() {
 
   const sortedIncidents = React.useMemo(() => {
     return [...filteredIncidents].sort((a, b) => {
-      const dateA = DateTime.fromFormat(a.reportedOn, "dd MMM yyyy HH:mm", {
-        zone: "Asia/Kolkata",
-      });
-      const dateB = DateTime.fromFormat(b.reportedOn, "dd MMM yyyy HH:mm", {
-        zone: "Asia/Kolkata",
-      });
+      const dateA = DateTime.fromISO(a.reportedOn, { zone: "Asia/Kolkata" });
+      const dateB = DateTime.fromISO(b.reportedOn, { zone: "Asia/Kolkata" });
       return dateB - dateA;
     });
   }, [filteredIncidents]);

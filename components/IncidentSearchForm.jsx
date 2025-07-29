@@ -2,8 +2,7 @@
 
 import React, { memo } from "react";
 import { useSession } from "next-auth/react";
-import { incidentTypes } from "@/lib/incident-types";
-import { departments } from "@/lib/departments.js";
+import useSWR from "swr";
 import { isSystemIncident } from "@/lib/incident-helpers";
 import {
   Box,
@@ -16,14 +15,14 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
+const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 const statuses = ["Any", "New", "Processed", "open", "Resolved", "Closed"];
 const priorities = ["Any", "Low", "Medium", "High"];
 const categories = ["Any", "System", "General"];
 
-// This is the new, reusable component for both vendor forms.
-// It removes code duplication and makes maintenance much easier.
 const VendorSearchForm = ({
   incidentType,
   criteria,
@@ -33,7 +32,6 @@ const VendorSearchForm = ({
 }) => {
   return (
     <Stack spacing={2}>
-      {/* --- FIRST ROW --- */}
       <Stack direction="row" spacing={2}>
         <TextField
           sx={{ flex: 1 }}
@@ -76,8 +74,6 @@ const VendorSearchForm = ({
           disabled
         />
       </Stack>
-
-      {/* --- SECOND ROW --- */}
       <Stack direction="row" spacing={2} alignItems="center">
         <TextField
           select
@@ -147,10 +143,21 @@ function IncidentSearchForm({
   onSearch,
   isLoading,
 }) {
+  console.log("--- Search Form received criteria: ---", criteria);
   const { data: session } = useSession();
   const user = session?.user;
 
-  // This hook is now corrected to handle both vendor roles.
+  const {
+    data: incidentTypes,
+    error,
+    isLoading: isLoadingTypes,
+  } = useSWR("/api/incident-types", fetcher);
+
+  const { data: departments, isLoading: isLoadingDepts } = useSWR(
+    "/api/departments",
+    fetcher
+  );
+
   React.useEffect(() => {
     if (
       user?.role === "network_vendor" &&
@@ -166,15 +173,18 @@ function IncidentSearchForm({
   }, [user, criteria, onCriteriaChange]);
 
   const filteredIncidentTypes = React.useMemo(() => {
-    if (user?.role === "sys_admin") return ["Any", ...incidentTypes];
+    if (!incidentTypes) return [{ name: "Any" }];
+
+    let typesToFilter = incidentTypes;
+
     if (user?.role === "admin") {
-      const generalTypes = incidentTypes.filter(
-        (type) => !isSystemIncident({ incidentType: type })
+      typesToFilter = incidentTypes.filter(
+        (type) => !isSystemIncident({ incidentType: type.name })
       );
-      return ["Any", ...generalTypes];
     }
-    return ["Any", ...incidentTypes];
-  }, [user]);
+
+    return [{ name: "Any" }, ...typesToFilter];
+  }, [user, incidentTypes]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -194,7 +204,6 @@ function IncidentSearchForm({
   };
 
   const renderFormContent = () => {
-    // Define the common props once to pass to the reusable component
     const commonProps = { criteria, handleChange, handleDateChange, isLoading };
 
     if (user?.role === "network_vendor") {
@@ -202,6 +211,11 @@ function IncidentSearchForm({
     } else if (user?.role === "biometric_vendor") {
       return <VendorSearchForm incidentType="BIOMETRIC" {...commonProps} />;
     } else if (user?.role === "admin" || user?.role === "sys_admin") {
+      console.log(
+        "Value being passed to Start Date Picker:",
+        criteria.dateRange.start
+      );
+
       return (
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>
@@ -240,11 +254,13 @@ function IncidentSearchForm({
               value={criteria.department}
               onChange={handleChange}
               size="small"
+              disabled={isLoadingDepts}
             >
               <MenuItem key="any-dept" value="Any">
                 Any
               </MenuItem>
-              {departments.map((dept) => (
+              {/* Update this map to handle the loading state */}
+              {departments?.map((dept) => (
                 <MenuItem key={dept.code} value={dept.name}>
                   {dept.name}
                 </MenuItem>
@@ -258,10 +274,11 @@ function IncidentSearchForm({
               value={criteria.incidentType}
               onChange={handleChange}
               size="small"
+              disabled={isLoadingTypes}
             >
               {filteredIncidentTypes.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
+                <MenuItem key={option.name} value={option.name}>
+                  {option.name}
                 </MenuItem>
               ))}
             </TextField>
@@ -372,10 +389,11 @@ function IncidentSearchForm({
             value={criteria.incidentType}
             onChange={handleChange}
             size="small"
+            disabled={isLoadingTypes}
           >
             {filteredIncidentTypes.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
+              <MenuItem key={option.name} value={option.name}>
+                {option.name}
               </MenuItem>
             ))}
           </TextField>

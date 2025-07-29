@@ -20,8 +20,8 @@ export default function RecentIncidentsCard({ incidents }) {
   const recentIncidents = [...(incidents || [])]
     .sort((a, b) => {
       const format = "d MMM yyyy HH:mm";
-      const dateA = DateTime.fromFormat(a.reportedOn, format);
-      const dateB = DateTime.fromFormat(b.reportedOn, format);
+      const dateA = DateTime.fromISO(a.reportedOn,{ zone: "Asia/Kolkata" }, format);
+      const dateB = DateTime.fromISO(b.reportedOn,{ zone: "Asia/Kolkata" }, format);
       // Subtracting timestamps gives a reliable descending sort
       return dateB.toMillis() - dateA.toMillis();
     })
@@ -106,10 +106,9 @@ export default function RecentIncidentsCard({ incidents }) {
                     display: { xs: "none", md: "block" },
                   }}
                 >
-                  {DateTime.fromFormat(
-                    incident.reportedOn,
-                    "dd MMM yyyy HH:mm"
-                  ).toFormat("dd MMM, h:mm a")}
+                  {DateTime.fromISO(incident.reportedOn,{ zone: "Asia/Kolkata" }).toFormat(
+                    "dd MMM, h:mm a"
+                  )}
                 </Typography>
                 <Box sx={{ width: "95px" }}>
                   <Chip

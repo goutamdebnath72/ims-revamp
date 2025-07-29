@@ -44,13 +44,15 @@ model User {
 }
 
 model AuditEntry {
-  id          String   @id @default(cuid())
-  timestamp   String
+  id          String    @id @default(cuid())
+  timestamp   DateTime  @default(now()) // Changed type to DateTime
   author      String
   action      String
   comment     String
   rating      Int?
   isEdited    Boolean  @default(false)
+  editedAt    DateTime?                // Added optional field for edit time
+
   
   incident    Incident @relation(fields: [incidentId], references: [id])
   incidentId  String
@@ -68,7 +70,7 @@ model Incident {
   location         String?
   ipAddress        String?
   jobFrom          String?
-  reportedOn       String
+  reportedOn       DateTime
   isTypeLocked     Boolean?
   isPriorityLocked Boolean?
 

@@ -1,6 +1,7 @@
 // File: utils/pdfGenerators.js
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { DateTime } from "luxon";
 
 export function generateIncidentPdf(incident, auditTrail) {
   const doc = new jsPDF({ orientation: "portrait" });
@@ -32,24 +33,29 @@ export function generateIncidentPdf(incident, auditTrail) {
 
   const leftColumnDetails = [
     { label: "Incident No.", value: incident.id },
-    { label: "Incident Type", value: incident.incidentType },
+    { label: "Incident Type", value: incident.incidentType?.name },
     { label: "Job Title", value: incident.jobTitle },
     { label: "Description", value: incident.description },
-    { label: "Requestor", value: incident.requestor },
-    { label: "Department", value: incident.department },
-    { label: "Email ID", value: displayEmailSail },
+    { label: "Requestor", value: incident.requestor?.name },
+    { label: "Department", value: incident.requestor?.department?.name },
+    { label: "Email ID", value: incident.requestor?.emailId || "N/A" },
     { label: "IP Address", value: incident.ipAddress },
   ];
 
   // CORRECTED: The layout is now rearranged exactly as you requested.
   const rightColumnDetails = [
-    { label: "Reported On", value: incident.reportedOn },
+    {
+      label: "Reported On",
+      value: DateTime.fromISO(incident.reportedOn)
+        .setZone("Asia/Kolkata")
+        .toFormat("dd/MM/yyyy, HH:mm:ss"),
+    },
     { label: "Status", value: incident.status },
     { label: "Priority", value: incident.priority },
     { label: "", value: "" }, // Placeholder to align with Description
-    { label: "Ticket No.", value: incident.ticketNo },
-    { label: "SAIL P/No", value: incident.sailpno },
-    { label: "Email ID (NIC)", value: displayEmailNic },
+    { label: "Ticket No.", value: incident.requestor?.ticketNo || "N/A" },
+    { label: "SAIL P/No", value: incident.requestor?.sailPNo || "N/A" },
+    { label: "Email ID (NIC)", value: incident.requestor?.emailIdNic || "N/A" },
     { label: "Job From", value: incident.jobFrom },
   ];
 
@@ -134,7 +140,7 @@ export function generateIncidentPdf(incident, auditTrail) {
       entry.timestamp,
       entry.author,
       entry.action,
-      entry.comment || "",
+      entry.rating ? `${entry.comment || ""}\n` : entry.comment || "",
     ]),
     theme: "grid",
     styles: {
@@ -223,14 +229,13 @@ export function generateIncidentPdf(incident, auditTrail) {
         // Inside the loop that renders each audit trail entry
         // After rendering the entry's comment...
 
+        // Logic for the star rating
+        // Logic for the star rating
         if (entry.rating && entry.rating > 0) {
           const filledSymbol = "H"; // ZapfDingbats: filled star
           const emptySymbol = "I"; // ZapfDingbats: empty star
 
           const rating = Math.round(entry.rating || 0);
-          const stars =
-            filledSymbol.repeat(rating) + emptySymbol.repeat(5 - rating);
-
           const ratingY = cell.y + cell.height - cell.padding("bottom") - 2;
           const ratingX = cell.x + cell.padding("left");
 
@@ -243,6 +248,9 @@ export function generateIncidentPdf(incident, auditTrail) {
           doc.setFont("zapfdingbats");
           doc.setFontSize(14);
           const labelWidth = doc.getTextWidth("Final Rating: ");
+
+          // --- THIS IS THE CORRECTED LINE ---
+          // Using the calculation from your original file for perfect alignment
           const starOffsetX = ratingX + labelWidth - 25;
           const starOffsetY = ratingY + 2.3;
 
@@ -250,11 +258,10 @@ export function generateIncidentPdf(incident, auditTrail) {
 
           for (let i = 0; i < 5; i++) {
             const symbol = i < rating ? "H" : "I"; // filled or empty
-            doc.text(symbol, starOffsetX + i * 5, starOffsetY); // spacing: 10 units
+            doc.text(symbol, starOffsetX + i * 5, starOffsetY);
           }
 
           doc.setTextColor(33, 33, 33); // Reset to default dark grey
-
 
           // Restore font
           doc.setFont("helvetica", "normal");
