@@ -11,26 +11,30 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Alert from "@mui/material/Alert";
 import Image from "next/image";
-import LoginInfoPanel from "@/components/LoginInfoPanel";       // Test deployment
+import LoginInfoPanel from "@/components/LoginInfoPanel";
 
-export default function LoginPage() {                           // Trigger new deployment          
+export default function LoginPage() {
   const [userId, setUserId] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
-  // Add this line
   const router = useRouter();
   const { status } = useSession();
+
+  // This hook handles redirecting users who are already logged in.
+  React.useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/"); // Redirect to dashboard if already logged in
+    }
+  }, [status, router]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
     setError("");
-
     const res = await signIn("credentials", {
       redirect: false,
       userId,
       password,
     });
-
     if (res.ok) {
       window.location.href = "/";
     } else {
@@ -38,8 +42,9 @@ export default function LoginPage() {                           // Trigger new d
     }
   };
 
-  // Stage 1: Force full-screen loading fallback
-  if (status === "loading") {
+  // The loading check prevents the form from flashing while session is verified.
+  // It now also covers the 'authenticated' status to allow time for the redirect effect.
+  if (status === "loading" || status === "authenticated") {
     return (
       <Box
         sx={{
@@ -52,7 +57,6 @@ export default function LoginPage() {                           // Trigger new d
           fontWeight: 600,
           letterSpacing: "1px",
           background: "linear-gradient(to top, #eef2f3, #ffffff)",
-          transition: "opacity 0.3s ease",
         }}
       >
         Loading . . .
@@ -60,7 +64,7 @@ export default function LoginPage() {                           // Trigger new d
     );
   }
 
-  // Stage 2: Actual UI with smooth fade-in
+  // Actual UI (only shown if status is 'unauthenticated')
   return (
     <Box
       sx={{
@@ -71,7 +75,7 @@ export default function LoginPage() {                           // Trigger new d
         alignItems: "center",
         background: "linear-gradient(to top, #eef2f3, #ffffff)",
         padding: 0,
-        opacity: 0, 
+        opacity: 0,
         animation: "fadeIn 0.5s ease 0.1s forwards",
         "@keyframes fadeIn": {
           to: { opacity: 1 },

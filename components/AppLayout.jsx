@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { SettingsContext } from "@/context/SettingsContext";
 import { getCurrentShift } from "@/lib/date-helpers";
 import InfoTooltip from "./InfoTooltip";
@@ -84,7 +85,7 @@ const allMenuItems = [
   {
     text: "Search & Archive",
     icon: <SearchIcon />,
-    href: "/search?reset=true",
+    href: "/search",
     roles: [
       "admin",
       "standard",
@@ -116,6 +117,8 @@ const allMenuItems = [
 
 export default function AppLayout({ children }) {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
   const user = session?.user;
   const logout = () => signOut({ callbackUrl: "/login" });
   const { isSpellcheckEnabled, toggleSpellcheck } =
@@ -133,6 +136,16 @@ export default function AppLayout({ children }) {
   const visibleMenuItems = allMenuItems.filter((item) =>
     item.roles.includes(user?.role)
   );
+
+  const handleSearchLinkClick = () => {
+    if (pathname === "/search") {
+      // If we are on the search page, force a full browser navigation to guarantee a reset.
+      window.location.href = '/search';
+    } else {
+      // Otherwise, just navigate to the search page.
+      router.push("/search");
+    }
+  };
 
   const isCnIT = user?.role === "admin";
   const [currentShift, setCurrentShift] = React.useState(getCurrentShift());
@@ -280,10 +293,17 @@ export default function AppLayout({ children }) {
             <React.Fragment key={item.text}>
               {item.divider && <Divider sx={{ my: 1 }} />}
               <ListItem disablePadding>
-                <ListItemButton LinkComponent={Link} href={item.href}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
+                {item.text === "Search & Archive" ? (
+                  <ListItemButton onClick={handleSearchLinkClick}>
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItemButton>
+                ) : (
+                  <ListItemButton LinkComponent={Link} href={item.href}>
+                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemText primary={item.text} />
+                  </ListItemButton>
+                )}
               </ListItem>
             </React.Fragment>
           ))}

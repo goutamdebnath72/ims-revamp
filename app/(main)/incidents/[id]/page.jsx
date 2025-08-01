@@ -22,7 +22,6 @@ export default function IncidentDetailsPage() {
   const user = session?.user;
 
   const incident = incidents.find((inc) => inc.id.toString() === params.id);
-  console.log("--- FRONTEND LOG --- Incident data:", incident);
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const [isOptimisticallyResolved, setOptimisticallyResolved] =

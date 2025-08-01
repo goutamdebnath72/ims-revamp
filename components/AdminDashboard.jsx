@@ -2,13 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { IncidentContext } from "@/context/IncidentContext";
 import { DashboardFilterContext } from "@/context/DashboardFilterContext";
-import {
-  isSystemIncident,
-  filterIncidents,
-  SYSTEM_INCIDENT_TYPES,
-} from "@/lib/incident-helpers";
+import { isSystemIncident } from "@/lib/incident-helpers";
 import {
   Stack,
   Button,
@@ -39,15 +34,22 @@ import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 
 export default function AdminDashboard() {
-  const { incidents } = React.useContext(IncidentContext);
   const { data: session } = useSession();
   const user = session?.user;
 
-  // Get all filter state and functions from the global context
-  const { filters, setFilters, resetFilters } = React.useContext(
-    DashboardFilterContext
-  );
+    console.log("DASHBOARD RENDER: User object is", user);
+
+
+  // --- REFACTORED ---
+  // Data now comes directly from the context.
+  // This assumes your DashboardFilterContext provides these values.
+  const { filters, setFilters, resetFilters, incidents, isLoading, error } =
+    React.useContext(DashboardFilterContext);
   const { dateRange, shift } = filters;
+
+  // --- DELETED ---
+  // The useSWR hook, buildQueryString function, and fetcher function have been removed.
+  // The context is now responsible for all data fetching.
 
   const [view, setView] = React.useState("general");
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -65,7 +67,6 @@ export default function AdminDashboard() {
   const setPresetRange = (rangeName) => {
     const now = DateTime.local().setZone("Asia/Kolkata");
     let newDateRange;
-
     if (rangeName === "today") {
       newDateRange = { start: now.startOf("day"), end: now.endOf("day") };
     } else if (rangeName === "week") {
@@ -73,18 +74,15 @@ export default function AdminDashboard() {
     } else if (rangeName === "month") {
       newDateRange = { start: now.startOf("month"), end: now.endOf("day") };
     } else if (rangeName === "all") {
-      const veryOldDate = DateTime.fromISO("2020-01-01", {
-        zone: "Asia/Kolkata",
-      });
-      newDateRange = { start: veryOldDate, end: now };
+      newDateRange = { start: null, end: null };
     }
-
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
 
   const incidentsToDisplay = React.useMemo(() => {
     const category = user?.role === "sys_admin" ? view : "general";
+    if (!incidents) return []; // Now uses incidents from context
     return incidents.filter((incident) => {
       const isSys = isSystemIncident(incident);
       if (category === "system") return isSys;
@@ -93,22 +91,10 @@ export default function AdminDashboard() {
     });
   }, [incidents, user, view]);
 
-  const filteredIncidents = React.useMemo(() => {
-    return filterIncidents(incidentsToDisplay, filters, user);
-  }, [incidentsToDisplay, filters, user]);
-
-  const sortedIncidents = React.useMemo(() => {
-    return [...filteredIncidents].sort((a, b) => {
-      const dateA = DateTime.fromISO(a.reportedOn, { zone: "Asia/Kolkata" });
-      const dateB = DateTime.fromISO(b.reportedOn, { zone: "Asia/Kolkata" });
-      return dateB - dateA;
-    });
-  }, [filteredIncidents]);
-
-  const newIncidents = filteredIncidents.filter(
+  const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === "New"
   ).length;
-  const processedIncidents = filteredIncidents.filter(
+  const processedIncidents = incidentsToDisplay.filter(
     (i) => i.status === "Processed"
   ).length;
   const allOpenIncidents = newIncidents + processedIncidents;
@@ -134,13 +120,13 @@ export default function AdminDashboard() {
     },
     {
       title: "Resolved",
-      value: filteredIncidents.filter((i) => i.status === "Resolved").length,
+      value: incidentsToDisplay.filter((i) => i.status === "Resolved").length,
       color: "success",
       filterStatus: "Resolved",
     },
     {
       title: "Closed",
-      value: filteredIncidents.filter((i) => i.status === "Closed").length,
+      value: incidentsToDisplay.filter((i) => i.status === "Closed").length,
       color: "default",
       filterStatus: "Closed",
     },
@@ -163,17 +149,18 @@ export default function AdminDashboard() {
     { name: "Processed", count: processedIncidents },
     {
       name: "Resolved",
-      count: filteredIncidents.filter((i) => i.status === "Resolved").length,
+      count: incidentsToDisplay.filter((i) => i.status === "Resolved").length,
     },
     {
       name: "Closed",
-      count: filteredIncidents.filter((i) => i.status === "Closed").length,
+      count: incidentsToDisplay.filter((i) => i.status === "Closed").length,
     },
   ];
 
-  const openIncidentsList = filteredIncidents.filter(
+  const openIncidentsList = incidentsToDisplay.filter(
     (i) => i.status === "New" || i.status === "Processed"
   );
+
   const priorityChartData = [
     {
       name: "High",
@@ -194,25 +181,22 @@ export default function AdminDashboard() {
 
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
+    if (!start || !end) return "All Time"; // Handle "All Time"
     const now = DateTime.local().setZone("Asia/Kolkata");
-    if (start && end) {
-      if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
-      if (
-        start.hasSame(now.startOf("week"), "day") &&
-        end.hasSame(now.endOf("day"), "day")
-      )
-        return "This Week";
-      if (
-        start.hasSame(now.startOf("month"), "day") &&
-        end.hasSame(now.endOf("day"), "day")
-      )
-        return "This Month";
-      if (start.toISODate() === "2020-01-01") return "All Time";
-      if (start.toISODate() === end.toISODate())
-        return start.toFormat("d MMM, yy");
-      return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
-    }
-    return "Select Range";
+    if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
+    if (
+      start.hasSame(now.startOf("week"), "day") &&
+      end.hasSame(now.endOf("day"), "day")
+    )
+      return "This Week";
+    if (
+      start.hasSame(now.startOf("month"), "day") &&
+      end.hasSame(now.endOf("day"), "day")
+    )
+      return "This Month";
+    if (start.toISODate() === end.toISODate())
+      return start.toFormat("d MMM, yy");
+    return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
   const showTeamAvailability =
@@ -322,6 +306,35 @@ export default function AdminDashboard() {
           </ToggleButtonGroup>
         </Box>
       </Menu>
+
+      {/* This debug box now uses the state from the context */}
+      {/*<Box sx={{ p: 2, border: "2px solid red", borderRadius: 1 }}>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          Context Debugger:
+        </Typography>
+        {isLoading && (
+          <Typography>
+            Current Status: <strong>Loading...</strong>
+          </Typography>
+        )}
+        {error && (
+          <Typography>
+            Current Status: <strong>Error!</strong> Failed to fetch data.
+          </Typography>
+        )}
+        {incidents && (
+          <Typography>
+            Current Status: <strong>Success!</strong> Found {incidents.length}{" "}
+            incidents.
+          </Typography>
+        )}
+        {!isLoading && !error && !incidents && (
+          <Typography>
+            Current Status: <strong>Idle</strong>
+          </Typography>
+        )}
+      </Box>*/}
+
       <Stack direction="row" spacing={3}>
         {statCardsData.map((card, index) => (
           <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
@@ -374,7 +387,7 @@ export default function AdminDashboard() {
             >
               <StatusChart data={statusChartData} />
             </Card>
-            <RecentIncidentsCard incidents={sortedIncidents} />
+            <RecentIncidentsCard incidents={incidentsToDisplay} />
           </Stack>
           <Stack sx={{ flex: 5 }} spacing={3}>
             <Card
@@ -419,7 +432,7 @@ export default function AdminDashboard() {
               />
             </Box>
           </Stack>
-          <RecentIncidentsCard incidents={sortedIncidents} />
+          <RecentIncidentsCard incidents={incidentsToDisplay} />
         </Stack>
       )}
     </Stack>

@@ -87,6 +87,7 @@ function IncidentDataGrid({ rows, loading }) {
       columns={columns}
       loading={loading}
       onRowClick={handleRowClick}
+      hideFooterPagination={true}
       sx={{
         "& .MuiDataGrid-row:hover": {
           cursor: "pointer",

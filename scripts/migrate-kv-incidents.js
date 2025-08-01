@@ -28,20 +28,32 @@ async function main() {
     });
 
     if (requestor && incidentType) {
-      // Parse the 'reportedOn' string into a Luxon DateTime object
-      const reportedOnDt = DateTime.fromISO(incident.reportedOn, {
-        zone: "Asia/Kolkata",
-      });
+      // Parse the 'reportedOn' string
+      const reportedOnDt = DateTime.fromFormat(
+        incident.reportedOn,
+        "dd MMM yyyy HH:mm",
+        { zone: "Asia/Kolkata" }
+      );
+
+      // --- ADDED: Check if the parsed date is valid ---
+      if (!reportedOnDt.isValid) {
+        console.warn(
+          `--> Skipping incident ${incident.id} due to invalid date format: "${incident.reportedOn}"`
+        );
+        continue; // Skip to the next incident in the loop
+      }
 
       let shiftDate = reportedOnDt;
       if (reportedOnDt.hour < 6) {
         shiftDate = reportedOnDt.minus({ days: 1 });
       }
 
-      await prisma.incident.create({
-        data: {
+      await prisma.incident.upsert({
+        where: { id: incident.id }, // Find the incident by its unique ID
+        update: {}, // If it exists, do nothing
+        create: {
+          // If it does not exist, create it
           id: incident.id,
-          // CHANGED: Convert the Luxon object to a JS Date for Prisma
           reportedOn: reportedOnDt.toJSDate(),
           shiftDate: shiftDate.toJSDate(),
           jobTitle: incident.jobTitle,
@@ -57,15 +69,16 @@ async function main() {
           incidentTypeId: incidentType.id,
           auditTrail: {
             create: incident.auditTrail.map((entry) => ({
-              // CHANGED: Convert the timestamp string to a JS Date for Prisma
-              // NOTE: Assumes the old audit timestamp format was 'ccc LLL d yyyy h:mm a'
-              timestamp: DateTime.fromISO(entry.timestamp).toJSDate(),
+              timestamp: DateTime.fromFormat(
+                entry.timestamp,
+                "ccc LLL d yyyy h:mm a",
+                { zone: "Asia/Kolkata" }
+              ).toJSDate(),
               author: entry.author,
               action: entry.action,
               comment: entry.comment,
               rating: entry.rating,
               isEdited: entry.isEdited,
-              // The new 'editedAt' field will be left null, which is correct
             })),
           },
         },

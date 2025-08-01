@@ -17,7 +17,6 @@ export default function IncidentProvider({ children }) {
       const response = await fetch("/api/incidents");
       if (!response.ok) throw new Error("Failed to fetch incidents");
       const data = await response.json();
-      console.log("--- CLIENT CONTEXT --- Data received from API:", data);
       setIncidents(data);
     } catch (error) {
       console.error(error);

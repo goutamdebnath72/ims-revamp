@@ -1,44 +1,45 @@
-const { PrismaClient } = require('@prisma/client');
-const { MOCK_USER_DB } = require('../lib/citusers');
-const { departments } = require('../lib/departments');
-const { incidentTypes } = require('../lib/incident-types');
-// We no longer import the incidents.json file
-// const incidentsJson = require('../incidents.json'); 
-const { DateTime } = require('luxon');
+const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcrypt"); // <-- ADDED: Import bcrypt
+const { MOCK_USER_DB } = require("../lib/citusers");
+const { departments } = require("../lib/departments");
+const { incidentTypes } = require("../lib/incident-types");
+const { DateTime } = require("luxon");
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log(`Start seeding ...`);
-
   // 1. Seed Departments
-  console.log('Seeding departments...');
   await prisma.department.createMany({
-    data: departments.map(d => ({ code: d.code, name: d.name })),
+    data: departments.map((d) => ({ code: d.code, name: d.name })),
     skipDuplicates: true,
   });
-  console.log('Departments seeded.');
 
   // 2. Seed Incident Types
-  console.log('Seeding incident types...');
   await prisma.incidentType.createMany({
-    data: incidentTypes.map(name => ({ name })),
+    data: incidentTypes.map((name) => ({ name })),
     skipDuplicates: true,
   });
-  console.log('Incident types seeded.');
+
+  console.log("Seeding users with hashed passwords...");
 
   // 3. Seed Users and link them to Departments
-  console.log('Seeding C&IT users...');
   for (const userData of Object.values(MOCK_USER_DB)) {
-    const department = await prisma.department.findFirst({ where: { name: userData.department } });
+    const department = await prisma.department.findFirst({
+      where: { name: userData.department },
+    });
     if (department) {
+      // --- START: Hashing Logic ---
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+      // --- END: Hashing Logic ---
+
       await prisma.user.upsert({
         where: { ticketNo: userData.ticketNo },
         update: {},
         create: {
           role: userData.role,
           name: userData.name,
-          password: userData.password,
+          password: hashedPassword, // <-- CHANGED: Use the hashed password
           ticketNo: userData.ticketNo,
           contactNo: userData.mobileNo,
           emailId: userData.emailSail,
@@ -48,12 +49,11 @@ async function main() {
         },
       });
     } else {
-      console.warn(`Could not find department "${userData.department}" for user "${userData.name}". Skipping user.`);
+      console.warn(
+        `Could not find department "${userData.department}" for user "${userData.name}". Skipping user.`
+      );
     }
   }
-  console.log('Users seeded.');
-  
-  console.log(`Seeding finished.`);
 }
 
 main()

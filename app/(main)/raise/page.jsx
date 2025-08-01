@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { IncidentContext } from "@/context/IncidentContext";
+import { DashboardFilterContext } from '@/context/DashboardFilterContext';
 import { NotificationContext } from "@/context/NotificationContext";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
@@ -21,7 +21,7 @@ export default function RaiseIncidentPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { showNotification } = React.useContext(NotificationContext);
-  const { refetchIncidents } = React.useContext(IncidentContext); 
+  const { refetchIncidents } = React.useContext(DashboardFilterContext); 
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);

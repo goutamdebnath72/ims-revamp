@@ -21,7 +21,6 @@ function parseFlexibleDate(dateString) {
   const cleanedDateString = dateString.trim().replace(/\s+/g, " ");
 
   // ---- THIS IS THE NEW LINE TO ADD ----
-  console.log("Attempting to parse cleaned date:", `"${cleanedDateString}"`);
 
   const formats = [
     "dd MMM yy, h:mm a", // Handles "14 Jul 25, 6:30 PM"
@@ -47,20 +46,17 @@ export async function GET() {
   }
 
   try {
-    console.log("--- Starting Incident ID Migration ---");
 
     const incidents = (await kv.get("incidents")) || [];
     if (incidents.length === 0) {
       return NextResponse.json({ message: "No incidents found to migrate." });
     }
-    console.log(`Found ${incidents.length} total incidents.`);
 
     const backupKey = `incidents_backup_${format(
       new Date(),
       "yyyyMMddHHmmss"
     )}`;
     await kv.set(backupKey, incidents);
-    console.log(`Successfully created backup at key: ${backupKey}`);
 
     let migratedCount = 0;
     const migratedIncidents = incidents.map((incident) => {
@@ -81,10 +77,8 @@ export async function GET() {
       }
       return incident;
     });
-    console.log(`Migrated ${migratedCount} incident IDs.`);
 
     await kv.set("incidents", migratedIncidents);
-    console.log("Successfully saved migrated data.");
 
     return NextResponse.json({
       status: "Success",

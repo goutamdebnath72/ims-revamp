@@ -2,7 +2,6 @@
 
 import React, { memo } from "react";
 import { useSession } from "next-auth/react";
-import useSWR from "swr";
 import { isSystemIncident } from "@/lib/incident-helpers";
 import {
   Box,
@@ -12,6 +11,7 @@ import {
   MenuItem,
   Tooltip,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -29,6 +29,7 @@ const VendorSearchForm = ({
   handleChange,
   handleDateChange,
   isLoading,
+  departments,
 }) => {
   return (
     <Stack spacing={2}>
@@ -129,7 +130,11 @@ const VendorSearchForm = ({
             disabled={isLoading}
             sx={{ height: "40px" }}
           >
-            {isLoading ? "Searching..." : "Search"}
+            {isLoading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Search"
+            )}
           </Button>
         </Box>
       </Stack>
@@ -142,35 +147,11 @@ function IncidentSearchForm({
   onCriteriaChange,
   onSearch,
   isLoading,
+  incidentTypes = [],
+  departments = [],
 }) {
-  console.log("--- Search Form received criteria: ---", criteria);
   const { data: session } = useSession();
   const user = session?.user;
-
-  const {
-    data: incidentTypes,
-    error,
-    isLoading: isLoadingTypes,
-  } = useSWR("/api/incident-types", fetcher);
-
-  const { data: departments, isLoading: isLoadingDepts } = useSWR(
-    "/api/departments",
-    fetcher
-  );
-
-  React.useEffect(() => {
-    if (
-      user?.role === "network_vendor" &&
-      criteria.incidentType !== "NETWORK"
-    ) {
-      onCriteriaChange({ ...criteria, incidentType: "NETWORK" });
-    } else if (
-      user?.role === "biometric_vendor" &&
-      criteria.incidentType !== "BIOMETRIC"
-    ) {
-      onCriteriaChange({ ...criteria, incidentType: "BIOMETRIC" });
-    }
-  }, [user, criteria, onCriteriaChange]);
 
   const filteredIncidentTypes = React.useMemo(() => {
     if (!incidentTypes) return [{ name: "Any" }];
@@ -207,15 +188,22 @@ function IncidentSearchForm({
     const commonProps = { criteria, handleChange, handleDateChange, isLoading };
 
     if (user?.role === "network_vendor") {
-      return <VendorSearchForm incidentType="NETWORK" {...commonProps} />;
-    } else if (user?.role === "biometric_vendor") {
-      return <VendorSearchForm incidentType="BIOMETRIC" {...commonProps} />;
-    } else if (user?.role === "admin" || user?.role === "sys_admin") {
-      console.log(
-        "Value being passed to Start Date Picker:",
-        criteria.dateRange.start
+      return (
+        <VendorSearchForm
+          incidentType="NETWORK"
+          {...commonProps}
+          departments={departments}
+        />
       );
-
+    } else if (user?.role === "biometric_vendor") {
+      return (
+        <VendorSearchForm
+          incidentType="BIOMETRIC"
+          {...commonProps}
+          departments={departments}
+        />
+      );
+    } else if (user?.role === "admin" || user?.role === "sys_admin") {
       return (
         <Stack spacing={2}>
           <Stack direction="row" spacing={2}>
@@ -254,7 +242,6 @@ function IncidentSearchForm({
               value={criteria.department}
               onChange={handleChange}
               size="small"
-              disabled={isLoadingDepts}
             >
               <MenuItem key="any-dept" value="Any">
                 Any
@@ -274,7 +261,6 @@ function IncidentSearchForm({
               value={criteria.incidentType}
               onChange={handleChange}
               size="small"
-              disabled={isLoadingTypes}
             >
               {filteredIncidentTypes.map((option) => (
                 <MenuItem key={option.name} value={option.name}>
@@ -363,7 +349,11 @@ function IncidentSearchForm({
                 disabled={isLoading}
                 sx={{ height: "40px", width: "120px" }}
               >
-                {isLoading ? "Searching..." : "Search"}
+                {isLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Search"
+                )}
               </Button>
             </Box>
           </Stack>
@@ -389,7 +379,6 @@ function IncidentSearchForm({
             value={criteria.incidentType}
             onChange={handleChange}
             size="small"
-            disabled={isLoadingTypes}
           >
             {filteredIncidentTypes.map((option) => (
               <MenuItem key={option.name} value={option.name}>
@@ -435,7 +424,11 @@ function IncidentSearchForm({
             disabled={isLoading}
             sx={{ height: "40px" }}
           >
-            {isLoading ? "Searching..." : "Search"}
+            {isLoading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Search"
+            )}
           </Button>
         </Stack>
       );

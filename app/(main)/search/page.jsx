@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { filterIncidents } from "@/lib/incident-helpers";
+import useSWR from "swr";
 import { DateTime } from "luxon";
 import {
   Box,
@@ -10,15 +10,19 @@ import {
   Paper,
   Stack,
   useScrollTrigger,
+  Button,
+  IconButton,
   Alert,
 } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import IncidentSearchForm from "@/components/IncidentSearchForm";
 import IncidentDataGrid from "@/components/IncidentDataGrid";
-import { IncidentContext } from "@/context/IncidentContext";
 import { useSession } from "next-auth/react";
 
+const fetcher = (...args) => fetch(...args).then((res) => res.json());
+
 const createDefaultCriteria = () => {
-  const now = DateTime.now().setZone("Asia/Kolkata");
   return {
     incidentId: "",
     requestor: "",
@@ -35,145 +39,117 @@ const createDefaultCriteria = () => {
   };
 };
 
-
 export default function SearchPage() {
   const { data: session } = useSession();
-  const { incidents } = React.useContext(IncidentContext);
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = session?.user;
 
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
+  console.log("%cSEARCH PAGE RENDERED", "color: green;");
+
+  const [page, setPage] = React.useState(1);
+  const [criteria, setCriteria] = React.useState(createDefaultCriteria());
   const [hasSearched, setHasSearched] = React.useState(false);
 
-  // Initialize state using the new helper function for consistency
-  const [criteria, setCriteria] = React.useState(createDefaultCriteria());
+  // --- ADDED THESE 4 LINES ---
+  const { data: typesData } = useSWR("/api/incident-types", fetcher);
+  const { data: deptsData } = useSWR("/api/departments", fetcher);
+  const incidentTypes = typesData?.incidentTypes || [];
+  const departments = deptsData?.departments || [];
+  // -------------------------
 
-  const performSearch = React.useCallback(
-    (searchCriteria) => {
-      if (!user || !incidents || incidents.length === 0) return;
-      setLoading(true);
-      setHasSearched(true);
-      setTimeout(() => {
-        const filteredResults = filterIncidents(
-          incidents,
-          searchCriteria,
-          user
-        );
-        const sortedResults = [...filteredResults].sort((a, b) => {
-          const dateA = DateTime.fromISO(a.reportedOn, {
-            zone: "Asia/Kolkata",
-          });
-          const dateB = DateTime.fromISO(b.reportedOn, {
-            zone: "Asia/Kolkata",
-          });
-          return dateB - dateA;
-        });
-        setSearchResults(sortedResults);
-        setLoading(false);
-      }, 500);
-    },
-    [incidents, user]
-  );
+  // --- LOG #1: To see the value of 'hasSearched' on every render ---
+  console.log("SEARCH PAGE RENDER: 'hasSearched' is currently", hasSearched);
+
+  const buildQueryString = () => {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", "20");
+
+    Object.entries(criteria).forEach(([key, value]) => {
+      if (key === "dateRange") {
+        if (value.start) params.append("startDate", value.start.toISODate());
+        if (value.end) params.append("endDate", value.end.toISODate());
+      } else if (value && value !== "Any") {
+        params.append(key, value);
+      }
+    });
+    return params.toString();
+  };
+
+  const SWR_URL = hasSearched ? `/api/incidents?${buildQueryString()}` : null;
+
+  // --- LOG #2: To see the final URL being passed to useSWR ---
+  console.log("SEARCH PAGE RENDER: The URL for useSWR is:", SWR_URL);
+
+  const { data, error, isLoading } = useSWR(SWR_URL, fetcher);
+
+  const handleSearch = (newCriteria) => {
+    setCriteria(newCriteria);
+    setPage(1);
+    setHasSearched(true);
+  };
 
   React.useEffect(() => {
-    // This entire effect is simplified and made more robust
-    if (!user || incidents.length === 0) return;
+        console.log("%cuseEffect HOOK RUNNING", "color: orange; font-weight: bold;", "Current searchParams:", searchParams.toString());
 
-    // Handle reset clicks
-    if (searchParams.get("reset") === "true") {
+        
+    const urlParams = Object.fromEntries(searchParams.entries());
+    if (Object.keys(urlParams).length > 0) {
+      console.log(
+        "useEffect found URL params, setting criteria and triggering a search."
+      );
+      setCriteria((prev) => ({
+        ...prev,
+        status: urlParams.status || "Any",
+        category: urlParams.category || "Any",
+        shift: urlParams.shift || "Any",
+        dateRange: {
+          start: urlParams.startDate
+            ? DateTime.fromISO(urlParams.startDate)
+            : null,
+          end: urlParams.endDate ? DateTime.fromISO(urlParams.endDate) : null,
+        },
+      }));
+      setHasSearched(true);
+    } else {
+      // This new 'else' block resets the page on direct navigation
       setCriteria(createDefaultCriteria());
-      setSearchResults([]);
       setHasSearched(false);
-      router.replace("/search", { scroll: false });
-      return;
+      setPage(1);
     }
-
-    const urlCategory = searchParams.get("category");
-    const urlStatus = searchParams.get("status");
-    const urlPriority = searchParams.get("priority");
-    const urlShift = searchParams.get("shift");
-    const urlStartDate = searchParams.get("startDate");
-    const urlEndDate = searchParams.get("endDate");
-    const urlIncidentType = searchParams.get("incidentType");
-
-    // Only perform a search if at least one search parameter is in the URL
-    if (
-      urlCategory ||
-      urlStatus ||
-      urlPriority ||
-      urlShift ||
-      urlIncidentType
-    ) {
-      // Use the default date range as a fallback if none is provided in the URL
-      const defaultDateRange = createDefaultCriteria().dateRange;
-      const criteriaFromLink = {
-        incidentId: "",
-        requestor: "",
-        incidentType: urlIncidentType || "Any",
-        status: urlStatus || "Any",
-        priority: urlPriority || "Any",
-        shift: urlShift || "Any",
-        department: "Any",
-        category:
-          urlCategory || (user.role === "sys_admin" ? "Any" : "general"),
-        dateRange:
-          urlStartDate && urlEndDate
-            ? {
-                start: DateTime.fromISO(urlStartDate, { zone: "Asia/Kolkata" }),
-                end: DateTime.fromISO(urlEndDate, { zone: "Asia/Kolkata" }),
-              }
-            : defaultDateRange,
-      };
-
-      setCriteria(criteriaFromLink);
-      performSearch(criteriaFromLink);
-    }
-  }, [user, incidents, searchParams, performSearch, router]);
-
-  const isScrolled = useScrollTrigger({
-    disableHysteresis: true,
-    threshold: 0,
-  });
+  }, [searchParams]);
 
   const getHeading = () => {
-    const category = searchParams.get("category");
-    if (user?.role === "sys_admin" && category === "system")
+    if (user?.role === "sys_admin" && criteria.category === "System")
       return "Search & Archive (SYS)";
     return "Search & Archive";
   };
 
   const getFilterContextText = () => {
     const startDateParam = searchParams.get("startDate");
-    const endDateParam = searchParams.get("endDate");
     const shiftParam = searchParams.get("shift");
     if (!startDateParam && !shiftParam) return null;
     let dateText = "";
-    if (startDateParam && endDateParam) {
-      const start = DateTime.fromISO(startDateParam, { zone: "Asia/Kolkata" });
-      const end = DateTime.fromISO(endDateParam, { zone: "Asia/Kolkata" });
-      if (start.toISODate() === end.toISODate()) {
-        dateText = `Date: ${start.toFormat("d MMM, yyyy")}`;
-      } else {
-        dateText = `Date Range: ${start.toFormat("d MMM")} - ${end.toFormat(
-          "d MMM, yyyy"
-        )}`;
-      }
+    if (startDateParam) {
+      dateText = `Date Range: ${DateTime.fromISO(startDateParam).toFormat(
+        "d MMM, yyyy"
+      )}`;
     }
     const shiftText = shiftParam ? `Shift: ${shiftParam}` : "";
-    return [dateText, shiftText].filter(Boolean).join("  |  ");
+    return [dateText, shiftText].filter(Boolean).join(" | ");
   };
-
   const filterContextText = getFilterContextText();
+
+  const isScrolled = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 0,
+  });
 
   return (
     <Stack
       spacing={2}
-      sx={{
-        minHeight: "calc(100vh - 64px)",
-        bgcolor: "grey.100",
-      }}
+      sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "grey.100" }}
     >
       <Paper
         elevation={isScrolled ? 4 : 2}
@@ -191,20 +167,17 @@ export default function SearchPage() {
         <IncidentSearchForm
           criteria={criteria}
           onCriteriaChange={setCriteria}
-          onSearch={performSearch}
-          isLoading={loading}
+          onSearch={handleSearch}
+          isLoading={isLoading}
+          incidentTypes={incidentTypes}
+          departments={departments}
         />
       </Paper>
 
       {hasSearched && (
         <Paper
           elevation={2}
-          sx={{
-            p: 2,
-            display: "flex",
-            flexDirection: "column",
-            height: "75vh",
-          }}
+          sx={{ p: 2, display: "flex", flexDirection: "column", flexGrow: 1 }}
         >
           {filterContextText && (
             <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
@@ -214,9 +187,46 @@ export default function SearchPage() {
           <Typography variant="h5" sx={{ mb: 2, flexShrink: 0 }}>
             Search Results
           </Typography>
-
           <Box sx={{ flexGrow: 1, minHeight: 0 }}>
-            <IncidentDataGrid rows={searchResults} loading={loading} />
+            <IncidentDataGrid
+              rows={data?.incidents || []}
+              loading={isLoading}
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              pt: 2,
+              flexShrink: 0,
+            }}
+          >
+            {data?.incidents && (
+              <Typography variant="body2" sx={{ mr: "auto" }}>
+                Showing{" "}
+                <strong>
+                  {(data.currentPage - 1) * 20 + 1}–
+                  {(data.currentPage - 1) * 20 + data.incidents.length}
+                </strong>{" "}
+                of <strong>{data.totalIncidents}</strong>
+              </Typography>
+            )}
+            <Typography variant="body2" sx={{ mr: 2 }}>
+              Page {data?.currentPage || 0} of {data?.totalPages || 0}
+            </Typography>
+            <IconButton
+              onClick={() => setPage(page - 1)}
+              disabled={!data || data.currentPage <= 1}
+            >
+              <ArrowBackIcon />
+            </IconButton>
+            <IconButton
+              onClick={() => setPage(page + 1)}
+              disabled={!data || data.currentPage >= data.totalPages}
+            >
+              <ArrowForwardIcon />
+            </IconButton>
           </Box>
         </Paper>
       )}

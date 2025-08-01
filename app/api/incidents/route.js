@@ -3,20 +3,16 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { getAllIncidents, createIncident } from "@/lib/incident-repo";
 import { getShiftTimestamps } from "@/lib/date-helpers";
-import { DateTime } from "luxon";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  console.log("--- API GET /api/incidents: Request received ---");
-  // This function is for fetching incidents
+// The new GET function that handles all filtering and pagination
+export async function GET(request) {
   try {
-    const incidents = await getAllIncidents();
-    console.log(
-      `--- API GET /api/incidents: Found ${incidents.length} incidents. ---`
-    );
-
-    return NextResponse.json(incidents);
+    const { searchParams } = new URL(request.url);
+    const filters = Object.fromEntries(searchParams.entries());
+    const result = await getAllIncidents(filters);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Failed in GET /api/incidents:", error);
     return NextResponse.json(
@@ -26,6 +22,7 @@ export async function GET() {
   }
 }
 
+// Your complete POST function for creating new incidents
 export async function POST(request) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
@@ -34,13 +31,14 @@ export async function POST(request) {
 
   try {
     const formData = await request.json();
-    const user = session.user; // Get the full user object from the session
+    const user = session.user;
 
     const { idTimestamp, shiftDateObject } = getShiftTimestamps();
     const randomHex = Math.floor(Math.random() * 0xffff)
       .toString(16)
       .toUpperCase()
       .padStart(4, "0");
+      
     let ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
     if (ip.includes(",")) ip = ip.split(",")[0].trim();
     if (ip === "::1") ip = "127.0.0.1";
@@ -49,7 +47,7 @@ export async function POST(request) {
       id: `${idTimestamp}-${randomHex}`,
       reportedOn: shiftDateObject,
       shiftDate: shiftDateObject,
-      ...formData, // Spread the form data
+      ...formData,
       requestor: user.name,
       ticketNo: user.id,
       department: user.department,
@@ -58,11 +56,9 @@ export async function POST(request) {
       ipAddress: ip,
     };
 
-    // Pass both the incident data and the user session to the repository function
     const createdIncident = await createIncident(newIncidentData, user);
-    console.log("--- BACKEND LOG --- Incident created:", createdIncident);
-
     return NextResponse.json(createdIncident, { status: 201 });
+
   } catch (error) {
     console.error("Failed to create incident:", error);
     return NextResponse.json(

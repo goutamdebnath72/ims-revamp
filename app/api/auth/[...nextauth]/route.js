@@ -1,8 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MOCK_USER_DB } from "@/lib/citusers";
-import { MOCK_VENDOR_DB } from "@/lib/network-vendors";
-import { MOCK_BIOMETRIC_VENDOR_DB } from "@/lib/biometric-vendors";
+import prisma from "@/lib/prisma.js"; // Import the Prisma client
+import bcrypt from "bcrypt"; // Import bcrypt for password hashing
 import { getCurrentShift } from "@/lib/date-helpers";
 
 export const authOptions = {
@@ -13,71 +12,64 @@ export const authOptions = {
         userId: { label: "User ID", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      authorize(credentials) {
-        // --- CHECK 1: C&IT Employees ---
-        const citUser = MOCK_USER_DB[credentials.userId];
-        if (citUser && citUser.password === credentials.password) {
+
+      async authorize(credentials) {
+        if (!credentials?.userId || !credentials?.password) {
+          return null;
+        }
+
+        // --- CHECK 1: Try to find in the Employees (User) table ---
+        const dspEmployee = await prisma.user.findUnique({
+          where: { ticketNo: credentials.userId },
+          include: { department: true },
+        });
+
+        if (dspEmployee) {
+          const passwordMatch = await bcrypt.compare(
+            credentials.password,
+            dspEmployee.password
+          );
+          if (passwordMatch) {
+            // If employee is found, return their data
+            return {
+              id: dspEmployee.ticketNo,
+              name: dspEmployee.name,
+              role: dspEmployee.role,
+              emailSail: dspEmployee.emailId,
+              emailNic: dspEmployee.emailIdNic,
+              sailpno: dspEmployee.sailPNo,
+              departmentCode: dspEmployee.department.code,
+              loginShift: getCurrentShift(),
+              designation: dspEmployee.designation,
+              department: dspEmployee.department.name,
+              mobileNo: dspEmployee.contactNo,
+            };
+          }
+        }
+
+        // --- CHECK 2: Check for the hardcoded Network Vendor ---
+        if (
+          credentials.userId === "network.vendor" &&
+          credentials.password === process.env.NETWORK_VENDOR_PASSWORD
+        ) {
           return {
-            id: citUser.ticketNo,
-            name: citUser.name,
-            role: citUser.role,
-            emailSail: citUser.emailSail,
-            emailNic: citUser.emailNic,
-            sailpno: citUser.sailpno,
-            departmentCode: citUser.departmentCode,
-            loginShift: getCurrentShift(),
-            designation: citUser.designation,
-            department: citUser.department,
-            mobileNo: citUser.mobileNo,
+            id: "network.vendor",
+            name: "Network Vendor",
+            role: "network_vendor",
+            department: "Vendor",
           };
         }
 
-        // --- CHECK 2: Standard User ---
+        // --- CHECK 3: Check for the hardcoded Biometric Vendor ---
         if (
-          credentials.userId === "111111" &&
-          credentials.password === "password"
+          credentials.userId === "biometric.vendor" &&
+          credentials.password === process.env.BIOMETRIC_VENDOR_PASSWORD
         ) {
           return {
-            id: "111111",
-            name: "Standard User",
-            role: "standard",
-            emailSail: "",
-            emailNic: "",
-            sailpno: "N/A",
-            departmentCode: 0,
-            loginShift: getCurrentShift(),
-            designation: "N/A",
-            department: "N/A",
-            mobileNo: "N/A",
-          };
-        }
-
-        // --- CHECK 3: Network Vendor ---
-        const networkVendorUser = MOCK_VENDOR_DB[credentials.userId];
-        if (
-          networkVendorUser &&
-          networkVendorUser.password === credentials.password
-        ) {
-          return {
-            id: networkVendorUser.id,
-            name: networkVendorUser.name,
-            role: networkVendorUser.role,
-            department: "Network Vendor",
-          };
-        }
-
-        // --- 4. ADD NEW CHECK: Biometric Vendor ---
-        const biometricVendorUser =
-          MOCK_BIOMETRIC_VENDOR_DB[credentials.userId];
-        if (
-          biometricVendorUser &&
-          biometricVendorUser.password === credentials.password
-        ) {
-          return {
-            id: biometricVendorUser.id,
-            name: biometricVendorUser.name,
-            role: biometricVendorUser.role,
-            department: "Biometric Vendor",
+            id: "biometric.vendor",
+            name: "Biometric Vendor",
+            role: "biometric_vendor",
+            department: "Vendor",
           };
         }
 
@@ -90,11 +82,11 @@ export const authOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    // These callbacks remain the same, they correctly transfer data to the session
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.name = user.name;
-        // Add other user properties to the token if they exist
         token.emailSail = user.emailSail;
         token.emailNic = user.emailNic;
         token.sailpno = user.sailpno;
@@ -110,7 +102,6 @@ export const authOptions = {
       session.user.id = token.sub;
       session.user.role = token.role;
       session.user.name = token.name;
-      // Add other properties to the session if they exist
       session.user.emailSail = token.emailSail;
       session.user.emailNic = token.emailNic;
       session.user.sailpno = token.sailpno;
