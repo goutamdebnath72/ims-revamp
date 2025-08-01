@@ -34,6 +34,8 @@ import SpellcheckIcon from "@mui/icons-material/Spellcheck";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useSession, signOut } from "next-auth/react";
 import PersonIcon from "@mui/icons-material/Person";
+import { SearchContext } from "@/context/SearchContext";
+import { useContext } from "react";
 
 const spellCheckTooltipText = (
   <Stack spacing={1.5}>
@@ -118,6 +120,7 @@ const allMenuItems = [
 export default function AppLayout({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { resetSearch } = useContext(SearchContext);
   const pathname = usePathname();
   const user = session?.user;
   const logout = () => signOut({ callbackUrl: "/login" });
@@ -139,12 +142,11 @@ export default function AppLayout({ children }) {
 
   const handleSearchLinkClick = () => {
     if (pathname === "/search") {
-      // If we are on the search page, force a full browser navigation to guarantee a reset.
-      window.location.href = '/search';
-    } else {
-      // Otherwise, just navigate to the search page.
-      router.push("/search");
+      // If we are already on the page, reset its state first.
+      resetSearch();
     }
+    // Then, in all cases, navigate to the search page.
+    router.push("/search");
   };
 
   const isCnIT = user?.role === "admin";

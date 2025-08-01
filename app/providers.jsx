@@ -7,17 +7,20 @@ import SettingsProvider from "@/context/SettingsContext";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterLuxon } from "@mui/x-date-pickers/AdapterLuxon";
 import { DashboardFilterProvider } from "@/context/DashboardFilterContext";
+import { SearchProvider } from "@/context/SearchContext";
 
 export function AppProviders({ children }) {
   return (
     <AuthSessionProvider>
       <NotificationProvider>
         <SettingsProvider>
-            <DashboardFilterProvider>
+          <DashboardFilterProvider>
+            <SearchProvider>
               <LocalizationProvider dateAdapter={AdapterLuxon}>
                 {children}
               </LocalizationProvider>
-            </DashboardFilterProvider>
+            </SearchProvider>
+          </DashboardFilterProvider>
         </SettingsProvider>
       </NotificationProvider>
     </AuthSessionProvider>
