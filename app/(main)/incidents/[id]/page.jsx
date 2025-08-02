@@ -3,25 +3,59 @@
 import * as React from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import useSWR from "swr";
 import { NotificationContext } from "@/context/NotificationContext";
-import { IncidentContext } from "@/context/IncidentContext";
-import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
+import { Box, Stack, Typography, CircularProgress, Alert } from "@mui/material";
 import IncidentDetailsCard from "@/components/IncidentDetailsCard";
 import IncidentAuditTrail from "@/components/IncidentAuditTrail";
 import IncidentActionForm from "@/components/IncidentActionForm";
 import ResolutionDialog from "@/components/ResolutionDialog";
 
+const fetcher = (url) => fetch(url).then((res) => res.json());
+
+const updateIncidentAPI = async (id, data) => {
+  const response = await fetch(`/api/incidents/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to update incident");
+  }
+  return response.json();
+};
+
+const editCommentAPI = async (id, entryId, newComment) => {
+  const response = await fetch(`/api/incidents/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "editAuditComment", entryId, newComment }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to edit comment");
+  }
+  return response.json();
+};
+
 export default function IncidentDetailsPage() {
   const params = useParams();
-  const { incidents, updateIncident, editComment } =
-    React.useContext(IncidentContext);
   const { showNotification } = React.useContext(NotificationContext);
   const { data: session } = useSession();
   const user = session?.user;
+  const {
+    data: incidentData,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR(params.id ? `/api/incidents/${params.id}` : null, fetcher, {
+    refreshInterval:
+      user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
+    revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
+  });
 
-  const incident = incidents.find((inc) => inc.id.toString() === params.id);
+  const incident = incidentData;
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const [isOptimisticallyResolved, setOptimisticallyResolved] =
@@ -36,49 +70,65 @@ export default function IncidentDetailsPage() {
     }, 0);
   }, [incident?.auditTrail?.length]);
 
-  const handleUpdate = (updateData) => {
+  const handleUpdate = async (updateData) => {
     if (!updateData.comment || !updateData.comment.trim()) return;
-
-    // Create a new payload from the form data
     const payload = { ...updateData };
-
-    // If the incident is currently "New", we know this update will change
-    // its status to "Processed". We add this to the payload so the
-    // optimistic update can work instantly.
     if (incident?.status === "New") {
       payload.status = "Processed";
     }
-
-    updateIncident(params.id, payload, user);
+    try {
+      await updateIncidentAPI(params.id, payload);
+      mutate(); // Re-fetch data
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
   };
 
-  const handleConfirmResolve = (resolutionData) => {
+  const handleConfirmResolve = async (resolutionData) => {
     setOptimisticallyResolved(true);
-    updateIncident(
-      params.id,
-      {
+    try {
+      await updateIncidentAPI(params.id, {
         ...resolutionData,
         status: resolutionData.action === "close" ? "Closed" : "Resolved",
-      },
-      user
-    );
-    showNotification(
-      {
-        title: `Incident ${
+      });
+      showNotification(
+        `Incident ${
           resolutionData.action === "close" ? "Closed" : "Resolved"
-        }`,
-        message: `The incident has been successfully updated.`,
-      },
-      "success"
-    );
+        } successfully.`,
+        "success"
+      );
+      mutate(); // Re-fetch data
+    } catch (err) {
+      setOptimisticallyResolved(false); // Revert optimistic state on error
+      showNotification(err.message, "error");
+    }
   };
 
-  const handleCommentEdit = (entryId, newComment) => {
+  const handleCommentEdit = async (entryId, newComment) => {
     if (!incident) return;
-    editComment(incident.id, entryId, newComment);
+    try {
+      await editCommentAPI(incident.id, entryId, newComment);
+      mutate(); // Re-fetch data
+    } catch (err) {
+      showNotification(err.message, "error");
+    }
   };
 
   if (!user) return null;
+  if (isLoading) {
+    return (
+      <CircularProgress sx={{ display: "block", margin: "auto", mt: 10 }} />
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ m: 4 }}>
+        Failed to load incident details.
+      </Alert>
+    );
+  }
+
   if (!incident) {
     return (
       <Box sx={{ textAlign: "center", mt: 10 }}>

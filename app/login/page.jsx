@@ -73,7 +73,7 @@ export default function LoginPage() {
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
-        background: "linear-gradient(to top, #eef2f3, #ffffff)",
+        background: 'linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)',       
         padding: 0,
         opacity: 0,
         animation: "fadeIn 0.5s ease 0.1s forwards",
@@ -122,7 +122,8 @@ export default function LoginPage() {
       >
         <Box
           sx={{
-            width: "475px",
+            width: "100%",
+            maxWidth: "440px",
             minHeight: "505px",
             position: "relative",
             display: "flex",
@@ -132,7 +133,7 @@ export default function LoginPage() {
           }}
         >
           <Paper
-            elevation={8}
+            elevation={4}
             sx={{
               px: 4,
               py: 3,
@@ -144,6 +145,7 @@ export default function LoginPage() {
               justifyContent: "center",
               borderRadius: 2,
               boxSizing: "border-box",
+              border: "1px solid rgba(0, 0, 0, 0.05)",
             }}
           >
             {/* Logo */}
@@ -275,6 +277,7 @@ export default function LoginPage() {
                     borderRadius: "6px",
                     height: "48px",
                     boxShadow: "0 4px 12px rgba(74, 144, 226, 0.3)",
+                    transition: "all 0.25s ease-in-out",
                     "&:hover": {
                       backgroundColor: "#357ABD",
                       boxShadow: "0 6px 16px rgba(74, 144, 226, 0.4)",

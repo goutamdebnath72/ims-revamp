@@ -36,10 +36,10 @@ export default function SearchPage() {
   } = useContext(SearchContext);
 
   // Fetch dropdown data locally in the page component
-  const { data: typesData } = useSWR("/api/incident-types", fetcher);
-  const { data: deptsData } = useSWR("/api/departments", fetcher);
-  const incidentTypes = typesData?.incidentTypes || [];
-  const departments = deptsData?.departments || [];
+  const { data: incidentTypesData } = useSWR("/api/incident-types", fetcher);
+  const { data: departmentsData } = useSWR("/api/departments", fetcher);
+  const incidentTypes = incidentTypesData || [];
+  const departments = departmentsData || [];
 
   const getHeading = () => {
     if (user?.role === "sys_admin" && criteria.category === "System")

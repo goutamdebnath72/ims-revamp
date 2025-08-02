@@ -42,13 +42,13 @@ export default function PriorityChart({
       if (dateRange.start) {
         params.append(
           "startDate",
-          DateTime.fromJSDate(dateRange.start).toISODate()
+          dateRange.start.toISO()
         );
       }
       if (dateRange.end) {
         params.append(
           "endDate",
-          DateTime.fromJSDate(dateRange.end).toISODate()
+          dateRange.end.toISO()
         );
       }
       router.push(`/search?${params.toString()}`);

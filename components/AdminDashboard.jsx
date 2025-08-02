@@ -37,8 +37,7 @@ export default function AdminDashboard() {
   const { data: session } = useSession();
   const user = session?.user;
 
-    console.log("DASHBOARD RENDER: User object is", user);
-
+  console.log("DASHBOARD RENDER: User object is", user);
 
   // --- REFACTORED ---
   // Data now comes directly from the context.
@@ -138,9 +137,8 @@ export default function AdminDashboard() {
     params.append("status", status);
     params.append("category", category);
     if (shift !== "All") params.append("shift", shift);
-    if (dateRange?.start)
-      params.append("startDate", dateRange.start.toISODate());
-    if (dateRange?.end) params.append("endDate", dateRange.end.toISODate());
+    if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
+    if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
     return `/search?${params.toString()}`;
   };
 

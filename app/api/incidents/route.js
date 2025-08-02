@@ -33,20 +33,21 @@ export async function POST(request) {
     const formData = await request.json();
     const user = session.user;
 
-    const { idTimestamp, shiftDateObject } = getShiftTimestamps();
+    const { idTimestamp, reportedOnObject, shiftDateObject } =
+      getShiftTimestamps();
     const randomHex = Math.floor(Math.random() * 0xffff)
       .toString(16)
       .toUpperCase()
       .padStart(4, "0");
-      
+
     let ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
     if (ip.includes(",")) ip = ip.split(",")[0].trim();
     if (ip === "::1") ip = "127.0.0.1";
 
     const newIncidentData = {
       id: `${idTimestamp}-${randomHex}`,
-      reportedOn: shiftDateObject,
-      shiftDate: shiftDateObject,
+      reportedOn: reportedOnObject, // This is now the CORRECT, actual timestamp
+      shiftDate: shiftDateObject, // This remains the LOGICAL timestamp for the shift
       ...formData,
       requestor: user.name,
       ticketNo: user.id,
@@ -58,7 +59,6 @@ export async function POST(request) {
 
     const createdIncident = await createIncident(newIncidentData, user);
     return NextResponse.json(createdIncident, { status: 201 });
-
   } catch (error) {
     console.error("Failed to create incident:", error);
     return NextResponse.json(

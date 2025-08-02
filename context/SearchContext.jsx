@@ -1,9 +1,16 @@
 "use client";
 
-import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import useSWR from 'swr';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { DateTime } from 'luxon';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import useSWR from "swr";
+import { useSearchParams, useRouter } from "next/navigation";
+import { DateTime } from "luxon";
+import { useSession } from "next-auth/react";
 
 export const SearchContext = createContext();
 
@@ -26,6 +33,8 @@ const createDefaultCriteria = () => {
 export function SearchProvider({ children }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const [page, setPage] = useState(1);
   const [criteria, setCriteria] = useState(createDefaultCriteria());
@@ -33,7 +42,14 @@ export function SearchProvider({ children }) {
 
   const { data, error, isLoading } = useSWR(
     hasSearched ? `/api/incidents?${searchParams.toString()}` : null,
-    fetcher
+    fetcher,
+    {
+      refreshInterval:
+        user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
+      revalidateOnFocus: !(
+        user?.role === "admin" || user?.role === "sys_admin"
+      ),
+    }
   );
 
   const handleSearch = (newCriteria) => {
@@ -61,7 +77,7 @@ export function SearchProvider({ children }) {
     setHasSearched(false);
     setPage(1);
   };
-  
+
   useEffect(() => {
     const urlParams = Object.fromEntries(searchParams.entries());
     if (Object.keys(urlParams).length > 0) {
@@ -75,7 +91,9 @@ export function SearchProvider({ children }) {
         shift: urlParams.shift || "Any",
         department: urlParams.department || "Any",
         dateRange: {
-          start: urlParams.startDate ? DateTime.fromISO(urlParams.startDate) : null,
+          start: urlParams.startDate
+            ? DateTime.fromISO(urlParams.startDate)
+            : null,
           end: urlParams.endDate ? DateTime.fromISO(urlParams.endDate) : null,
         },
       });
@@ -86,18 +104,23 @@ export function SearchProvider({ children }) {
     }
   }, [searchParams]);
 
-  const value = useMemo(() => ({
-    criteria,
-    setCriteria,
-    hasSearched,
-    page,
-    incidentData: data,
-    isLoading,
-    error,
-    handleSearch,
-    handlePageChange,
-    resetSearch,
-  }), [criteria, hasSearched, page, data, isLoading, error]);
+  const value = useMemo(
+    () => ({
+      criteria,
+      setCriteria,
+      hasSearched,
+      page,
+      incidentData: data,
+      isLoading,
+      error,
+      handleSearch,
+      handlePageChange,
+      resetSearch,
+    }),
+    [criteria, hasSearched, page, data, isLoading, error]
+  );
 
-  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
+  return (
+    <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
+  );
 }
