@@ -1,7 +1,7 @@
 import * as React from "react";
+import { Suspense } from "react";
 import ThemeRegistry from "./ThemeRegistry";
 import { AppProviders } from "./providers";
-import AuthSessionProvider from "@/components/SessionProvider";
 
 export const metadata = {
   title: "IMS Application",
@@ -20,9 +20,13 @@ export default function RootLayout({ children }) {
         }}
       >
         <ThemeRegistry>
-          <AuthSessionProvider>
+          {/*
+              2. WRAP YOUR APP PROVIDERS IN SUSPENSE
+              This is the fix for the build error.
+            */}
+          <Suspense fallback={<div>Loading...</div>}>
             <AppProviders>{children}</AppProviders>
-          </AuthSessionProvider>
+          </Suspense>
         </ThemeRegistry>
       </body>
     </html>
