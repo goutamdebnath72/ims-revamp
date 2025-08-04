@@ -1,28 +1,24 @@
 "use client";
 
 import React, { useContext } from "react";
-import { useSession } from "next-auth/react";
 import { SearchContext } from "@/context/SearchContext";
 import {
   Box,
   Typography,
   Paper,
-  Stack,
-  useScrollTrigger,
+  Stack,  
   IconButton,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import IncidentSearchForm from "@/components/IncidentSearchForm";
 import IncidentDataGrid from "@/components/IncidentDataGrid";
+import { DateTime } from "luxon";
 import useSWR from "swr"; // Keep swr for dropdown data
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function SearchPage() {
-  const { data: session } = useSession();
-  const user = session?.user;
-
   // Get all state and functions from the new context
   const {
     criteria,
@@ -32,7 +28,8 @@ export default function SearchPage() {
     isLoading,
     handleSearch,
     handlePageChange,
-    setCriteria, // Add this
+    setCriteria,
+    user, // ADDING THIS
   } = useContext(SearchContext);
 
   // Fetch dropdown data locally in the page component
@@ -47,10 +44,38 @@ export default function SearchPage() {
     return "Search & Archive";
   };
 
-  const isScrolled = useScrollTrigger({
-    disableHysteresis: true,
-    threshold: 0,
-  });
+  // --- ADDING THIS FUNCTION FOR FORMATTING THE DASHBOARD FILTER ---
+  const formatFilterText = () => {
+    const parts = [];
+    const { dateRange, shift } = criteria;
+
+    // Format the date part
+    if (dateRange?.start && dateRange?.end) {
+      const start = DateTime.fromISO(dateRange.start);
+      const end = DateTime.fromISO(dateRange.end);
+      const now = DateTime.local().setZone("Asia/Kolkata");
+
+      if (start.hasSame(now, "day")) {
+        parts.push("Today");
+      } else if (start.toISODate() === end.toISODate()) {
+        parts.push(start.toFormat("d MMM, yyyy"));
+      } else {
+        parts.push(
+          `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yyyy")}`
+        );
+      }
+    } else {
+      parts.push("All Time");
+    }
+
+    // Format the shift part
+    if (shift && shift !== "Any") {
+      parts.push(`Shift: ${shift}`);
+    }
+
+    return parts.join("  |  ");
+  };
+  // ------------------------------------
 
   return (
     <Stack
@@ -58,15 +83,18 @@ export default function SearchPage() {
       sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "grey.100" }}
     >
       <Paper
-        elevation={isScrolled ? 4 : 2}
-        sx={{ p: 2, position: "sticky", top: 64, zIndex: 10 }}
+        elevation={2}
+        sx={{
+          p: 2,
+          bgcolor: "background.default", // Match the results paper
+        }}
       >
         <Typography variant="h4" sx={{ mb: 2 }}>
           {getHeading()}
         </Typography>
         <IncidentSearchForm
           criteria={criteria}
-          onCriteriaChange={setCriteria}
+          onCriteriaChange={setCriteria} // Pass this down
           onSearch={handleSearch}
           isLoading={isLoading}
           incidentTypes={incidentTypes}
@@ -80,10 +108,30 @@ export default function SearchPage() {
       >
         {hasSearched ? (
           <>
-            <Typography variant="h5" sx={{ mb: 2, flexShrink: 0 }}>
-              Search Results
-            </Typography>
-            <Box sx={{ flexGrow: 1, height: "65vh" }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 2,
+                gap: 2,
+              }}
+            >
+              <Typography variant="h5" component="h2">
+                Search Results
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.primary"
+                sx={{
+                  fontWeight: 500,
+                  position: "relative", // Adding this
+                  top: "1px", // Adding this to nudge the text down
+                }}
+              >
+                ({formatFilterText()})
+              </Typography>
+            </Box>
+            <Box sx={{ flexGrow: 1, minHeight: "65vh" }}>
               <IncidentDataGrid
                 rows={incidentData?.incidents || []}
                 loading={isLoading}

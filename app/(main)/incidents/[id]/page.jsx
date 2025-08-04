@@ -117,7 +117,16 @@ export default function IncidentDetailsPage() {
   if (!user) return null;
   if (isLoading) {
     return (
-      <CircularProgress sx={{ display: "block", margin: "auto", mt: 10 }} />
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "calc(100vh - 200px)",
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
   }
 

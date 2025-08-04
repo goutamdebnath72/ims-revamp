@@ -26,122 +26,92 @@ export function generateIncidentPdf(incident, auditTrail) {
   doc.line(margin, currentY, pageWidth - margin, currentY);
   currentY += 8;
 
-  // --- Incident Details ---
-  // CORRECTED: Simplified email logic to be more robust.
-  const displayEmailSail = incident.emailSail || "N/A";
-  const displayEmailNic = incident.emailNic || "N/A";
-
-  const leftColumnDetails = [
-    { label: "Incident No.", value: incident.id },
-    { label: "Incident Type", value: incident.incidentType?.name },
-    { label: "Job Title", value: incident.jobTitle },
-    { label: "Description", value: incident.description },
-    { label: "Requestor", value: incident.requestor?.name },
-    { label: "Department", value: incident.requestor?.department?.name },
-    { label: "Email ID", value: incident.requestor?.emailId || "N/A" },
-    { label: "IP Address", value: incident.ipAddress },
-  ];
-
-  // CORRECTED: The layout is now rearranged exactly as you requested.
-  const rightColumnDetails = [
-    {
-      label: "Reported On",
-      value: DateTime.fromISO(incident.reportedOn)
+  // --- Incident Details Table ---
+  const incidentDetails = [
+    [
+      "Incident No.",
+      incident.id,
+      "Reported On",
+      DateTime.fromISO(incident.reportedOn)
         .setZone("Asia/Kolkata")
         .toFormat("dd/MM/yyyy, HH:mm:ss"),
-    },
-    { label: "Status", value: incident.status },
-    { label: "Priority", value: incident.priority },
-    { label: "", value: "" }, // Placeholder to align with Description
-    { label: "Ticket No.", value: incident.requestor?.ticketNo || "N/A" },
-    { label: "SAIL P/No", value: incident.requestor?.sailPNo || "N/A" },
-    { label: "Email ID (NIC)", value: incident.requestor?.emailIdNic || "N/A" },
-    { label: "Job From", value: incident.jobFrom },
+    ],
+    ["Incident Type", incident.incidentType?.name, "Status", incident.status],
+    ["Job Title", incident.jobTitle, "Priority", incident.priority],
+    // This is the fix: Description row now spans all 3 following columns
+    [
+      {
+        content: "Description",
+        styles: { fontStyle: "bold", valign: "middle" },
+      },
+      {
+        content: incident.description.toUpperCase(),
+        colSpan: 3,
+        styles: { fontStyle: "bold", valign: "middle" },
+      },
+    ],
+    [
+      "Requestor",
+      incident.requestor?.name,
+      "Ticket No.",
+      incident.requestor?.ticketNo || "N/A",
+    ],
+    [
+      "Department",
+      incident.requestor?.department?.name,
+      "SAIL P/No",
+      incident.requestor?.sailPNo || "N/A",
+    ],
+    [
+      "Email ID",
+      incident.requestor?.emailId || "N/A",
+      "Email ID (NIC)",
+      incident.requestor?.emailIdNic || "N/A",
+    ],
+    ["IP Address", incident.ipAddress, "Job From", incident.jobFrom],
   ];
 
-  const colWidth = (pageWidth - margin * 2) / 2;
-  const labelWidth = 40;
-  const valueWidth = colWidth - labelWidth;
-  const rightColX = margin + colWidth;
-  const lineHeight = 5;
-  const padding = 2;
+  autoTable(doc, {
+    startY: currentY,
+    body: incidentDetails,
+    theme: "grid",
+    styles: { fontSize: 10, cellPadding: 2.5 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 35 },
+      2: { fontStyle: "bold", cellWidth: 35 },
+    },
+    didParseCell: (data) => {
+      // This makes the label cells look like the old version
+      if (
+        data.cell.section === "body" &&
+        (data.column.index === 0 || data.column.index === 2)
+      ) {
+        data.cell.styles.fillColor = [240, 240, 240];
+      }
+    },
+  });
 
-  doc.setFontSize(11);
-  doc.setLineWidth(0.2);
-
-  const rowCount = Math.max(
-    leftColumnDetails.length,
-    rightColumnDetails.length
-  );
-  for (let i = 0; i < rowCount; i++) {
-    const leftItem = leftColumnDetails[i] || { label: "", value: "" };
-    const rightItem = rightColumnDetails[i] || { label: "", value: "" };
-    const leftValueText = doc.splitTextToSize(
-      String(leftItem.value || "N/A"),
-      valueWidth - padding * 2
-    );
-    const rightValueText = doc.splitTextToSize(
-      String(rightItem.value || "N/A"),
-      valueWidth - padding * 2
-    );
-    const rowHeight =
-      Math.max(leftValueText.length, rightValueText.length) * lineHeight +
-      padding * 2;
-
-    // Draw Left Column
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, currentY, labelWidth, rowHeight, "F");
-    doc.text(
-      leftItem.label,
-      margin + padding,
-      currentY + padding + lineHeight - 1
-    );
-
-    doc.setFillColor(255, 255, 255);
-    doc.rect(margin + labelWidth, currentY, valueWidth, rowHeight, "F");
-    doc.text(
-      leftValueText,
-      margin + labelWidth + padding,
-      currentY + padding + lineHeight - 1
-    );
-
-    // Draw Right Column
-    if (rightItem.label) {
-      doc.setFillColor(240, 240, 240);
-      doc.rect(rightColX, currentY, labelWidth, rowHeight, "F");
-      doc.text(
-        rightItem.label,
-        rightColX + padding,
-        currentY + padding + lineHeight - 1
-      );
-
-      doc.setFillColor(255, 255, 255);
-      doc.rect(rightColX + labelWidth, currentY, valueWidth, rowHeight, "F");
-      doc.text(
-        rightValueText,
-        rightColX + labelWidth + padding,
-        currentY + padding + lineHeight - 1
-      );
-    }
-
-    // Draw borders for the row
-    doc.rect(margin, currentY, colWidth * 2, rowHeight);
-    currentY += rowHeight;
-  }
-
-  currentY += 10;
+  currentY = doc.lastAutoTable.finalY + 10;
 
   // --- Audit Trail Table ---
 
   autoTable(doc, {
     startY: currentY,
     head: [["Timestamp", "Author", "Action", "Comment"]],
-    body: (auditTrail || []).map((entry) => [
-      entry.timestamp,
-      entry.author,
-      entry.action,
-      entry.rating ? `${entry.comment || ""}\n` : entry.comment || "",
-    ]),
+    body: (auditTrail || []).map((entry) => {
+      const cleanedComment = (entry.comment || "")
+        .replace("Final Rating:", "")
+        .trim();
+      return [
+        DateTime.fromISO(entry.timestamp)
+          .setZone("Asia/Kolkata")
+          .toFormat("ccc LLL d, yyyy h:mm a"),
+        entry.author,
+        entry.action,
+        // This ternary logic correctly adds the newline ONLY if a rating exists
+        entry.rating ? `${cleanedComment}\n` : cleanedComment,
+      ];
+    }),
     theme: "grid",
     styles: {
       fontSize: 11,
@@ -228,13 +198,7 @@ export function generateIncidentPdf(incident, auditTrail) {
         // Logic for the star rating
         // Inside the loop that renders each audit trail entry
         // After rendering the entry's comment...
-
-        // Logic for the star rating
-        // Logic for the star rating
         if (entry.rating && entry.rating > 0) {
-          const filledSymbol = "H"; // ZapfDingbats: filled star
-          const emptySymbol = "I"; // ZapfDingbats: empty star
-
           const rating = Math.round(entry.rating || 0);
           const ratingY = cell.y + cell.height - cell.padding("bottom") - 2;
           const ratingX = cell.x + cell.padding("left");
@@ -265,21 +229,6 @@ export function generateIncidentPdf(incident, auditTrail) {
 
           // Restore font
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-        } else if (
-          entry.action.toLowerCase().includes("resolved") ||
-          entry.action.toLowerCase().includes("closed")
-        ) {
-          // If this is the final entry but no rating was found, print a diagnostic message
-          const textY = cell.y + cell.height - cell.padding("bottom") - 2;
-          doc.setFontSize(8);
-          doc.setTextColor(150); // Set color to gray
-          doc.text(
-            "[No rating provided]",
-            cell.x + cell.padding("left"),
-            textY
-          );
-          doc.setTextColor(0); // Reset color to black
           doc.setFontSize(9);
         }
       }

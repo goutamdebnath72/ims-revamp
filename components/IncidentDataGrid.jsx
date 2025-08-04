@@ -81,13 +81,13 @@ function IncidentDataGrid({ rows, loading }) {
   };
 
   return (
-    // *** FIX: CHANGED THE BOX TO TAKE UP 100% OF ITS PARENT'S HEIGHT ***
     <DataGrid
       rows={rows}
       columns={columns}
       loading={loading}
       onRowClick={handleRowClick}
       hideFooterPagination={true}
+      stickyHeader
       sx={{
         "& .MuiDataGrid-row:hover": {
           cursor: "pointer",

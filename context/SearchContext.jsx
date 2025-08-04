@@ -9,8 +9,8 @@ import React, {
 } from "react";
 import useSWR from "swr";
 import { useSearchParams, useRouter } from "next/navigation";
-import { DateTime } from "luxon";
 import { useSession } from "next-auth/react";
+import { DateTime } from "luxon";
 
 export const SearchContext = createContext();
 
@@ -55,10 +55,15 @@ export function SearchProvider({ children }) {
   const handleSearch = (newCriteria) => {
     const params = new URLSearchParams();
     params.append("page", "1");
+    params.append("limit", "20"); 
     Object.entries(newCriteria).forEach(([key, value]) => {
       if (key === "dateRange") {
-        if (value.start) params.append("startDate", value.start.toISODate());
-        if (value.end) params.append("endDate", value.end.toISODate());
+        if (value.start) {
+          params.append("startDate", value.start.toISO());
+        }
+        if (value.end) {
+          params.append("endDate", value.end.toISO());
+        }
       } else if (value && value !== "Any") {
         params.append(key, value);
       }
@@ -66,17 +71,17 @@ export function SearchProvider({ children }) {
     router.push(`/search?${params.toString()}`);
   };
 
-  const handlePageChange = (newPage) => {
+   const handlePageChange = useCallback((newPage) => { // Add useCallback
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", newPage.toString());
     router.push(`/search?${params.toString()}`);
-  };
+  }, [searchParams, router]); // Adding dependencies
 
-  const resetSearch = () => {
+  const resetSearch = useCallback(() => { // Adding useCallback
     setCriteria(createDefaultCriteria());
     setHasSearched(false);
     setPage(1);
-  };
+  }, []); // No dependencies needed
 
   useEffect(() => {
     const urlParams = Object.fromEntries(searchParams.entries());
@@ -113,11 +118,12 @@ export function SearchProvider({ children }) {
       incidentData: data,
       isLoading,
       error,
+      user,
       handleSearch,
       handlePageChange,
       resetSearch,
     }),
-    [criteria, hasSearched, page, data, isLoading, error]
+    [criteria, hasSearched, page, data, isLoading, error, user, handleSearch, handlePageChange, resetSearch]
   );
 
   return (

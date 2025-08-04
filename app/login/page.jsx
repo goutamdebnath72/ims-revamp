@@ -90,7 +90,7 @@ export default function LoginPage() {
           justifyContent: "center",
           flex: "0 0 50%",
           px: 2,
-          minWidth: "0",
+          minWidth: "0",          
         }}
       >
         <LoginInfoPanel />

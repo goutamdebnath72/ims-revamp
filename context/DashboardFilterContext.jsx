@@ -85,72 +85,81 @@ export function DashboardFilterProvider({ children }) {
       ? `/api/incidents?${buildQueryString()}`
       : null;
 
+  // --- START: NEW NOTIFICATION LOGIC ---
+  const previousIncidentsRef = useRef(null);
+  const playNotificationSound = useSound("/notification.mp3");
+  const { showNotification } = useContext(NotificationContext);
+
   const { data, error, isLoading, mutate } = useSWR(SWR_URL, fetcher, {
     refreshInterval:
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
+    onSuccess: (data, key, config) => {
+      // key and config are available here
+      const currentIncidents = data?.incidents || [];
+
+      // The key is the URL. If the URL changes (due to a filter change),
+      // we must reset our baseline and not send notifications.
+      // We also check if the ref has been initialized yet.
+      if (previousIncidentsRef.current === null || config.key !== SWR_URL) {
+        previousIncidentsRef.current = {
+          key: SWR_URL,
+          incidents: currentIncidents,
+        };
+        return;
+      }
+
+      const previousIncidents = previousIncidentsRef.current.incidents;
+      const previousIds = new Set(previousIncidents.map((i) => i.id));
+      const newIncidents = currentIncidents.filter(
+        (i) => !previousIds.has(i.id)
+      );
+
+      if (newIncidents.length > 0) {
+        newIncidents.forEach((incident) => {
+          if (incident.status !== "New") return;
+
+          let shouldNotify = false;
+          const isSysIncident = isSystemIncident(incident);
+
+          if (user?.role === "admin" && !isSysIncident) {
+            shouldNotify = true;
+          } else if (user?.role === "sys_admin" && isSysIncident) {
+            shouldNotify = true;
+          }
+
+          if (shouldNotify) {
+            playNotificationSound();
+            showNotification(
+              {
+                title: `New Incident Raised: ${incident.id}`,
+                message: `Type: ${incident.incidentType.name}`,
+              },
+              "info"
+            );
+          }
+        });
+      }
+
+      // Finally, update the baseline with the latest data and key for the next check.
+      previousIncidentsRef.current = {
+        key: SWR_URL,
+        incidents: currentIncidents,
+      };
+    },
   });
+  // --- END: NEW NOTIFICATION LOGIC ---
 
   const incidents = data?.incidents || [];
 
-  // 1. Set up the sound player and notification handler
-  const playNotificationSound = useSound("/notification.mp3");
-  const { showNotification } = useContext(NotificationContext);
-
-  // 2. Create a ref to store the list of incidents from the previous fetch
-  const previousIncidentsRef = useRef([]);
-
-  // 3. This useEffect runs every time the incident list is updated by the poll
-  useEffect(() => {
-    // Don't run on the very first load or if the data is still loading
-    if (previousIncidentsRef.current.length === 0 || isLoading) {
-      previousIncidentsRef.current = incidents;
-      return;
-    }
-
-    // Find any incidents that are in the new list but not in the old one
-    const previousIds = new Set(previousIncidentsRef.current.map((i) => i.id));
-    const newIncidents = incidents.filter((i) => !previousIds.has(i.id));
-
-    if (newIncidents.length > 0) {
-      // If new incidents are found, loop through them
-      newIncidents.forEach((incident) => {
-        let shouldNotify = false;
-
-        // Condition for admin: notify for any new incident
-        if (user?.role === "admin") {
-          shouldNotify = true;
-        }
-        // Condition for sys_admin: notify only for system incidents
-        else if (user?.role === "sys_admin" && isSystemIncident(incident)) {
-          shouldNotify = true;
-        }
-
-        if (shouldNotify) {
-          playNotificationSound();
-          showNotification(
-            {
-              title: `New Incident Raised: ${incident.id}`,
-              message: `Type: ${incident.incidentType.name}`,
-            },
-            "info"
-          );
-        }
-      });
-    }
-
-    // 4. Finally, update the ref with the latest incident list for the next check
-    previousIncidentsRef.current = incidents;
-  }, [incidents, isLoading, user, playNotificationSound, showNotification]);
-
   // This function will now work correctly because it uses the role-aware createInitialState
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setFilters(createInitialState(user));
-  };
+  }, [user]);
 
-  const refetchIncidents = () => {
+  const refetchIncidents = useCallback(() => {
     mutate();
-  };
+  }, [mutate]);
 
   const value = useMemo(
     () => ({
@@ -162,7 +171,7 @@ export function DashboardFilterProvider({ children }) {
       error,
       refetchIncidents,
     }),
-    [filters, incidents, isLoading, error, resetFilters]
+    [filters, incidents, isLoading, error, resetFilters, refetchIncidents]
   );
 
   return (

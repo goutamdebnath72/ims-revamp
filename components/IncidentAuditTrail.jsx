@@ -156,9 +156,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                           color: isResolvedEntry ? "#4CAF50" : "text.primary",
                         }}
                       >
-                        {isFinalEntry
-                          ? `(${entry.action} By ${entry.author.toUpperCase()})`
-                          : entry.action}
+                        {isFinalEntry ? `${entry.action}` : entry.action}
                       </Typography>
                       <EditableComment
                         comment={entry.comment}
