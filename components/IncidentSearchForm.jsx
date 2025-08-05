@@ -164,7 +164,7 @@ function IncidentSearchForm({
       );
     }
 
-    return [{ name: "Any" }, ...typesToFilter];
+    return [{ name: "Any" }, ...(typesToFilter || [])];
   }, [user, incidentTypes]);
 
   const handleChange = (event) => {

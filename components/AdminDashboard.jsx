@@ -197,6 +197,15 @@ export default function AdminDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
+    // --- INSERT CONSOLE.LOG FOR DEBUGGING ---
+  console.log("DEBUG: Checking visibility conditions", { 
+    userRole: user?.role, 
+    currentView: view,
+    isAdmin: user?.role === "admin",
+    isSysAdminInGeneral: user?.role === "sys_admin" && view === "general"
+  });
+  // -----------------------------------------
+
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && view === "general");
@@ -372,6 +381,7 @@ export default function AdminDashboard() {
         ))}
       </Stack>
       {showTeamAvailability ? (
+        console.log("DEBUG: Executing RENDER PATH for --> General View Layout"),
         <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
           <Stack sx={{ flex: 7 }} spacing={3}>
             <Card
@@ -412,6 +422,7 @@ export default function AdminDashboard() {
           </Stack>
         </Stack>
       ) : (
+        console.log("DEBUG: Executing RENDER PATH for --> System View Layout"),
         <Stack spacing={3}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
             <Box sx={{ flex: 7 }}>

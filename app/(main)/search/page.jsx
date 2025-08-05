@@ -39,7 +39,7 @@ export default function SearchPage() {
   const departments = departmentsData || [];
 
   const getHeading = () => {
-    if (user?.role === "sys_admin" && criteria.category === "System")
+    if (user?.role === "sys_admin" && criteria.category?.toLowerCase() === "system")
       return "Search & Archive (SYS)";
     return "Search & Archive";
   };

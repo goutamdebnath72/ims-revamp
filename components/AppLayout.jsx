@@ -198,7 +198,7 @@ export default function AppLayout({ children }) {
   }
 
   return (
-    <Box sx={{ display: "flex", height: '100vh' }}>
+    <Box sx={{ display: "flex", height: "100vh" }}>
       <AppBar
         position="fixed"
         sx={{ width: `calc(100% - ${drawerWidth}px)`, ml: `${drawerWidth}px` }}
@@ -327,7 +327,7 @@ export default function AppLayout({ children }) {
           bgcolor: "background.default",
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          overflow: 'auto',
+          overflow: "auto",
         }}
       >
         <Toolbar />
