@@ -25,6 +25,8 @@ export default function IncidentActionForm({
   incident,
   onUpdate,
   onOpenResolveDialog,
+  showResetButton,
+  onOpenResetDialog,
 }) {
   const { data: session } = useSession();
   const user = session?.user;
@@ -32,13 +34,13 @@ export default function IncidentActionForm({
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
   const [comment, setComment] = React.useState("");
-
-  // FIX: Manage dropdown state correctly
   const [newType, setNewType] = React.useState("");
   const [newPriority, setNewPriority] = React.useState("");
+  const [affectedTicketNo, setAffectedTicketNo] = React.useState(
+    incident.affectedTicketNo || ""
+  );
 
   React.useEffect(() => {
-    // Sync state with the incident prop when it loads or changes
     if (incident) {
       setNewType(incident.incidentType?.name || "");
       setNewPriority(incident.priority || "");
@@ -51,23 +53,28 @@ export default function IncidentActionForm({
     user?.role === "network_vendor" || user?.role === "biometric_vendor";
 
   const handleSubmitUpdate = () => {
-    onUpdate({
+    const payload = {
       comment,
       newType: newType === incident.incidentType?.name ? null : newType,
       newPriority: newPriority === incident.priority ? null : newPriority,
-    });
+    };
+
+    if (newType === "ESS Password") {
+      payload.affectedTicketNo = affectedTicketNo;
+    }
+
+    onUpdate(payload);
     setComment("");
   };
 
-  const handleResolveClick = () => {
-    onOpenResolveDialog();
-  };
+  const { data: incidentTypes, isLoading: isLoadingTypes } = useSWR(
+    "/api/incident-types",
+    fetcher
+  );
 
-  const {
-    data: incidentTypes,
-    error,
-    isLoading: isLoadingTypes,
-  } = useSWR("/api/incident-types", fetcher);
+  const isPasswordReset = incident.auditTrail.some(
+    (entry) => entry.action === "Password Reset"
+  );
 
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
@@ -77,57 +84,77 @@ export default function IncidentActionForm({
       <Divider sx={{ mb: 2 }} />
       <Stack spacing={2}>
         {isCITEmployee && (
-          <Stack direction="row" spacing={2}>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <FormControl
+          <>
+            {/* This is the existing stack with the two dropdowns */}
+            <Stack direction="row" spacing={2}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  disabled={
+                    isPasswordReset ||
+                    isLoadingTypes ||
+                    incident.status === "New" ||
+                    incident.isTypeLocked
+                  }
+                >
+                  <InputLabel>Change Incident Type</InputLabel>
+                  <Select
+                    value={newType}
+                    label="Change Incident Type"
+                    onChange={(e) => setNewType(e.target.value)}
+                  >
+                    {incidentTypes?.map((type) => (
+                      <MenuItem key={type.id} value={type.name}>
+                        {type.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  disabled={
+                    isPasswordReset ||
+                    incident.status === "New" ||
+                    incident.isPriorityLocked
+                  }
+                >
+                  <InputLabel>Change Priority</InputLabel>
+                  <Select
+                    value={newPriority}
+                    label="Change Priority"
+                    onChange={(e) => setNewPriority(e.target.value)}
+                  >
+                    {priorities.map((p) => (
+                      <MenuItem key={p} value={p}>
+                        {p}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Stack>
+
+            {/* --- THIS IS THE NEW TEXTFIELD TO ADD --- */}
+            {/* It will appear only when "ESS Password" is selected */}
+            {newType === "ESS Password" && (
+              <TextField
+                required
                 fullWidth
                 size="small"
-                disabled={
-                  isLoadingTypes ||
-                  incident.status === "New" ||
-                  incident.isTypeLocked
-                }
-              >
-                <InputLabel>Change Incident Type</InputLabel>
-                <Select
-                  value={newType}
-                  label="Change Incident Type"
-                  onChange={(e) => setNewType(e.target.value)}
-                >
-                  {/* Map over the incidentTypes array from the API, handling the loading state */}
-                  {incidentTypes?.map((type) => (
-                    <MenuItem key={type.id} value={type.name}>
-                      {type.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <FormControl
-                fullWidth
-                size="small"
-                disabled={
-                  incident.status === "New" || incident.isPriorityLocked
-                }
-              >
-                <InputLabel>Change Priority</InputLabel>
-                <Select
-                  value={newPriority}
-                  label="Change Priority"
-                  onChange={(e) => setNewPriority(e.target.value)}
-                >
-                  {priorities.map((p) => (
-                    <MenuItem key={p} value={p}>
-                      {p}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          </Stack>
+                label="Affected Employee's Ticket No"
+                value={affectedTicketNo}
+                onChange={(e) => setAffectedTicketNo(e.target.value.trim())}
+                slotProps={{ input: { maxLength: 6 } }}
+              />
+            )}
+          </>
         )}
 
+        {/* Your existing comment box (no changes here) */}
         <TextField
           id="incident-comment"
           label="Provide a detailed update"
@@ -141,6 +168,7 @@ export default function IncidentActionForm({
           required
         />
 
+        {/* Your existing buttons (no changes here) */}
         {isVendor ? (
           <Button
             variant="contained"
@@ -151,19 +179,43 @@ export default function IncidentActionForm({
             Submit Update
           </Button>
         ) : (
-          <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+          <Stack direction="row" spacing={0.6} sx={{ width: "100%" }}>
+            {showResetButton && (
+              <Button
+                variant="outlined"
+                onClick={onOpenResetDialog}
+                sx={{
+                  flex: 1,
+                  color: "#d32f2f",
+                  borderColor: "#d32f2f",
+                  borderRadius: 0,
+                  lineHeight: 1.3,
+                }}
+              >
+                <div style={{ textAlign: "center" }}>
+                  <div>Reset</div>
+                  <div>ESS Password</div>
+                </div>
+              </Button>
+            )}
             <Button
               variant="outlined"
               color="success"
-              onClick={handleResolveClick}
-              sx={{ flex: 1, letterSpacing: "1px" }}
+              onClick={onOpenResolveDialog}
+              sx={{
+                flex: 1,
+                borderRadius: showResetButton ? 0 : undefined,
+              }}
             >
               Resolve Incident
             </Button>
             <Button
               variant="contained"
               onClick={handleSubmitUpdate}
-              sx={{ flex: 1, letterSpacing: "1px" }}
+              sx={{
+                flex: 1,
+                borderRadius: showResetButton ? 0 : undefined,
+              }}
               disabled={!comment.trim()}
             >
               Submit Update

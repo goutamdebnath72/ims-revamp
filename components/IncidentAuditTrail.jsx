@@ -17,6 +17,7 @@ import EditableComment from "./EditableComment";
 import IconButton from "@mui/material/IconButton";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import ReactMarkdown from "react-markdown";
 
 const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
   {
@@ -152,13 +153,15 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         sx={{
                           display: "block",
                           fontWeight: "bold",
-                          // Style restored from your old file
                           color: isResolvedEntry ? "#4CAF50" : "text.primary",
                         }}
                       >
-                        {isFinalEntry ? `${entry.action}` : entry.action}
+                        {isFinalEntry
+                          ? `(${entry.action} by ${entry.author})`
+                          : entry.action}
                       </Typography>
                       <EditableComment
+                        action={entry.action}
                         comment={entry.comment}
                         author={entry.author}
                         isEdited={entry.isEdited}

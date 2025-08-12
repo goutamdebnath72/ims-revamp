@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { getAllIncidents, createIncident } from "@/lib/incident-repo";
 import { getShiftTimestamps } from "@/lib/date-helpers";
 
@@ -9,9 +9,18 @@ export const dynamic = "force-dynamic";
 // The new GET function that handles all filtering and pagination
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user; // Get the entire user object
+
+    //console.log("--- API: /api/incidents GET ---");
+    //console.log("Session found by getServerSession:", session);
+
     const { searchParams } = new URL(request.url);
     const filters = Object.fromEntries(searchParams.entries());
-    const result = await getAllIncidents(filters);
+
+    // Pass the entire user object to the data fetching function
+    const result = await getAllIncidents(filters, user);
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("Failed in GET /api/incidents:", error);
@@ -31,6 +40,7 @@ export async function POST(request) {
 
   try {
     const formData = await request.json();
+    //console.log("API received this formData:", formData);
     const user = session.user;
 
     const { idTimestamp, reportedOnObject, shiftDateObject } =
@@ -58,6 +68,21 @@ export async function POST(request) {
     };
 
     const createdIncident = await createIncident(newIncidentData, user);
+    //console.log("Data saved to the database:", createdIncident);
+    // --- ADD THIS LOGGING BLOCK ---
+    //console.log("--- INCIDENT CREATION CHECK ---");
+    /*if (createdIncident) {
+      console.log(
+        "SUCCESS: Incident was saved to the database with ID:",
+        createdIncident.id
+      );
+    } else {
+      console.log(
+        "FAILURE: createIncident function did not return a saved incident."
+      );
+    }*/
+    //console.log("-----------------------------");
+    // --- END OF LOGGING BLOCK ---
     return NextResponse.json(createdIncident, { status: 201 });
   } catch (error) {
     console.error("Failed to create incident:", error);

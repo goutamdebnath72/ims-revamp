@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { IncidentContext } from "@/context/IncidentContext";
-import { filterIncidents } from "@/lib/incident-helpers";
+import { DashboardFilterContext } from "@/context/DashboardFilterContext";
 import { DateTime } from "luxon";
 import {
   Stack,
@@ -18,87 +17,107 @@ import {
   Typography,
   Card,
   CardContent,
+  Chip,
 } from "@mui/material";
 import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import EventIcon from "@mui/icons-material/Event";
+import ReplayIcon from "@mui/icons-material/Replay";
 import StatusChart from "@/components/StatusChart";
 import PriorityChart from "@/components/PriorityChart";
 import RecentIncidentsCard from "@/components/RecentIncidentsCard";
-import { useSession } from "next-auth/react";
 
 // This is a specialized dashboard for the Network Vendor role.
 export default function NetworkVendorDashboard() {
-  const { incidents } = React.useContext(IncidentContext);
-  const { data: session } = useSession();
-  const user = session?.user;
+  const cardContainerStyles = {
+    height: 380, // You can adjust this "sweet spot" value
+    display: "flex",
+    flexDirection: "column",
+  };
 
-  const [dateRange, setDateRange] = React.useState({ start: null, end: null });
-  const [shift, setShift] = React.useState("All");
+  // 1. Get ALL necessary state and functions from the context
+  const { filters, setFilters, resetFilters, incidents } = React.useContext(
+    DashboardFilterContext
+  );
+  const { dateRange, shift } = filters;
+
+  // 2. Remove all local useState for filters. Use the context's state.
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
-  React.useEffect(() => {
-    const now = DateTime.local().setZone("Asia/Kolkata");
-    setDateRange({ start: now.toJSDate(), end: now.toJSDate() });
-  }, []);
-
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
+
   const handleShiftChange = (event, newShift) => {
-    if (newShift !== null) setShift(newShift);
+    if (newShift !== null) {
+      setFilters((prev) => ({ ...prev, shift: newShift }));
+    }
   };
 
   const setPresetRange = (rangeName) => {
     const now = DateTime.local().setZone("Asia/Kolkata");
+    let newDateRange;
     if (rangeName === "today") {
-      setDateRange({ start: now.toJSDate(), end: now.toJSDate() });
+      newDateRange = { start: now.startOf("day"), end: now.endOf("day") };
     } else if (rangeName === "week") {
-      setDateRange({
-        start: now.startOf("week").toJSDate(),
-        end: now.toJSDate(),
-      });
+      newDateRange = { start: now.startOf("week"), end: now.endOf("day") };
     } else if (rangeName === "month") {
-      setDateRange({
-        start: now.startOf("month").toJSDate(),
-        end: now.toJSDate(),
-      });
+      newDateRange = { start: now.startOf("month"), end: now.endOf("day") };
     } else if (rangeName === "all") {
-      setDateRange({ start: null, end: null });
+      newDateRange = { start: null, end: null };
     }
+    setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
 
+  const formatDateRange = (currentDateRange) => {
+    const { start, end } = currentDateRange;
+    if (!start || !end) return "All Time"; // Handle "All Time"
+
+    const now = DateTime.local().setZone("Asia/Kolkata");
+
+    // Check for "Today"
+    if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
+
+    // Check for "This Week"
+    if (
+      start.hasSame(now.startOf("week"), "day") &&
+      end.hasSame(now.endOf("day"), "day")
+    )
+      return "This Week";
+
+    // Check for "This Month"
+    if (
+      start.hasSame(now.startOf("month"), "day") &&
+      end.hasSame(now.endOf("day"), "day")
+    )
+      return "This Month";
+
+    // Fallback for custom ranges
+    if (start.toISODate() === end.toISODate())
+      return start.toFormat("d MMM, yy");
+
+    return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
+  };
+
+  // 3. Filter incidents from the context data
   const networkIncidents = React.useMemo(() => {
+    if (!incidents) return [];
+    // The main filtering now happens in the context, here we just select network incidents
     return incidents.filter(
-      (incident) =>
-        incident.incidentType === "NETWORK" && incident.status !== "New"
+      (incident) => incident.incidentType?.name === "NETWORK"
     );
   }, [incidents]);
 
-  const filteredIncidents = React.useMemo(() => {
-    const criteria = { dateRange, shift };
-    return filterIncidents(networkIncidents, criteria, user);
-  }, [networkIncidents, dateRange, shift, user]);
-
-  const sortedIncidents = React.useMemo(() => {
-    return [...filteredIncidents].sort((a, b) => {
-      const dateA = DateTime.fromISO(a.reportedOn, { zone: "Asia/Kolkata" });
-      const dateB = DateTime.fromISO(b.reportedOn, { zone: "Asia/Kolkata" });
-      return dateB - dateA;
-    });
-  }, [filteredIncidents]);
-
-  const processedIncidents = filteredIncidents.filter(
+  const processedIncidents = networkIncidents.filter(
     (i) => i.status === "Processed"
   ).length;
-  const resolvedIncidents = filteredIncidents.filter(
+  const resolvedIncidents = networkIncidents.filter(
     (i) => i.status === "Resolved"
   ).length;
-  const closedIncidents = filteredIncidents.filter(
+  const closedIncidents = networkIncidents.filter(
     (i) => i.status === "Closed"
   ).length;
-  const allOpenIncidents = processedIncidents;
 
   const statCardsData = [
     {
@@ -106,12 +125,6 @@ export default function NetworkVendorDashboard() {
       value: processedIncidents,
       color: "info",
       filterStatus: "Processed",
-    },
-    {
-      title: "All Open",
-      value: allOpenIncidents,
-      color: "secondary",
-      filterStatus: "open",
     },
     {
       title: "Resolved Incidents",
@@ -127,24 +140,13 @@ export default function NetworkVendorDashboard() {
     },
   ];
 
-  // *** FIX: THIS FUNCTION NOW CORRECTLY ADDS ALL FILTERS TO THE URL ***
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("incidentType", "NETWORK"); // Always filter for network
-    if (shift !== "All") {
-      params.append("shift", shift);
-    }
-    // Pass the dashboard's current date range to the search page
-    if (dateRange.start) {
-      params.append(
-        "startDate",
-        DateTime.fromJSDate(dateRange.start).toISODate()
-      );
-    }
-    if (dateRange.end) {
-      params.append("endDate", DateTime.fromJSDate(dateRange.end).toISODate());
-    }
+    params.append("incidentType", "NETWORK");
+    if (shift !== "All") params.append("shift", shift);
+    if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
+    if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
     return `/search?${params.toString()}`;
   };
 
@@ -157,58 +159,29 @@ export default function NetworkVendorDashboard() {
   const priorityChartData = [
     {
       name: "High",
-      value: filteredIncidents.filter((i) => i.priority === "High").length,
+      value: networkIncidents.filter(
+        (i) => i.priority === "High" && i.status === "Processed"
+      ).length,
     },
     {
       name: "Medium",
-      value: filteredIncidents.filter((i) => i.priority === "Medium").length,
+      value: networkIncidents.filter(
+        (i) => i.priority === "Medium" && i.status === "Processed"
+      ).length,
     },
     {
       name: "Low",
-      value: filteredIncidents.filter((i) => i.priority === "Low").length,
+      value: networkIncidents.filter(
+        (i) => i.priority === "Low" && i.status === "Processed"
+      ).length,
     },
   ].filter((item) => item.value > 0);
 
   const getNumberVariant = (value) =>
     value.toString().length > 4 ? "h4" : "h3";
 
-  const formatDateRange = () => {
-    const { start, end } = dateRange;
-    if (!start || !end) return "All Time";
-    const startDt = DateTime.fromJSDate(start);
-    const endDt = DateTime.fromJSDate(end);
-    const today = DateTime.local().setZone("Asia/Kolkata");
-    if (startDt.hasSame(today, "day") && endDt.hasSame(today, "day")) {
-      return "Today";
-    }
-    if (startDt.toISODate() === endDt.toISODate()) {
-      return startDt.toFormat("d MMM, yy");
-    }
-    return `${startDt.toFormat("d MMM")} - ${endDt.toFormat("d MMM, yy")}`;
-  };
-
   return (
     <Stack spacing={3}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={2}
-      >
-        <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
-          Network Incidents Dashboard
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
-          <Button
-            id="date-range-button"
-            variant="outlined"
-            onClick={handleClick}
-            startIcon={<EventIcon />}
-          >
-            {formatDateRange()}
-          </Button>
-        </Box>
-      </Stack>
       <Menu
         id="date-range-menu"
         anchorEl={anchorEl}
@@ -227,16 +200,22 @@ export default function NetworkVendorDashboard() {
           <Stack spacing={2}>
             <DatePicker
               label="Start Date"
-              value={dateRange.start}
+              value={dateRange.start || null}
               onChange={(newValue) =>
-                setDateRange((prev) => ({ ...prev, start: newValue }))
+                setFilters((prev) => ({
+                  ...prev,
+                  dateRange: { ...prev.dateRange, start: newValue },
+                }))
               }
             />
             <DatePicker
               label="End Date"
-              value={dateRange.end}
+              value={dateRange.end || null}
               onChange={(newValue) =>
-                setDateRange((prev) => ({ ...prev, end: newValue }))
+                setFilters((prev) => ({
+                  ...prev,
+                  dateRange: { ...prev.dateRange, end: newValue },
+                }))
               }
             />
           </Stack>
@@ -250,25 +229,57 @@ export default function NetworkVendorDashboard() {
             value={shift}
             exclusive
             onChange={handleShiftChange}
-            aria-label="Shift filter"
             size="small"
             sx={{ mt: 1 }}
           >
-            <ToggleButton value="All" aria-label="all shifts">
-              All
-            </ToggleButton>
-            <ToggleButton value="A" aria-label="a shift">
-              A
-            </ToggleButton>
-            <ToggleButton value="B" aria-label="b shift">
-              B
-            </ToggleButton>
-            <ToggleButton value="C" aria-label="c shift">
-              C
-            </ToggleButton>
+            <ToggleButton value="All">All</ToggleButton>
+            <ToggleButton value="A">A</ToggleButton>
+            <ToggleButton value="B">B</ToggleButton>
+            <ToggleButton value="C">C</ToggleButton>
           </ToggleButtonGroup>
         </Box>
       </Menu>
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
+          <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
+            Network Incidents Dashboard
+          </Typography>
+        </Box>
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          {/* Placeholder for any potential center items */}
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          {/* --- FIX: REORDERED THE ITEMS BELOW --- */}
+          <ReplayIcon
+            onClick={resetFilters}
+            sx={{ cursor: "pointer", color: "action.active" }}
+          />
+          {shift !== "All" && (
+            <Chip
+              label={`Shift: ${shift}`}
+              color="secondary"
+              size="small"
+              variant="outlined"
+            />
+          )}
+          <Button
+            id="date-range-button"
+            variant="outlined"
+            onClick={handleClick}
+            startIcon={<EventIcon />}
+          >
+            {formatDateRange(dateRange)}
+          </Button>
+        </Box>
+      </Stack>
       <Stack direction="row" spacing={3}>
         {statCardsData.map((card, index) => (
           <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
@@ -313,10 +324,17 @@ export default function NetworkVendorDashboard() {
             <StatusChart data={statusChartData} />
           </Box>
           <Box sx={{ flex: 5 }}>
-            <PriorityChart data={priorityChartData} />
+            <PriorityChart
+              data={priorityChartData}
+              dateRange={dateRange}
+              shift={shift}
+              incidentTypeFilter="NETWORK"
+            />
           </Box>
         </Stack>
-        <RecentIncidentsCard incidents={sortedIncidents} />
+        <Box sx={cardContainerStyles}>
+          <RecentIncidentsCard incidents={networkIncidents} />
+        </Box>{" "}
       </Stack>
     </Stack>
   );

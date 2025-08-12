@@ -41,6 +41,7 @@ export default function RaiseIncidentPage() {
   }
 
   const handleFormSubmit = async (formData) => {
+    //console.log("1. Data leaving the form:", formData);
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/incidents', {
@@ -60,8 +61,15 @@ export default function RaiseIncidentPage() {
         refetchIncidents();
       }
       
+      // Determine the success message based on the incident type
+      const successMessage =
+        formData.incidentType?.toLowerCase() === 'ess password'
+          ? `Incident #${newIncident.id} raised. The user will be notified via email upon password reset.`
+          : `Your incident #${newIncident.id} has been submitted.`;
+
       showNotification(
-        { title: "Success!", message: `Your incident #${newIncident.id} has been submitted.` }, "success"
+        { title: "Success!", message: successMessage },
+        "success"
       );
 
       // --- ADD THIS LOGIC TO PLAY THE SOUND FOR ADMINS/SYS_ADMINS ---

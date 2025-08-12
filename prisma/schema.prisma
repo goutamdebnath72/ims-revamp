@@ -4,17 +4,21 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")          // prisma+postgres (Accelerate)
+  directUrl = env("DIRECT_POSTGRES_URL")   // standard postgres:// for tools/migrate
 }
+
 
 model Department {
   id    String @id @default(cuid())
   code  Int    @unique
   name  String
-  users User[]
 
-  @@map("departments") // Map to the 'departments' table
+  // Explicit relation name to avoid ambiguity
+  users User[] @relation("DepartmentUsers")
+
+  @@map("departments")
 }
 
 model IncidentType {
@@ -22,46 +26,62 @@ model IncidentType {
   name      String     @unique
   incidents Incident[]
 
-  @@map("incident_types") // Map to the 'incident_types' table
+  @@map("incident_types")
 }
 
 model User {
-  id           String    @id @default(cuid())
-  role         String
-  name         String
-  password     String
-  ticketNo     String    @unique
-  contactNo    String?
-  emailId      String?
-  emailIdNic   String?
-  sailPNo      String?   @unique
-  incidents    Incident[]
+  id        String @id @default(cuid())
+  role      String
+  name      String
+  password  String
+  ticketNo  String @unique
 
-  department   Department @relation(fields: [departmentId], references: [id])
+  // REQUIRED + UNIQUE; we’ll set this = ticketNo in seed
+  essUserId String @unique
+
+  
+  designation         String  // <-- no ?
+
+  contactNo           String?
+  emailId             String?
+  emailIdNic          String?
+  sailPNo             String? @unique
+
+  // Required but defaults to now
+  passwordLastChanged DateTime @default(now())
+
+  // Department relation (explicit name)
+  department   Department @relation("DepartmentUsers", fields: [departmentId], references: [id])
   departmentId String
+  
 
-  @@map("users") // Map to the 'users' table
+  // Back-relation for incidents requested by this user
+  incidentsRequested Incident[] @relation("UserRequestor")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
 }
 
 model AuditEntry {
-  id          String    @id @default(cuid())
-  timestamp   DateTime  @default(now()) // Changed type to DateTime
-  author      String
-  action      String
-  comment     String
-  rating      Int?
-  isEdited    Boolean  @default(false)
-  editedAt    DateTime?                // Added optional field for edit time
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  author     String
+  action     String
+  comment    String
+  rating     Int?
+  isEdited   Boolean  @default(false)
+  editedAt   DateTime?
 
-  
-  incident    Incident @relation(fields: [incidentId], references: [id])
-  incidentId  String
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  incidentId String
 
-  @@map("audit_entries") // Map to the 'audit_entries' table
+  @@map("audit_entries")
 }
 
 model Incident {
-  id               String    @id
+  id               String    @id @default(cuid())
   shiftDate        DateTime
   jobTitle         String
   description      String
@@ -70,17 +90,19 @@ model Incident {
   location         String?
   ipAddress        String?
   jobFrom          String?
-  reportedOn       DateTime
+  reportedOn       DateTime  @default(now())
   isTypeLocked     Boolean?
   isPriorityLocked Boolean?
+  affectedTicketNo String?
 
   incidentType   IncidentType @relation(fields: [incidentTypeId], references: [id])
   incidentTypeId String
 
-  requestor   User   @relation(fields: [requestorId], references: [id])
+  // Explicit relation name and back-field lives on User.incidentsRequested
+  requestor   User   @relation("UserRequestor", fields: [requestorId], references: [id])
   requestorId String
-  
+
   auditTrail  AuditEntry[]
 
-  @@map("incidents") // Map to the 'incidents' table
+  @@map("incidents")
 }

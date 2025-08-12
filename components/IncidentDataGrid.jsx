@@ -80,9 +80,9 @@ function IncidentDataGrid({ rows, loading }) {
     router.push(`/incidents/${incidentId}`);
   };
 
-  return (
+   return (
     <DataGrid
-      rows={rows}
+      rows={rows.filter(row => row && row.id)}
       columns={columns}
       loading={loading}
       onRowClick={handleRowClick}

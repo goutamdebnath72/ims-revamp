@@ -22,6 +22,7 @@ export default function PriorityChart({
   dateRange,
   userRole,
   shift,
+  incidentTypeFilter,
 }) {
   const router = useRouter();
   const hasData = data.some((item) => item.value > 0);
@@ -33,6 +34,10 @@ export default function PriorityChart({
       params.append("priority", data.name);
       params.append("category", category);
       params.append("status", "open"); // Ensure we are searching for open incidents
+      // Add the incidentType to the URL if the prop is provided
+      if (incidentTypeFilter) {
+        params.append("incidentType", incidentTypeFilter);
+      }
 
       // UPDATED: Add the shift parameter to the URL if it is active
       if (shift && shift !== "All") {
@@ -40,16 +45,10 @@ export default function PriorityChart({
       }
 
       if (dateRange.start) {
-        params.append(
-          "startDate",
-          dateRange.start.toISO()
-        );
+        params.append("startDate", dateRange.start.toISO());
       }
       if (dateRange.end) {
-        params.append(
-          "endDate",
-          dateRange.end.toISO()
-        );
+        params.append("endDate", dateRange.end.toISO());
       }
       router.push(`/search?${params.toString()}`);
     }

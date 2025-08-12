@@ -34,14 +34,20 @@ import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 
 export default function AdminDashboard() {
+  const cardContainerStyles = {
+    height: 380, // Can adjust this "sweet spot" value
+    display: "flex",
+    flexDirection: "column",
+  };
+
   const { data: session } = useSession();
   const user = session?.user;
 
-  console.log("DASHBOARD RENDER: User object is", user);
+  //console.log("DASHBOARD RENDER: User object is", user);
 
   // --- REFACTORED ---
   // Data now comes directly from the context.
-  // This assumes your DashboardFilterContext provides these values.
+  // This assumes our DashboardFilterContext provides these values.
   const { filters, setFilters, resetFilters, incidents, isLoading, error } =
     React.useContext(DashboardFilterContext);
   const { dateRange, shift } = filters;
@@ -197,13 +203,13 @@ export default function AdminDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-    // --- INSERT CONSOLE.LOG FOR DEBUGGING ---
-  console.log("DEBUG: Checking visibility conditions", { 
+  // --- INSERT CONSOLE.LOG FOR DEBUGGING ---
+  /*console.log("DEBUG: Checking visibility conditions", { 
     userRole: user?.role, 
     currentView: view,
     isAdmin: user?.role === "admin",
     isSysAdminInGeneral: user?.role === "sys_admin" && view === "general"
-  });
+  });*/
   // -----------------------------------------
 
   const showTeamAvailability =
@@ -381,8 +387,8 @@ export default function AdminDashboard() {
         ))}
       </Stack>
       {showTeamAvailability ? (
-        console.log("DEBUG: Executing RENDER PATH for --> General View Layout"),
         <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
+          {/* Left Column */}
           <Stack sx={{ flex: 7 }} spacing={3}>
             <Card
               elevation={3}
@@ -395,8 +401,13 @@ export default function AdminDashboard() {
             >
               <StatusChart data={statusChartData} />
             </Card>
-            <RecentIncidentsCard incidents={incidentsToDisplay} />
+            {/* Add the styled wrapper around the card */}
+            <Box sx={cardContainerStyles}>
+              <RecentIncidentsCard incidents={incidentsToDisplay} />
+            </Box>
           </Stack>
+
+          {/* Right Column */}
           <Stack sx={{ flex: 5 }} spacing={3}>
             <Card
               elevation={3}
@@ -408,9 +419,7 @@ export default function AdminDashboard() {
               }}
             >
               <PriorityChart
-                key={`${shift}-${String(dateRange.start)}-${String(
-                  dateRange.end
-                )}`}
+                key={`${shift}-${String(dateRange.start)}-${String(dateRange.end)}`}
                 data={priorityChartData}
                 view={view}
                 dateRange={dateRange}
@@ -418,11 +427,14 @@ export default function AdminDashboard() {
                 shift={shift}
               />
             </Card>
-            <TeamAvailabilityCard />
+            {/* Add the styled wrapper around the card */}
+            <Box sx={cardContainerStyles}>
+              <TeamAvailabilityCard />
+            </Box>
           </Stack>
         </Stack>
       ) : (
-        console.log("DEBUG: Executing RENDER PATH for --> System View Layout"),
+        //console.log("DEBUG: Executing RENDER PATH for --> System View Layout"),
         <Stack spacing={3}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
             <Box sx={{ flex: 7 }}>

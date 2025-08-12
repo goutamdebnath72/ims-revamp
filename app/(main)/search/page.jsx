@@ -2,13 +2,7 @@
 
 import React, { useContext } from "react";
 import { SearchContext } from "@/context/SearchContext";
-import {
-  Box,
-  Typography,
-  Paper,
-  Stack,  
-  IconButton,
-} from "@mui/material";
+import { Box, Typography, Paper, Stack, IconButton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import IncidentSearchForm from "@/components/IncidentSearchForm";
@@ -39,7 +33,10 @@ export default function SearchPage() {
   const departments = departmentsData || [];
 
   const getHeading = () => {
-    if (user?.role === "sys_admin" && criteria.category?.toLowerCase() === "system")
+    if (
+      user?.role === "sys_admin" &&
+      criteria.category?.toLowerCase() === "system"
+    )
       return "Search & Archive (SYS)";
     return "Search & Archive";
   };
@@ -80,7 +77,7 @@ export default function SearchPage() {
   return (
     <Stack
       spacing={2}
-      sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "grey.100" }}
+      sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 112px)' }}
     >
       <Paper
         elevation={2}
@@ -131,7 +128,7 @@ export default function SearchPage() {
                 ({formatFilterText()})
               </Typography>
             </Box>
-            <Box sx={{ flexGrow: 1, minHeight: "65vh" }}>
+            <Box sx={{ flexGrow: 1, display: "flex" }}>
               <IncidentDataGrid
                 rows={incidentData?.incidents || []}
                 loading={isLoading}
@@ -185,8 +182,7 @@ export default function SearchPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              textAlign: "center",
-              minHeight: "65vh",
+              textAlign: "center",              
               color: "text.secondary",
             }}
           >

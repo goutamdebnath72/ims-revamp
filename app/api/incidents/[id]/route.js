@@ -5,7 +5,7 @@ import {
   editAuditComment,
 } from "@/lib/incident-repo";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from '@/lib/auth';
 
 // GET a single incident by ID
 export async function GET(request, { params }) {

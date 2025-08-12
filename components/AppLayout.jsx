@@ -167,7 +167,7 @@ export default function AppLayout({ children }) {
     const logoutTimer = setInterval(() => {
       if (user?.role === "admin" && user?.loginShift) {
         const latestShift = getCurrentShift();
-        console.log({
+        /*console.log({
           message: "Auto-logout check running...",
           loginShift_from_session: user.loginShift,
           currentShift_calculated_on_client: latestShift,
@@ -175,7 +175,7 @@ export default function AppLayout({ children }) {
           currentTime_IST: new Date().toLocaleString("en-US", {
             timeZone: "Asia/Kolkata",
           }),
-        });
+        });*/
         if (latestShift !== user.loginShift) {
           logout();
         }

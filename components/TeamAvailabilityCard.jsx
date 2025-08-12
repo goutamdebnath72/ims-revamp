@@ -15,8 +15,8 @@ export default function TeamAvailabilityCard() {
   const { data: session } = useSession();
   const user = session?.user;
 
-    // --- ADD THIS DEBUG LINE ---
-  console.log("Inside TeamAvailabilityCard, checking user object:", user);
+    // --- DEBUG LINE ---
+  //console.log("Inside TeamAvailabilityCard, checking user object:", user);
   // --------------------------
 
   // This logic now works correctly. The card will only render if the logged-in

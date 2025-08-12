@@ -14,8 +14,33 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { Chip } from "@mui/material";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+
+// --- HELPER FUNCTIONS to manage the comment string ---
+const separator = "\n---\n";
+
+// Gets the system-generated (non-editable) part of a comment
+const getSystemPart = (fullComment) => {
+  if (!fullComment || !fullComment.includes(separator)) {
+    return null;
+  }
+  return fullComment.split(separator)[0];
+};
+
+// Gets the user-written (editable) part of a comment
+const getUserPart = (fullComment) => {
+  if (!fullComment) return "";
+  if (!fullComment.includes(separator)) {
+    return fullComment; // If no separator, the whole comment is editable
+  }
+  return fullComment.split(separator).slice(1).join(separator);
+};
+// --- END OF HELPER FUNCTIONS ---
 
 export default function EditableComment({
+  action,
   comment,
   author,
   onSave,
@@ -23,61 +48,74 @@ export default function EditableComment({
   incidentStatus,
 }) {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editText, setEditText] = React.useState(comment);
+  const [editText, setEditText] = React.useState(""); // Initial state is empty
   const { data: session } = useSession();
   const currentUser = session?.user;
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
-  // --- CORRECTED LOGIC FOR EDITING CONSTRAINTS ---
-  // 1. User can only edit their own comment.
+  // --- LOGIC FOR EDITING CONSTRAINTS ---
   const isAuthor = currentUser && currentUser.name === author;
-  // 2. Editing can only be done once.
   const hasBeenEdited = isEdited;
-  // 3. Editing is only active in the 'Processed' state.
   const isStatusCorrect = incidentStatus === "Processed";
+  const isPasswordReset = action === "Password Reset";
+  const canEdit =
+    isAuthor && !hasBeenEdited && isStatusCorrect && !isPasswordReset;
 
-  const canEdit = isAuthor && !hasBeenEdited && isStatusCorrect;
+  // --- UPDATED HANDLERS ---
+  const handleEditClick = () => {
+    // When editing starts, only load the user's part of the comment
+    setEditText(getUserPart(comment));
+    setIsEditing(true);
+  };
 
   const handleSave = () => {
-    onSave(editText);
+    const systemPart = getSystemPart(comment);
+    // Rebuild the full comment string before saving
+    const finalComment = systemPart
+      ? `${systemPart}${separator}${editText}`
+      : editText;
+
+    onSave(finalComment);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditText(comment);
+    // No need to reset editText, as it's set fresh on each edit click
     setIsEditing(false);
   };
 
   const renderDisplayMode = () => {
-    const separator = "\n---\n";
-    const parts = comment ? comment.split(separator) : [""];
-    const systemPart = parts[0];
-    const userPart = parts.slice(1).join(separator);
+    const renderTextWithLineBreaks = (text) => {
+      const lines = text.split("\n");
+      return lines.map((line, index) => (
+        <ReactMarkdown
+          key={index}
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+        >
+          {line}
+        </ReactMarkdown>
+      ));
+    };
+
+    const systemPart = getSystemPart(comment);
+    const userPart = getUserPart(comment);
 
     return (
-      <>
-        {systemPart && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ display: "block", whiteSpace: "pre-wrap" }}
-          >
-            {systemPart}
-          </Typography>
-        )}
-        {userPart && (
-          <>
-            <Divider variant="dashed" sx={{ my: 1 }} />
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ display: "block", whiteSpace: "pre-wrap" }}
-            >
-              {userPart}
-            </Typography>
-          </>
-        )}
-      </>
+      <Box
+        sx={{
+          "& p": {
+            margin: 0,
+            color: "text.secondary",
+            fontSize: "0.875rem",
+            whiteSpace: "pre-wrap",
+          },
+        }}
+      >
+        {systemPart && renderTextWithLineBreaks(systemPart)}
+        {userPart && systemPart && <Divider variant="dashed" sx={{ my: 1 }} />}
+        {userPart && renderTextWithLineBreaks(userPart)}
+      </Box>
     );
   };
 
@@ -136,7 +174,7 @@ export default function EditableComment({
       <IconButton
         className="edit-button"
         size="small"
-        onClick={() => setIsEditing(true)}
+        onClick={handleEditClick} // <-- Use the new handler
         disabled={!canEdit}
         sx={{ ml: 1, opacity: canEdit ? 0 : 0.2, transition: "opacity 0.2s" }}
         title={
@@ -144,8 +182,8 @@ export default function EditableComment({
             ? hasBeenEdited
               ? "Already edited once"
               : isStatusCorrect
-              ? "Edit comment"
-              : "Cannot edit unless status is Processed"
+                ? "Edit comment"
+                : "Cannot edit unless status is Processed"
             : "Can only edit your own comments"
         }
       >

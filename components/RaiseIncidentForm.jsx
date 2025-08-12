@@ -54,8 +54,9 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
   const [formData, setFormData] = React.useState({
     incidentType: "",
+    affectedTicketNo: "",
     priority: "Medium",
-    department: user?.departmentCode || "",
+    department: "",
     location: "",
     contactNumber: "",
     jobTitle: "",
@@ -72,6 +73,20 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     fetcher
   );
 
+  React.useEffect(() => {
+    // This sets the user's default department only after the department list has loaded
+    if (user?.departmentCode && departmentsData?.length > 0) {
+      // First, find the full department object that matches the user's code
+      const userDepartment = departmentsData.find(
+        (dept) => dept.code === user.departmentCode
+      );
+      // If we found it, set the form's state to use the department's unique ID
+      if (userDepartment) {
+        setFormData((prev) => ({ ...prev, department: userDepartment.id }));
+      }
+    }
+  }, [user, departmentsData]);
+
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
@@ -87,6 +102,13 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
           if (!/^\d{5}$/.test(value)) {
             error = "Please enter a valid 5-digit PAX No.";
           }
+        }
+        break;
+      case "affectedTicketNo":
+        if (!value) {
+          error = "Required.";
+        } else if (!/^\d{6}$/.test(value)) {
+          error = "Please enter a valid 6-digit Ticket No.";
         }
         break;
       case "incidentType":
@@ -110,7 +132,17 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // First, check if the value is a string before trying to trim it
+    const isString = typeof value === "string";
+
+    const processedValue =
+      isString && name !== "description" && name !== "jobTitle"
+        ? value.trimStart()
+        : value;
+
+    setFormData((prev) => ({ ...prev, [name]: processedValue }));
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -119,16 +151,33 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const handleSubmit = (event) => {
     event.preventDefault();
     const newErrors = {};
-    Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key]);
+    const trimmedFormData = {};
+
+    // Trim all string values before validation and submission
+    for (const key in formData) {
+      const value = formData[key];
+      trimmedFormData[key] = typeof value === "string" ? value.trim() : value;
+    }
+
+    Object.keys(trimmedFormData).forEach((key) => {
+      // Skip validating affectedTicketNo if it's not an ESS Password incident
+      if (
+        key === "affectedTicketNo" &&
+        trimmedFormData.incidentType?.toLowerCase() !== "ess password"
+      ) {
+        return;
+      }
+
+      const error = validateField(key, trimmedFormData[key]);
       if (error) {
         newErrors[key] = error;
       }
     });
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      onSubmit(formData);
+      onSubmit(trimmedFormData);
     }
   };
 
@@ -193,7 +242,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               onBlur={handleBlur}
             >
               {departmentsData?.map((dept) => (
-                <MenuItem key={dept.id} value={dept.code}>
+                <MenuItem key={dept.id} value={dept.id}>
                   {dept.name}
                 </MenuItem>
               ))}
@@ -215,6 +264,27 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             helperText={errors.location || " "}
           />
         </Stack>
+        {/* --- REVISED CODE BLOCK FOR THE CONDITIONAL FIELD --- */}
+        {/* This will now appear on its own line */}
+        {formData.incidentType?.toLowerCase() === "ess password" && (
+          <Stack>
+            <TextField
+              required
+              fullWidth
+              name="affectedTicketNo"
+              label="Affected Employee's Ticket No"
+              value={formData.affectedTicketNo}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!errors.affectedTicketNo}
+              helperText={
+                errors.affectedTicketNo || "Enter the 6-digit ticket number."
+              }
+              slotProps={{ input: { maxLength: 6 } }}
+            />
+          </Stack>
+        )}
+        {/* --- END OF REVISED CODE BLOCK --- */}
 
         {/* ROW 2 */}
         <Stack direction="row" spacing={2}>
@@ -250,7 +320,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             fullWidth
             disabled
             label="Ticket No."
-            value={user?.id || ""}
+            value={user?.ticketNo || ""}
           />
           <TextField
             fullWidth

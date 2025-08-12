@@ -59,7 +59,7 @@ export default function RecentIncidentsCard({ incidents }) {
           width: "100%",
           bgcolor: "background.paper",
           p: 0,
-          maxHeight: 220,
+          //maxHeight: 220,
           overflowY: "auto",
         }}
       >

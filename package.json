@@ -4,10 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:studio": "dotenv -e .env.local npx prisma studio",
+    "db:migrate": "dotenv -e .env.local npx prisma migrate dev",
+    "db:reset": "dotenv -e .env.local npx prisma migrate reset",
+    "db:seed": "dotenv -e .env.local node prisma/seed.js"     
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -17,6 +21,7 @@
     "@mui/x-data-grid": "^8.5.2",
     "@mui/x-date-pickers": "^8.9.0",
     "@prisma/client": "^6.12.0",
+    "@react-email/components": "^0.5.0",
     "@vercel/kv": "^3.0.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.1",
@@ -30,7 +35,12 @@
     "react": "^19.0.0",
     "react-countup": "^6.5.3",
     "react-dom": "^19.0.0",
+    "react-email": "^4.2.8",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.0.2",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "resend": "^4.8.0",
     "swr": "^2.3.4"
   },
   "devDependencies": {
@@ -39,8 +49,5 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "prisma": "^6.12.0"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
   }
 }

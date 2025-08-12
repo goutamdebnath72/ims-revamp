@@ -66,7 +66,7 @@ export function DashboardFilterProvider({ children }) {
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
-    params.append("limit", "0");
+    //params.append("limit", "0");
 
     if (filters.shift && filters.shift !== "All") {
       params.append("shift", filters.shift);
