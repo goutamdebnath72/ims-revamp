@@ -4,9 +4,10 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")          // prisma+postgres (Accelerate)
-  directUrl = env("DIRECT_POSTGRES_URL")   // standard postgres:// for tools/migrate
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")            // prisma+postgres (Accelerate)
+  directUrl         = env("DIRECT_POSTGRES_URL")     // postgres://… (direct)
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")     // clean shadow target
 }
 
 
@@ -94,6 +95,7 @@ model Incident {
   isTypeLocked     Boolean?
   isPriorityLocked Boolean?
   affectedTicketNo String?
+  rating           Int?
 
   incidentType   IncidentType @relation(fields: [incidentTypeId], references: [id])
   incidentTypeId String

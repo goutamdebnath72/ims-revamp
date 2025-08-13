@@ -18,9 +18,14 @@ import {
   FormControl,
   InputLabel,
   OutlinedInput,
+  Tooltip,
   Typography,
   Paper,
   DialogContentText,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -115,38 +120,82 @@ export default function ResetPasswordModal({
             disabled={isLoading || isTicketNoPreFilled}
             slotProps={{ input: { maxLength: 6 } }}
           />
-
           {/* This is the new block that displays the user's details */}
           {affectedUser && (
-            <Paper
-              variant="outlined"
-              sx={{ p: 1.5, bgcolor: "action.hover", lineHeight: 1.9 }}
-            >
-              <Typography variant="body2">
-                <strong>ESS User Name:</strong> {affectedUser.ticketNo}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Name:</strong> {affectedUser.name}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Designation:</strong>{" "}
-                {affectedUser.designation || "N/A"}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Dept. Name:</strong> {affectedUser.department?.name}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Mobile No.:</strong> {affectedUser.contactNo || "N/A"}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Pass Lst Change:</strong>{" "}
-                {affectedUser.passwordLastChanged
-                  ? new Date(affectedUser.passwordLastChanged).toLocaleString(
-                      "en-IN",
-                      { dateStyle: "medium", timeStyle: "short" }
-                    )
-                  : "N/A"}
-              </Typography>
+            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "action.hover" }}>
+              <Table
+                size="small"
+                sx={{
+                  "& .MuiTableCell-root": {
+                    border: "1px solid rgba(224, 224, 224, 1)",
+                  },
+                }}
+              >
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      ESS User ID
+                    </TableCell>
+                    <TableCell>{affectedUser.ticketNo}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>Name</TableCell>
+                    <TableCell>
+                      <Tooltip title={affectedUser.name} placement="top">
+                        <Typography noWrap sx={{ maxWidth: "170px" }}>
+                          {" "}
+                          {/* We can adjust the maxWidth */}
+                          {affectedUser.name}
+                        </Typography>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      Designation
+                    </TableCell>
+                    <TableCell>{affectedUser.designation || "N/A"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      Dept. Name
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip
+                        title={affectedUser.department?.name || ""}
+                        placement="top"
+                      >
+                        <Typography noWrap sx={{ maxWidth: "170px" }}>
+                          {" "}
+                          {/* We can adjust the maxWidth */}
+                          {affectedUser.department?.name}
+                        </Typography>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      Mobile No.
+                    </TableCell>
+                    <TableCell>{affectedUser.contactNo || "N/A"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>
+                      Last Security Update
+                    </TableCell>
+                    <TableCell>
+                      {affectedUser.passwordLastChanged
+                        ? new Date(
+                            affectedUser.passwordLastChanged
+                          ).toLocaleString("en-IN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })
+                        : "N/A"}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </Paper>
           )}
           {userError && ticketNo.length === 6 && (
@@ -154,7 +203,6 @@ export default function ResetPasswordModal({
               User with that Ticket No. not found.
             </Alert>
           )}
-
           <FormControl required fullWidth variant="outlined">
             <InputLabel htmlFor="admin-password">
               Enter Your Password to Confirm

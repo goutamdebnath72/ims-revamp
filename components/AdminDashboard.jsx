@@ -32,6 +32,9 @@ import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 import ViewToggle from "@/components/ViewToggle";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
+import { INCIDENT_STATUS } from '@/lib/constants';
+
+
 
 export default function AdminDashboard() {
   const cardContainerStyles = {
@@ -97,7 +100,7 @@ export default function AdminDashboard() {
   }, [incidents, user, view]);
 
   const newIncidents = incidentsToDisplay.filter(
-    (i) => i.status === "New"
+    (i) => i.status === INCIDENT_STATUS.NEW
   ).length;
   const processedIncidents = incidentsToDisplay.filter(
     (i) => i.status === "Processed"
@@ -109,7 +112,7 @@ export default function AdminDashboard() {
       title: "New Incidents",
       value: newIncidents,
       color: "warning",
-      filterStatus: "New",
+      filterStatus: INCIDENT_STATUS.NEW,
     },
     {
       title: "Processed",

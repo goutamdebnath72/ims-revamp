@@ -6,6 +6,9 @@ import {
 } from "@/lib/incident-repo";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from '@/lib/auth';
+import { INCIDENT_STATUS } from '@/lib/constants';
+
+
 
 // GET a single incident by ID
 export async function GET(request, { params }) {
@@ -59,7 +62,7 @@ export async function PATCH(request, { params }) {
     }
 
     // --- YOUR CUSTOM BUSINESS LOGIC IS PRESERVED HERE ---
-    if (incidentToUpdate.status === "New") {
+    if (incidentToUpdate.status === INCIDENT_STATUS.NEW) {
       body.status = "Processed";
     }
 

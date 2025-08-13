@@ -8,6 +8,7 @@ import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import { DateTime } from "luxon";
+import Button from "@mui/material/Button";
 
 function DetailItem({ label, value, component = "div" }) {
   return (
@@ -34,7 +35,10 @@ function DetailItem({ label, value, component = "div" }) {
   );
 }
 
-export default function IncidentDetailsCard({ incident }) {
+export default function IncidentDetailsCard({
+  incident,
+  onOpenDescriptionModal,
+}) {
   if (!incident) {
     return null;
   }
@@ -73,6 +77,10 @@ export default function IncidentDetailsCard({ incident }) {
   const formattedReportedOn = DateTime.fromISO(incident.reportedOn, {
     zone: "Asia/Kolkata",
   }).toFormat("dd MMM yyyy, h:mm a");
+
+  const descriptionPreview =
+    incident.description?.substring(0, 200) +
+    (incident.description?.length > 200 ? "..." : "");
 
   return (
     <Paper
@@ -183,10 +191,20 @@ export default function IncidentDetailsCard({ incident }) {
             <Typography
               variant="body1"
               component="div"
-              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mt: 0.5 }}
             >
-              {incident.description || "N/A"}
+              {descriptionPreview || "N/A"}
             </Typography>
+            {incident.description && incident.description.length > 200 && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={onOpenDescriptionModal}
+                sx={{ mt: 1 }}
+              >
+                View Full Description...
+              </Button>
+            )}
           </Box>
 
           {/* --- CORRECTED REQUESTOR INFORMATION SECTION --- */}

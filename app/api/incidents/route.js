@@ -43,6 +43,18 @@ export async function POST(request) {
     //console.log("API received this formData:", formData);
     const user = session.user;
 
+    // --- START: Server-Side Validation ---
+    if (
+      formData.incidentType?.toLowerCase() === 'ess password' &&
+      formData.affectedTicketNo === user.ticketNo
+    ) {
+      return NextResponse.json(
+        { error: "Validation failed: You cannot raise a password reset incident for yourself." },
+        { status: 400 } // 400 Bad Request
+      );
+    }
+    // --- END: Server-Side Validation ---
+
     const { idTimestamp, reportedOnObject, shiftDateObject } =
       getShiftTimestamps();
     const randomHex = Math.floor(Math.random() * 0xffff)

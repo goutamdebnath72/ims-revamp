@@ -57,6 +57,31 @@ export async function POST(request) {
       );
     }
 
+    // --- START: NEW VALIDATION STEP ---
+    // 4a. Fetching the incident to check its status
+    const incident = await prisma.incident.findUnique({
+      where: { id: incidentId },
+    });
+
+    if (!incident) {
+      return NextResponse.json(
+        { error: "Incident not found." },
+        { status: 404 }
+      );
+    }
+
+    // 4b. Checking if the incident is already resolved or closed
+    if (incident.status === "Resolved" || incident.status === "Closed") {
+      return NextResponse.json(
+        {
+          error:
+            "Action failed: This incident has already been resolved or closed.",
+        },
+        { status: 409 } // 409 Conflict status
+      );
+    }
+    // --- END: NEW VALIDATION STEP ---
+
     // 5. Hash the new default password and update the target user
     const newDefaultPassword = "dsp123";
     const hashedNewPassword = await bcrypt.hash(newDefaultPassword, 10);

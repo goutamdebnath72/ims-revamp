@@ -50,6 +50,7 @@ const descriptionTooltipText = (
 export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const { data: session } = useSession();
   const user = session?.user;
+  const loggedInUserTicketNo = session?.user?.ticketNo;
   const isExecutive = user?.id?.startsWith("4");
 
   const [formData, setFormData] = React.useState({
@@ -107,6 +108,9 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
       case "affectedTicketNo":
         if (!value) {
           error = "Required.";
+        } else if (value === loggedInUserTicketNo) {
+          // <-- ADDED THIS CHECK
+          error = "You cannot raise a password reset request for yourself.";
         } else if (!/^\d{6}$/.test(value)) {
           error = "Please enter a valid 6-digit Ticket No.";
         }

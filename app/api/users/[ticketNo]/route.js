@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(request, { params }) {
-  const { ticketno: ticketNo } = params; //Next.js automatically converts the names of dynamic route folders (like your [ticketNo] folder) to all lowercase when they are passed into our code.
+  const { ticketNo } = await params;
+
   try {
     const user = await prisma.user.findUnique({
       where: { ticketNo },
@@ -21,7 +22,7 @@ export async function GET(request, { params }) {
     return NextResponse.json(userWithoutPassword);
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch user" },
+      { error: "Failed to fetch user due to a server error." },
       { status: 500 }
     );
   }

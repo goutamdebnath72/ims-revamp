@@ -12,100 +12,133 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Rating from "@mui/material/Rating";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import { SettingsContext } from "@/context/SettingsContext";
+import { DIALOG_CONTEXTS, RESOLUTION_ACTIONS } from "@/lib/constants";
 
-const closingReasons = [
-    "Out of Scope",
-    "User Unresponsive",
-    "Referred to External Department",
-    "Duplicate Incident",
-    "Resolved by User",
+const adminClosingReasons = [
+  "Out of Scope",
+  "User Unresponsive",
+  "Referred to External Department",
+  "Duplicate Incident",
+  "Resolved by User",
 ];
 
-export default function ResolutionDialog({ open, onClose, onConfirm }) {
+const userClosingReasons = [
+  "Problem solved on its own",
+  "I was able to fix the issue myself",
+  "This is no longer a priority",
+  "The issue is related to Hardware/OS",
+  "Other",
+];
+
+export default function ResolutionDialog({
+  open,
+  onClose,
+  onConfirm,
+  context,
+}) {
   const [comment, setComment] = React.useState("");
   const [rating, setRating] = React.useState(3);
-  const [action, setAction] = React.useState('resolve');
-  const [closingReason, setClosingReason] = React.useState('');
+  const [action, setAction] = React.useState("resolve");
+  const [closingReason, setClosingReason] = React.useState("");
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
-  const handleActionChange = (event, newAction) => {
-    if (newAction !== null) {
-      setAction(newAction);
-    }
-  };
+  // This effect resets the state and sets the correct action
+  // whenever the dialog is opened in a new context.
+  React.useEffect(() => {
+    if (open) {
+      setComment("");
+      setRating(3);
+      setClosingReason("");
 
-  const handleConfirm = () => {
-    onConfirm({
-        action,
-        comment,
-        rating: action === 'resolve' ? rating : null,
-        closingReason: action === 'close' ? closingReason : null,
-    });
+      if (context === DIALOG_CONTEXTS.USER_CLOSE) {
+        setAction(RESOLUTION_ACTIONS.CLOSE);
+      } else {
+        setAction(RESOLUTION_ACTIONS.RESOLVE);
+      }
+    }
+  }, [open, context]);
+
+  const handleConfirm = (payload) => {
+    onConfirm(payload);
     onClose();
-    setComment("");
-    setRating(3);
-    setAction('resolve');
-    setClosingReason('');
   };
 
   const handleCancel = () => {
     onClose();
-    setComment("");
-    setRating(3);
-    setAction('resolve');
-    setClosingReason('');
   };
-  
-  const isSubmitDisabled = !comment.trim() || (action === 'close' && !closingReason);
+
+  // --- START: NEW DYNAMIC JSX ---
+  const renderTitle = () => {
+    switch (context) {
+      case DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION:
+        return "Resolution Feedback";
+      case DIALOG_CONTEXTS.USER_CLOSE:
+        return "Close Incident";
+      default:
+        return "Finalize Incident";
+    }
+  };
+
+  const isSubmitDisabled =
+    !comment.trim() || (context === "user_close" && !closingReason);
 
   return (
-    <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ pb: 1 }}>Finalize Incident</DialogTitle>
-      <DialogContent sx={{ pt: '0 !important' }}>
-        
-        <ToggleButtonGroup
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle sx={{ pb: 1 }}>{renderTitle()}</DialogTitle>
+      <DialogContent sx={{ pt: "0 !important" }}>
+        {/* Admin-only Resolve/Close Toggle */}
+        {context === DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE && (
+          <ToggleButtonGroup
             value={action}
             exclusive
-            onChange={handleActionChange}
+            onChange={(e, newAction) => newAction && setAction(newAction)}
             aria-label="resolution action"
             fullWidth
             sx={{ mb: 2 }}
-        >
-            <ToggleButton value="resolve" aria-label="resolve incident">
-                Resolve Incident
-            </ToggleButton>
-            <ToggleButton value="close" aria-label="close incident">
-                Close Incident
-            </ToggleButton>
-        </ToggleButtonGroup>
-
-        {action === 'close' && (
-            <FormControl fullWidth required sx={{ mb: 2 }} size="small">
-                <InputLabel>Reason for Closing</InputLabel>
-                <Select
-                    value={closingReason}
-                    label="Reason for Closing"
-                    onChange={(e) => setClosingReason(e.target.value)}
-                >
-                    {closingReasons.map(reason => (
-                        <MenuItem key={reason} value={reason}>{reason}</MenuItem>
-                    ))}
-                </Select>
-            </FormControl>
+          >
+            <ToggleButton value="resolve">Resolve Incident</ToggleButton>
+            <ToggleButton value="close">Close Incident</ToggleButton>
+          </ToggleButtonGroup>
         )}
-        
+
+        {/* Closing Reason Dropdown (for Admin or User) */}
+        {action === RESOLUTION_ACTIONS.CLOSE && (
+          <FormControl fullWidth required sx={{ mb: 2 }} size="small">
+            <InputLabel>Reason for Closing</InputLabel>
+            <Select
+              value={closingReason}
+              label="Reason for Closing"
+              onChange={(e) => setClosingReason(e.target.value)}
+            >
+              {(context === DIALOG_CONTEXTS.USER_CLOSE
+                ? userClosingReasons
+                : adminClosingReasons
+              ).map((reason) => (
+                <MenuItem key={reason} value={reason}>
+                  {reason}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        {/* Final Comment Textfield (for all contexts) */}
         <TextField
           autoFocus
           margin="dense"
           id="resolution-comment"
-          label="Final Comment"
+          label={
+            context === "user_confirm_resolution"
+              ? "Provide Feedback (Comment)"
+              : "Final Comment"
+          }
           type="text"
           fullWidth
           variant="outlined"
@@ -117,41 +150,76 @@ export default function ResolutionDialog({ open, onClose, onConfirm }) {
           required
         />
 
-        {action === 'resolve' && (
-            <Box
-            sx={{
-                mt: 2,
-                display: "flex",
-                alignItems: "center",
-            }}
-            >
+        {/* Rating Component (for Admin Resolve or User Confirmation) */}
+        {(action === RESOLUTION_ACTIONS.RESOLVE ||
+          context === DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION) && (
+          <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
             <Typography component="legend" sx={{ mr: 2 }}>
-                Satisfaction Rating
+              Satisfaction Rating
             </Typography>
             <Rating
-                name="resolution-rating"
-                value={rating}
-                onChange={(event, newValue) => {
-                if (newValue !== null) {
-                    setRating(newValue);
-                }
-                }}
+              name="resolution-rating"
+              value={rating}
+              onChange={(event, newValue) => {
+                if (newValue !== null) setRating(newValue);
+              }}
             />
-            </Box>
+          </Box>
         )}
       </DialogContent>
-      <DialogActions sx={{ p: '0 24px 16px' }}>
-        <Button onClick={handleCancel}>Cancel</Button>
-        <Button
-          onClick={handleConfirm}
-          variant="contained"
-          disabled={isSubmitDisabled}
-          color={action === 'resolve' ? 'success' : 'primary'}
-        >
-          {/* --- THIS IS THE FIX: The button text is now dynamic --- */}
-          {action === 'resolve' ? 'Confirm Resolution' : 'Confirm Closure'}
-        </Button>
+
+      <DialogActions sx={{ p: "0 24px 16px" }}>
+        <Button onClick={onClose}>Cancel</Button>
+
+        {/* --- DYNAMIC ACTION BUTTONS --- */}
+        {context === DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION ? (
+          <Stack direction="row" spacing={1}>
+            <Button
+              onClick={() =>
+                handleConfirm({ action: RESOLUTION_ACTIONS.RE_OPEN, comment })
+              }
+              variant="outlined"
+              color="error"
+              disabled={!comment.trim()}
+            >
+              This is Not Solved (Re-open)
+            </Button>
+            <Button
+              onClick={() =>
+                handleConfirm({
+                  action: RESOLUTION_ACTIONS.ACCEPT_CLOSE,
+                  comment,
+                  rating,
+                })
+              }
+              variant="contained"
+              color="success"
+              disabled={!comment.trim()}
+            >
+              Accept & Close Incident
+            </Button>
+          </Stack>
+        ) : (
+          <Button
+            onClick={() =>
+              handleConfirm({
+                action,
+                comment,
+                rating: action === RESOLUTION_ACTIONS.RESOLVE ? rating : null,
+                closingReason:
+                  action === RESOLUTION_ACTIONS.CLOSE ? closingReason : null,
+              })
+            }
+            variant="contained"
+            disabled={isSubmitDisabled}
+          >
+            {action === RESOLUTION_ACTIONS.RESOLVE
+              ? "Confirm Resolution"
+              : "Confirm Closure"}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );
+  // --- END: NEW DYNAMIC JSX ---
 }
