@@ -17,7 +17,7 @@ import EditableComment from "./EditableComment";
 import IconButton from "@mui/material/IconButton";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import ReactMarkdown from "react-markdown";
+import { INCIDENT_STATUS } from "@/lib/constants";
 
 const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
   {
@@ -137,6 +137,16 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
           const isResolvedEntry = entry.action
             .toLowerCase()
             .includes("resolved");
+          // --- START: NEW, CORRECT LOGIC ---
+          // Find the index of the absolute last "resolved" or "closed" entry in the entire trail
+          const finalActionIndex = auditTrail.findLastIndex(
+            (e) =>
+              e.action.toLowerCase().includes("resolved") ||
+              e.action.toLowerCase().includes("closed")
+          );
+          // The special styling should only apply if the current entry IS that final one
+          const isTheFinalAction = index === finalActionIndex;
+          // --- END: NEW, CORRECT LOGIC ---
           const isFinalEntry =
             entry.action.toLowerCase().includes("resolved") ||
             entry.action.toLowerCase().includes("closed");
@@ -153,7 +163,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         sx={{
                           display: "block",
                           fontWeight: "bold",
-                          color: isResolvedEntry ? "#4CAF50" : "text.primary",
+                          color: isTheFinalAction ? "#4CAF50" : "text.primary",
                         }}
                       >
                         {isFinalEntry
@@ -180,12 +190,21 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                             color="text.secondary"
                             sx={{ mr: 1 }}
                           >
-                            Final Rating:
+                            {isTheFinalAction ? "Final Rating:" : "Rating:"}
                           </Typography>
                           <Rating
                             name="read-only-rating"
                             value={entry.rating}
                             readOnly
+                            sx={
+                              !isTheFinalAction
+                                ? {
+                                    "& .MuiRating-iconFilled": {
+                                      color: "grey.500",
+                                    },
+                                  }
+                                : {}
+                            }
                           />
                         </Box>
                       )}

@@ -15,6 +15,12 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
+import {
+  INCIDENT_STATUS,
+  USER_ROLES,
+  AUDIT_ACTIONS,
+  INCIDENT_TYPES,
+} from "@/lib/constants";
 
 const priorities = ["Low", "Medium", "High"];
 const C_AND_IT_DEPT_CODES = [98540, 98500];
@@ -27,11 +33,26 @@ export default function IncidentActionForm({
   onOpenResolveDialog,
   showResetButton,
   onOpenResetDialog,
+  // --- New props start here ---
+  isRequestor,
+  canUserClose,
+  onUserClose,
+  canUserConfirm,
+  onUserConfirm,
+  isDisabled,
 }) {
   const { data: session } = useSession();
   const user = session?.user;
 
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
+
+  // --- START: ADD THIS DEBUGGING BLOCK ---
+  React.useEffect(() => {
+    console.log("--- ACTION FORM PROPS CHECK ---");
+    console.log("isTypeLocked:", incident.isTypeLocked);
+    console.log("isPriorityLocked:", incident.isPriorityLocked);
+  }, [incident]);
+  // --- END: ADD THIS DEBUGGING BLOCK ---
 
   const [comment, setComment] = React.useState("");
   const [newType, setNewType] = React.useState("");
@@ -76,6 +97,10 @@ export default function IncidentActionForm({
     (entry) => entry.action === "Password Reset"
   );
 
+  const placeholderText = isDisabled
+    ? "This form will be enabled once the support team processes your incident."
+    : "";
+
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
@@ -104,11 +129,12 @@ export default function IncidentActionForm({
                     label="Change Incident Type"
                     onChange={(e) => setNewType(e.target.value)}
                   >
-                    {incidentTypes?.map((type) => (
-                      <MenuItem key={type.id} value={type.name}>
-                        {type.name}
-                      </MenuItem>
-                    ))}
+                    {incidentTypes &&
+                      incidentTypes.map((type) => (
+                        <MenuItem key={type.id} value={type.name}>
+                          {type.name}
+                        </MenuItem>
+                      ))}
                   </Select>
                 </FormControl>
               </Box>
@@ -154,10 +180,11 @@ export default function IncidentActionForm({
           </>
         )}
 
-        {/* Your existing comment box (no changes here) */}
+        {/* existing comment box (no changes here) */}
         <TextField
           id="incident-comment"
-          label="Provide a detailed update"
+          // This now conditionally removes the label when disabled
+          label={isDisabled ? "" : "Provide a detailed update"}
           multiline
           rows={4}
           value={comment}
@@ -166,62 +193,132 @@ export default function IncidentActionForm({
           fullWidth
           spellCheck={isSpellcheckEnabled}
           required
+          disabled={isDisabled}
+          placeholder={placeholderText}
+          // This new sx prop makes the disabled placeholder text clear
+          sx={{
+            "& .MuiInputBase-input.Mui-disabled::placeholder": {
+              opacity: 1,
+              color: "rgba(0, 0, 0, 0.6)",
+              WebkitTextFillColor: "rgba(0, 0, 0, 0.6)",
+            },
+          }}
         />
 
-        {/* Your existing buttons (no changes here) */}
-        {isVendor ? (
-          <Button
-            variant="contained"
-            onClick={handleSubmitUpdate}
-            sx={{ width: "100%", letterSpacing: "1px" }}
-            disabled={!comment.trim()}
-          >
-            Submit Update
-          </Button>
-        ) : (
-          <Stack direction="row" spacing={0.6} sx={{ width: "100%" }}>
-            {showResetButton && (
-              <Button
-                variant="outlined"
-                onClick={onOpenResetDialog}
-                sx={{
-                  flex: 1,
-                  color: "#d32f2f",
-                  borderColor: "#d32f2f",
-                  borderRadius: 0,
-                  lineHeight: 1.3,
-                }}
-              >
-                <div style={{ textAlign: "center" }}>
-                  <div>Reset</div>
-                  <div>ESS Password</div>
-                </div>
-              </Button>
-            )}
-            <Button
-              variant="outlined"
-              color="success"
-              onClick={onOpenResolveDialog}
-              sx={{
-                flex: 1,
-                borderRadius: showResetButton ? 0 : undefined,
-              }}
-            >
-              Resolve Incident
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSubmitUpdate}
-              sx={{
-                flex: 1,
-                borderRadius: showResetButton ? 0 : undefined,
-              }}
-              disabled={!comment.trim()}
-            >
-              Submit Update
-            </Button>
-          </Stack>
-        )}
+        {/* --- ADDING THIS TEMPORARY DEBUGGING BLOCK --- */}
+        {/*<pre>
+          {JSON.stringify(
+            {
+              isDisabled,
+              comment,
+              isCommentEmpty: !comment.trim(),
+              isButtonDisabled: isDisabled || !comment.trim(),
+            },
+            null,
+            2
+          )}
+        </pre>*/}
+        {/* --- END OF DEBUGGING BLOCK --- */}
+        {/* --- START: NEW DYNAMIC BUTTON LOGIC --- */}
+        <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+          {isRequestor ? (
+            // --- Buttons for the Standard User (Requestor) ---
+            <>
+              {(incident.status === INCIDENT_STATUS.NEW ||
+                incident.status === INCIDENT_STATUS.PROCESSED) && (
+                <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleSubmitUpdate}
+                    disabled={isDisabled || !comment.trim()}
+                    fullWidth
+                  >
+                    Submit Update
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={onUserClose}
+                    disabled={isDisabled}
+                    fullWidth
+                  >
+                    Close Incident
+                  </Button>
+                </Stack>
+              )}
+              {canUserConfirm && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={onUserConfirm}
+                  disabled={isDisabled}
+                  fullWidth
+                >
+                  Confirm Resolution
+                </Button>
+              )}
+            </>
+          ) : (
+            // --- Buttons for Admins / Vendors (This part remains unchanged) ---
+            <>
+              {isVendor ? (
+                <Button
+                  variant="contained"
+                  onClick={handleSubmitUpdate}
+                  disabled={isDisabled || !comment.trim()}
+                  fullWidth
+                >
+                  Submit Update
+                </Button>
+              ) : (
+                <>
+                  {showResetButton && (
+                    <Button
+                      variant="outlined"
+                      onClick={onOpenResetDialog}
+                      disabled={isDisabled}
+                      sx={{
+                        flex: 1,
+                        color: "#d32f2f",
+                        borderColor: "#d32f2f",
+                        "&:hover": {
+                          borderColor: "#d32f2f",
+                          bgcolor: "rgba(211, 47, 47, 0.04)",
+                        },
+                        lineHeight: 1.3,
+                        textAlign: "center",
+                      }}
+                    >
+                      <div>
+                        <div>Reset</div>
+                        <div>ESS Password</div>
+                      </div>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outlined"
+                    color="success"
+                    onClick={onOpenResolveDialog}
+                    sx={{ flex: 1 }}
+                    disabled={
+                      isDisabled || incident.status === INCIDENT_STATUS.NEW
+                    }
+                  >
+                    Resolve Incident
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={handleSubmitUpdate}
+                    sx={{ flex: 1 }}
+                    disabled={isDisabled || !comment.trim()}
+                  >
+                    Submit Update
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </Stack>
+        {/* --- END: NEW DYNAMIC BUTTON LOGIC --- */}
       </Stack>
     </Paper>
   );

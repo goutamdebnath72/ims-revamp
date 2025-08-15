@@ -73,7 +73,7 @@ model AuditEntry {
   comment    String
   rating     Int?
   isEdited   Boolean  @default(false)
-  editedAt   DateTime?
+  editedAt   DateTime?  
 
   incident   Incident @relation(fields: [incidentId], references: [id])
   incidentId String

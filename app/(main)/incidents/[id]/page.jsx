@@ -5,13 +5,22 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { NotificationContext } from "@/context/NotificationContext";
-import { Box, Stack, Typography, CircularProgress, Alert } from "@mui/material";
 import IncidentDetailsCard from "@/components/IncidentDetailsCard";
 import IncidentAuditTrail from "@/components/IncidentAuditTrail";
 import IncidentActionForm from "@/components/IncidentActionForm";
 import ResolutionDialog from "@/components/ResolutionDialog";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import DescriptionModal from "@/components/DescriptionModal";
+import {
+  Box,
+  Stack,
+  Typography,
+  CircularProgress,
+  Alert,
+  Paper,
+  Divider,
+  Button,
+} from "@mui/material"; // Add Paper and Divider
 import {
   INCIDENT_STATUS,
   USER_ROLES,
@@ -83,7 +92,10 @@ export default function IncidentDetailsPage() {
     setIsResetModalOpen(false); // This closes the modal
     mutate(); // This re-fetches all the incident data
     showNotification(
-      "ESS Password has been reset successfully. User will be notified via email.",
+      {
+        title: "Success",
+        message: "ESS Password has been reset successfully.",
+      },
       "success"
     );
   };
@@ -137,14 +149,20 @@ export default function IncidentDetailsPage() {
     // 3. Send the real request to the server in the background.
     //    Notice we are NOT sending the temporary ID.
     try {
-      await updateIncidentAPI(params.id, payload);
+      // Step 1: Capture the updated data returned from the API call
+      const updatedIncident = await updateIncidentAPI(params.id, payload);
 
-      // After the server succeeds, we run mutate() again without arguments.
-      // This re-fetches the real data from the server, which will seamlessly
-      // replace the temporary entry with the permanent one from the database.
-      mutate();
+      showNotification(
+        { title: "Success", message: "Incident updated successfully." },
+        "success"
+      );
+      // Step 2: Pass the fresh data directly to mutate to instantly update the UI
+      mutate(updatedIncident, false); // 'false' prevents an unnecessary re-fetch
     } catch (err) {
-      showNotification(err.message, "error");
+      showNotification(
+        { title: "Update Failed", message: err.message },
+        "error"
+      );
       // If the server fails, revert the UI to the original state
       mutate();
     }
@@ -188,11 +206,20 @@ export default function IncidentDetailsPage() {
     }
 
     try {
-      await updateIncidentAPI(params.id, payload);
-      showNotification("Incident updated successfully.", "success");
-      mutate(); // Re-fetch data to get the final state
+      // Step 1: Capture the updated data returned from the API call
+      const updatedIncident = await updateIncidentAPI(params.id, payload);
+
+      showNotification(
+        { title: "Success", message: "Incident updated successfully." },
+        "success"
+      );
+      // Step 2: Pass the fresh data directly to mutate to instantly update the UI
+      mutate(updatedIncident, false); // 'false' prevents an unnecessary re-fetch
     } catch (err) {
-      showNotification(err.message, "error");
+      showNotification(
+        { title: "Update Failed", message: err.message },
+        "error"
+      );
       mutate(); // Revert any UI changes if the API fails
     } finally {
       setOptimisticallyResolved(false);
@@ -205,7 +232,7 @@ export default function IncidentDetailsPage() {
       await editCommentAPI(incident.id, entryId, newComment);
       mutate(); // Re-fetch data
     } catch (err) {
-      showNotification(err.message, "error");
+      showNotification({ title: "Edit Failed", message: err.message }, "error");
     }
   };
 
@@ -295,69 +322,93 @@ export default function IncidentDetailsPage() {
             onOpenDescriptionModal={() => setDescriptionModalOpen(true)}
           />
         </Box>
-        {canTakeAction || isRequestor ? (
-          <Stack
-            spacing={0}
-            sx={{ flex: 5, minWidth: 0, position: "relative" }}
+        {/* --- START: NEW, CORRECTED RIGHT COLUMN --- */}
+        <Stack sx={{ flex: 5, minWidth: 0 }}>
+          {/* The Audit Trail is always at the top */}
+          <Box
+            sx={{
+              flexGrow: 1,
+              minHeight: 0,
+              display: "flex",
+              position: "relative",
+              zIndex: 2,
+            }}
           >
-            <Box
-              sx={{
-                flexGrow: 1,
-                minHeight: 0,
-                display: "flex",
-                position: "relative",
-                zIndex: 2,
-              }}
-            >
-              <IncidentAuditTrail
-                ref={auditTrailRef}
-                auditTrail={incident.auditTrail || []}
-                incident={incident}
-                isResolved={isResolved}
-                onCommentEdit={handleCommentEdit}
-                isExpanded={isAuditTrailExpanded}
-                onToggleExpand={() => setIsAuditTrailExpanded((prev) => !prev)}
-              />
-            </Box>
-
-            {!isAuditTrailExpanded && (
-              <IncidentActionForm
-                incident={incident}
-                onUpdate={handleUpdate}
-                // Passing a generic handler for Admins
-                onOpenResolveDialog={() =>
-                  handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
-                }
-                showResetButton={showResetButton}
-                onOpenResetDialog={() => setIsResetModalOpen(true)}
-                // --- Start: New props for the standard user ---
-                isRequestor={isRequestor}
-                canUserClose={canUserClose}
-                onUserClose={() => handleOpenDialog(DIALOG_CONTEXTS.USER_CLOSE)}
-                canUserConfirm={canUserConfirm}
-                onUserConfirm={() =>
-                  handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
-                }
-                isDisabled={
-                  incident.status === INCIDENT_STATUS.NEW && isRequestor
-                }
-                // --- End: New props for the standard user ---
-              />
-            )}
-          </Stack>
-        ) : (
-          <Box sx={{ flex: 5, minWidth: 0, display: "flex" }}>
             <IncidentAuditTrail
               ref={auditTrailRef}
               auditTrail={incident.auditTrail || []}
               incident={incident}
               isResolved={isResolved}
               onCommentEdit={handleCommentEdit}
-              isExpanded={false}
-              onToggleExpand={() => {}}
+              isExpanded={
+                !(
+                  (canTakeAction || isRequestor) &&
+                  incident.status !== INCIDENT_STATUS.CLOSED
+                ) || isAuditTrailExpanded
+              }
+              onToggleExpand={() => setIsAuditTrailExpanded((prev) => !prev)}
             />
           </Box>
-        )}
+
+          {/* This condition now correctly handles ALL states */}
+          {(canTakeAction || isRequestor) &&
+            incident.status !== INCIDENT_STATUS.CLOSED &&
+            !isAuditTrailExpanded && (
+              <>
+                {canUserConfirm ? (
+                  // The Resolution Feedback UI for the user
+                  <Paper elevation={3} sx={{ p: 3 }}>
+                    <Typography variant="h5" gutterBottom>
+                      Resolution Feedback
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                      The support team has marked this incident as resolved.
+                      Please provide your feedback to close the ticket or let us
+                      know if the issue persists.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() =>
+                        handleOpenDialog(
+                          DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION
+                        )
+                      }
+                      fullWidth
+                      size="large"
+                    >
+                      Confirm Resolution
+                    </Button>
+                  </Paper>
+                ) : (
+                  // The standard Action Form
+                  <IncidentActionForm
+                    incident={incident}
+                    onUpdate={handleUpdate}
+                    onOpenResolveDialog={() =>
+                      handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
+                    }
+                    showResetButton={showResetButton}
+                    onOpenResetDialog={() => setIsResetModalOpen(true)}
+                    isRequestor={isRequestor}
+                    canUserClose={canUserClose}
+                    onUserClose={() =>
+                      handleOpenDialog(DIALOG_CONTEXTS.USER_CLOSE)
+                    }
+                    canUserConfirm={canUserConfirm}
+                    onUserConfirm={() =>
+                      handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
+                    }
+                    isDisabled={
+                      incident.status === INCIDENT_STATUS.NEW && isRequestor
+                    }
+                  />
+                )}
+              </>
+            )}
+        </Stack>
+        {/* --- END: NEW, CORRECTED RIGHT COLUMN --- */}
       </Box>
       <ResolutionDialog
         open={isDialogOpen}

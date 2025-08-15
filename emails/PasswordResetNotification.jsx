@@ -14,8 +14,8 @@ export default function PasswordResetNotification({
   userName = "DSP Employee",
   incidentId = "Not specified",
   adminName = "An Administrator",
-  contactPerson = "Mr. Rakesh Ojha",
-  contactMobile = "9434792593", // Replace if needed
+  contactPerson,
+  contactMobile,
 }) {
   const resetTime = new Date().toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",

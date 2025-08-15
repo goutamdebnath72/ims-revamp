@@ -18,6 +18,8 @@ export async function POST(request) {
   const adminUser = session.user;
 
   try {
+    console.log("API Key being used:", process.env.RESEND_API_KEY);
+
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { adminPassword, targetTicketNo, incidentId } = await request.json();
@@ -105,46 +107,58 @@ export async function POST(request) {
 
     // --- NEW EMAIL SENDING BLOCK BELOW ---
     // 7. Sends security notification email
-    /*try {
-          let recipientEmail = null;
-          
-          // Case 1: User is an Executive (Ticket No starts with '4')
-          if (targetUser.ticketNo.startsWith('4')) {
-            // Use their official @sail.in address if it's valid
-            if (targetUser.emailSail && targetUser.emailSail.includes('@')) {
-              recipientEmail = targetUser.emailSail;
-            }
-          } 
-          // Case 2: User is a Non-Executive
-          else {
-            // Use their personal email (assuming it's in the emailNic field) if it's valid
-            if (targetUser.emailNic && targetUser.emailNic.includes('@')) {
-              recipientEmail = targetUser.emailNic;
-            }
-          }
+    // 7. Sends security notification email
+    try {
+      let recipientEmail = null;
 
-          // Case 3: Only send the email if a valid recipient address was found
-          if (recipientEmail) {
-            await resend.emails.send({
-              from: 'IMS Alert <rakesh.ojha@saildsp.co.in>',
-              to: recipientEmail,
-              subject: `Security Alert: Your ESS Password Has Been Reset (Incident: ${incidentId})`,
-              react: <PasswordResetNotification
-                userName={targetUser.name}
-                incidentId={incidentId}
-                adminName={adminUser.name}
-              />,
-            });
-            console.log(`Password reset notification sent to ${recipientEmail}`);
-          } else {
-            console.log(`No valid email found for user ${targetUser.ticketNo}. Skipping notification.`);
-          }
+      // --- START: FINAL, CORRECTED EMAIL LOGIC ---
+      // Case 1: User is an Executive (Ticket No starts with '4')
+      if (targetUser.ticketNo.startsWith("4")) {
+        // Use their official NIC email if it's valid
+        if (targetUser.emailIdNic && targetUser.emailIdNic.includes("@")) {
+          recipientEmail = targetUser.emailIdNic;
+        }
+      }
+      // Case 2: User is a Non-Executive
+      else {
+        // Use their personal email (from the emailId field) if it's valid
+        if (targetUser.emailId && targetUser.emailId.includes("@")) {
+          recipientEmail = targetUser.emailId;
+        }
+      }
+      // --- END: FINAL, CORRECTED EMAIL LOGIC ---
 
-        } catch (emailError) {
-          // Log the email error but do not fail the overall API request,
-          // as the primary action (password reset) was successful.
-          console.error("Failed to send notification email:", emailError);
-        }*/
+      // Case 3: Only send the email if a valid recipient address was found
+      if (recipientEmail) {
+        const { data, error } = await resend.emails.send({
+          from: process.env.SENDER_EMAIL,
+          to: recipientEmail,
+          subject: `Security Alert: Your ESS Password Has Been Reset (Incident: ${incidentId})`,
+          react: (
+            <PasswordResetNotification
+              userName={targetUser.name}
+              incidentId={incidentId}
+              adminName={adminUser.name}
+              contactPerson={process.env.SECURITY_CONTACT_NAME}
+              contactMobile={process.env.SECURITY_CONTACT_MOBILE}
+            />
+          ),
+        });
+
+        if (error) {
+          // If Resend returns an error, log it and throw an error to be caught below
+          throw new Error(error.message);
+        }
+
+        console.log(`Password reset notification sent to ${recipientEmail}`);
+      } else {
+        console.log(
+          `No valid email found for user ${targetUser.ticketNo}. Skipping notification.`
+        );
+      }
+    } catch (emailError) {
+      console.error("Failed to send notification email:", emailError);
+    }
     // --- END OF NEW EMAIL BLOCK ---
 
     // 8. Return success

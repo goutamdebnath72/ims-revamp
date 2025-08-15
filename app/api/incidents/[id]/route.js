@@ -41,6 +41,7 @@ export async function PATCH(request, { params }) {
   try {
     const { id } = await params;
     const body = await request.json();
+    console.log("--- BACKEND API CHECK: Received body:", body);
 
     // Logic to handle editing just an audit trail comment
     if (body.action === "editAuditComment") {
