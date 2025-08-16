@@ -97,14 +97,18 @@ model Incident {
   affectedTicketNo String?
   rating           Int?
 
-  incidentType   IncidentType @relation(fields: [incidentTypeId], references: [id])
-  incidentTypeId String
+  telecomTasks     String[]
+  assignedTeam     String   @default("C&IT")
+  etlTasks         String[]
+
+  incidentType     IncidentType @relation(fields: [incidentTypeId], references: [id])
+  incidentTypeId   String
 
   // Explicit relation name and back-field lives on User.incidentsRequested
-  requestor   User   @relation("UserRequestor", fields: [requestorId], references: [id])
-  requestorId String
+  requestor        User   @relation("UserRequestor", fields: [requestorId], references: [id])
+  requestorId      String
 
-  auditTrail  AuditEntry[]
+  auditTrail       AuditEntry[]
 
   @@map("incidents")
 }
