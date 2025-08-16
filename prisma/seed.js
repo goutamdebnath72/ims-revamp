@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { departments as DEPARTMENTS } from "../lib/departments.js";
 import { incidentTypes as INCIDENT_TYPES } from "../lib/incident-types.js";
 import { MOCK_USER_DB } from "../lib/citusers.js";
+import { USER_ROLES } from "../lib/constants.js";
 
 const prisma = new PrismaClient();
 const SALT_ROUNDS = 10;
@@ -87,6 +88,33 @@ async function seedUsers({ byCode, byName }) {
     deptName: "C & IT (TECH)",
   });
 
+  fromMock.push(
+    {
+      role: USER_ROLES.TELECOM,
+      name: "Telecom User",
+      ticketNo: "telecom", // This will be their login username
+      passwordPlain: "password", // Default password, will be hashed
+      contactNo: null,
+      emailId: null,
+      emailIdNic: null,
+      sailPNo: null,
+      deptCode: 98540, // Assigning to C & IT (TECH)
+      deptName: "C & IT (TECH)",
+    },
+    {
+      role: USER_ROLES.ETL,
+      name: "ETL User",
+      ticketNo: "etl", // This will be their login username
+      passwordPlain: "password", // Default password, will be hashed
+      contactNo: null,
+      emailId: null,
+      emailIdNic: null,
+      sailPNo: null,
+      deptCode: 98540, // Assigning to C & IT (TECH)
+      deptName: "C & IT (TECH)",
+    }
+  );
+
   for (const r of fromMock) {
     // resolve department
     let departmentId = null;
@@ -111,13 +139,17 @@ async function seedUsers({ byCode, byName }) {
       password: hashedPassword,
       ticketNo: r.ticketNo,
       essUserId: r.ticketNo, // as requested
-      designation: null, // fill later in Studio
+      designation: "N/A", // fill later in Studio
       contactNo: r.contactNo,
       emailId: r.emailId,
       emailIdNic: r.emailIdNic,
       sailPNo: r.sailPNo,
-      departmentId,
-      // passwordLastChanged -> DB default(now())
+      // This is the corrected syntax for linking a relation
+      department: {
+        connect: {
+          id: departmentId,
+        },
+      },
     };
 
     await prisma.user.upsert({

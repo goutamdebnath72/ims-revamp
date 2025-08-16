@@ -11,6 +11,7 @@ import IncidentActionForm from "@/components/IncidentActionForm";
 import ResolutionDialog from "@/components/ResolutionDialog";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import DescriptionModal from "@/components/DescriptionModal";
+import TelecomReferralModal from "@/components/TelecomReferralModal";
 import {
   Box,
   Stack,
@@ -28,6 +29,7 @@ import {
   INCIDENT_TYPES,
   DIALOG_CONTEXTS,
   RESOLUTION_ACTIONS,
+  TEAMS,
 } from "@/lib/constants";
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
@@ -84,6 +86,7 @@ export default function IncidentDetailsPage() {
   const [isDescriptionModalOpen, setDescriptionModalOpen] =
     React.useState(false);
   const [dialogContext, setDialogContext] = React.useState("");
+  const [isReferralModalOpen, setReferralModalOpen] = React.useState(false);
 
   const auditTrailRef = React.useRef(null);
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
@@ -165,6 +168,38 @@ export default function IncidentDetailsPage() {
       );
       // If the server fails, revert the UI to the original state
       mutate();
+    }
+  };
+
+  const handleReferralSubmit = async (referralData) => {
+    const { tasks, comment } = referralData;
+
+    const payload = {
+      // The comment for the audit trail
+      comment: `Referred to Telecom with the following tasks:\n- ${tasks.join("\n- ")}\n\n---\n${comment}`,
+      // The new data for the incident record
+      assignedTeam: "Telecom",
+      telecomTasks: tasks,
+      status: INCIDENT_STATUS.PENDING_TELECOM,
+      // We also need to add the action for the audit trail
+      action: "Referred to Telecom",
+    };
+
+    try {
+      const updatedIncident = await updateIncidentAPI(params.id, payload);
+      mutate(updatedIncident, false);
+      showNotification(
+        {
+          title: "Success",
+          message: "Incident successfully referred to Telecom.",
+        },
+        "success"
+      );
+    } catch (err) {
+      showNotification(
+        { title: "Referral Failed", message: err.message },
+        "error"
+      );
     }
   };
 
@@ -306,6 +341,12 @@ export default function IncidentDetailsPage() {
   const canUserConfirm =
     isRequestor && incident.status === INCIDENT_STATUS.RESOLVED;
 
+  const canReferToTelecom =
+    (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SYS_ADMIN) &&
+    incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
+    incident.status === INCIDENT_STATUS.PROCESSED &&
+    incident.assignedTeam !== "Telecom";
+
   return (
     <>
       <Box
@@ -403,6 +444,10 @@ export default function IncidentDetailsPage() {
                     isDisabled={
                       incident.status === INCIDENT_STATUS.NEW && isRequestor
                     }
+                    showReferToTelecomButton={canReferToTelecom}
+                    onOpenTelecomReferralDialog={() =>
+                      setReferralModalOpen(true)
+                    }
                   />
                 )}
               </>
@@ -426,6 +471,11 @@ export default function IncidentDetailsPage() {
         open={isDescriptionModalOpen}
         onClose={() => setDescriptionModalOpen(false)}
         description={incident?.description}
+      />
+      <TelecomReferralModal
+        open={isReferralModalOpen}
+        onClose={() => setReferralModalOpen(false)}
+        onSubmit={handleReferralSubmit}
       />
     </>
   );

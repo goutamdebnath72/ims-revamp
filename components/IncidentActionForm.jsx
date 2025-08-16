@@ -33,13 +33,15 @@ export default function IncidentActionForm({
   onOpenResolveDialog,
   showResetButton,
   onOpenResetDialog,
-  // --- New props start here ---
   isRequestor,
   canUserClose,
   onUserClose,
   canUserConfirm,
   onUserConfirm,
   isDisabled,
+  // --- New props for Telecom Referral ---
+  showReferToTelecomButton,
+  onOpenTelecomReferralDialog,
 }) {
   const { data: session } = useSession();
   const user = session?.user;
@@ -271,6 +273,17 @@ export default function IncidentActionForm({
                 </Button>
               ) : (
                 <>
+                  {showReferToTelecomButton && (
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={onOpenTelecomReferralDialog}
+                      sx={{ flex: 1 }}
+                      disabled={isDisabled}
+                    >
+                      Refer to Telecom
+                    </Button>
+                  )}
                   {showResetButton && (
                     <Button
                       variant="outlined"
