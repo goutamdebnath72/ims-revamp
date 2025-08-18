@@ -36,6 +36,7 @@ import { useSession, signOut } from "next-auth/react";
 import PersonIcon from "@mui/icons-material/Person";
 import { SearchContext } from "@/context/SearchContext";
 import { useContext } from "react";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
 const spellCheckTooltipText = (
   <Stack spacing={1.5}>
@@ -82,6 +83,8 @@ const allMenuItems = [
       "sys_admin",
       "network_vendor",
       "biometric_vendor",
+      "telecom",
+      "etl",
     ],
   },
   {
@@ -94,6 +97,8 @@ const allMenuItems = [
       "sys_admin",
       "network_vendor",
       "biometric_vendor",
+      "telecom",
+      "etl",
     ],
   },
   {
@@ -251,7 +256,7 @@ export default function AppLayout({ children }) {
               >
                 {["admin", "sys_admin", "standard"].includes(user?.role) ? (
                   // Apply fontSize directly to the icon
-                  <PersonIcon sx={{ fontSize: "1.9rem" }} />
+                  <PersonOutlineIcon sx={{ fontSize: "1.9rem" }} />
                 ) : user.name ? (
                   user.name.charAt(0)
                 ) : (

@@ -4,11 +4,10 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")            // prisma+postgres (Accelerate)
-  directUrl         = env("DIRECT_POSTGRES_URL")     // postgres://… (direct)
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")     // clean shadow target
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
+
 
 
 model Department {
@@ -38,10 +37,10 @@ model User {
   ticketNo  String @unique
 
   // REQUIRED + UNIQUE; we’ll set this = ticketNo in seed
-  essUserId String @unique
+  essUserId String? @unique
 
   
-  designation         String  // <-- no ?
+  designation         String?  // <-- no ?
 
   contactNo           String?
   emailId             String?
@@ -52,8 +51,8 @@ model User {
   passwordLastChanged DateTime @default(now())
 
   // Department relation (explicit name)
-  department   Department @relation("DepartmentUsers", fields: [departmentId], references: [id])
-  departmentId String
+  department          Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
+  departmentId        String?
   
 
   // Back-relation for incidents requested by this user

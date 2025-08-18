@@ -74,7 +74,7 @@ export async function POST(request) {
       requestor: user.name,
       ticketNo: user.id,
       department: user.department,
-      sailpno: user.sailpno,
+      sailPNo: user.sailPNo,
       jobFrom: user.name,
       ipAddress: ip,
     };

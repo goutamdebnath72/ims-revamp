@@ -7,6 +7,7 @@ import StandardUserDashboard from "@/components/StandardUserDashboard";
 import NetworkVendorDashboard from "@/components/NetworkVendorDashboard"; // <-- 1. IMPORT THE NEW DASHBOARD
 import BiometricVendorDashboard from "@/components/BiometricVendorDashboard"; // <-- 1. IMPORT THE NEW DASHBOARD
 import { Box, CircularProgress } from "@mui/material";
+import { USER_ROLES } from "@/lib/constants";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -41,12 +42,14 @@ export default function DashboardPage() {
   // --- 2. ADD LOGIC TO RENDER THE CORRECT DASHBOARD BASED ON ROLE ---
   const renderDashboardByRole = () => {
     switch (role) {
-      case "admin":
-      case "sys_admin":
+      case USER_ROLES.ADMIN:
+      case USER_ROLES.SYS_ADMIN:
         return <AdminDashboard />;
-      case "network_vendor":
+      case USER_ROLES.NETWORK_VENDOR:
+      case USER_ROLES.TELECOM:
+      case USER_ROLES.ETL:
         return <NetworkVendorDashboard />;
-      case "biometric_vendor": // <-- 2. ADD LOGIC TO RENDER THE NEW DASHBOARD
+      case "biometric_vendor":
         return <BiometricVendorDashboard />;
       case "standard":
       default:

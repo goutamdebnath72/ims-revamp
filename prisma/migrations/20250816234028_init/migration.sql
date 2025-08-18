@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateTable
 CREATE TABLE "public"."departments" (
     "id" TEXT NOT NULL,
@@ -28,8 +31,10 @@ CREATE TABLE "public"."users" (
     "emailId" TEXT,
     "emailIdNic" TEXT,
     "sailPNo" TEXT,
-    "passwordLastChanged" TIMESTAMP(3) NOT NULL,
+    "passwordLastChanged" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "departmentId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -60,10 +65,14 @@ CREATE TABLE "public"."incidents" (
     "location" TEXT,
     "ipAddress" TEXT,
     "jobFrom" TEXT,
-    "reportedOn" TIMESTAMP(3) NOT NULL,
+    "reportedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "isTypeLocked" BOOLEAN,
     "isPriorityLocked" BOOLEAN,
     "affectedTicketNo" TEXT,
+    "rating" INTEGER,
+    "telecomTasks" TEXT[],
+    "assignedTeam" TEXT NOT NULL DEFAULT 'C&IT',
+    "etlTasks" TEXT[],
     "incidentTypeId" TEXT NOT NULL,
     "requestorId" TEXT NOT NULL,
 

@@ -181,12 +181,12 @@ function IncidentSearchForm({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    // Create a copy of the criteria to avoid direct state mutation
     const finalCriteria = { ...criteria };
-
-    // If the user is a vendor, programmatically add their incident type to the search
-    if (user?.role === "network_vendor") {
+    if (
+      user?.role === "network_vendor" ||
+      user?.role === "telecom" ||
+      user?.role === "etl"
+    ) {
       finalCriteria.incidentType = "NETWORK";
     } else if (user?.role === "biometric_vendor") {
       finalCriteria.incidentType = "BIOMETRIC";
@@ -197,8 +197,11 @@ function IncidentSearchForm({
 
   const renderFormContent = () => {
     const commonProps = { criteria, handleChange, handleDateChange, isLoading };
-
-    if (user?.role === "network_vendor") {
+    if (
+      user?.role === "network_vendor" ||
+      user?.role === "telecom" ||
+      user?.role === "etl"
+    ) {
       return (
         <VendorSearchForm
           incidentType="NETWORK"
