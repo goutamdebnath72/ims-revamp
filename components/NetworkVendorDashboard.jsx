@@ -103,7 +103,6 @@ export default function NetworkVendorDashboard() {
   // 3. Filter incidents from the context data
   const networkIncidents = React.useMemo(() => {
     if (!incidents) return [];
-    // The main filtering now happens in the context, here we just select network incidents
     return incidents.filter(
       (incident) => incident.incidentType?.name === "NETWORK"
     );
@@ -160,19 +159,25 @@ export default function NetworkVendorDashboard() {
     {
       name: "High",
       value: networkIncidents.filter(
-        (i) => i.priority === "High" && i.status === "Processed"
+        (i) =>
+          i.priority === "High" &&
+          (i.status === "Processed" || i.status === "Pending Telecom Action")
       ).length,
     },
     {
       name: "Medium",
       value: networkIncidents.filter(
-        (i) => i.priority === "Medium" && i.status === "Processed"
+        (i) =>
+          i.priority === "Medium" &&
+          (i.status === "Processed" || i.status === "Pending Telecom Action")
       ).length,
     },
     {
       name: "Low",
       value: networkIncidents.filter(
-        (i) => i.priority === "Low" && i.status === "Processed"
+        (i) =>
+          i.priority === "Low" &&
+          (i.status === "Processed" || i.status === "Pending Telecom Action")
       ).length,
     },
   ].filter((item) => item.value > 0);

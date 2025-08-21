@@ -12,11 +12,14 @@ import Stack from "@mui/material/Stack";
 import Alert from "@mui/material/Alert";
 import Image from "next/image";
 import LoginInfoPanel from "@/components/LoginInfoPanel";
+import { IconButton, InputAdornment } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function LoginPage() {
   const [userId, setUserId] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false); // State for the eye icon
   const router = useRouter();
   const { status } = useSession();
 
@@ -27,23 +30,42 @@ export default function LoginPage() {
     }
   }, [status, router]);
 
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+
   const handleLogin = async (event) => {
     event.preventDefault();
     setError("");
+
+    // --- DETAILED DEBUGGING LOG ---
+    console.log(`--- LOGIN ATTEMPT ---
+    Timestamp: ${new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata",
+    })}
+    User ID: ${userId}
+    -------------------------`);
+
     const res = await signIn("credentials", {
       redirect: false,
       userId,
       password,
     });
+
     if (res.ok) {
+      // --- DETAILED DEBUGGING LOG ---
+      console.log(`--- LOGIN SUCCESS ---
+      User ID: ${userId} successfully authenticated. Redirecting...
+      ---------------------`);
       window.location.href = "/";
     } else {
+      // --- DETAILED DEBUGGING LOG ---
+      console.log(`--- LOGIN FAILED ---
+      Reason: Invalid credentials for User ID: ${userId}
+      ----------------------`);
       setError("Invalid User ID or Password");
     }
   };
 
   // The loading check prevents the form from flashing while session is verified.
-  // It now also covers the 'authenticated' status to allow time for the redirect effect.
   if (status === "loading" || status === "authenticated") {
     return (
       <Box
@@ -73,7 +95,7 @@ export default function LoginPage() {
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
-        background: 'linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)',       
+        background: "linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)",
         padding: 0,
         opacity: 0,
         animation: "fadeIn 0.5s ease 0.1s forwards",
@@ -90,7 +112,7 @@ export default function LoginPage() {
           justifyContent: "center",
           flex: "0 0 50%",
           px: 2,
-          minWidth: "0",          
+          minWidth: "0",
         }}
       >
         <LoginInfoPanel />
@@ -232,13 +254,27 @@ export default function LoginPage() {
                   fullWidth
                   name="password"
                   label="Password"
-                  type="password"
                   id="password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   error={!!error}
                   variant="outlined"
+                  type={showPassword ? "text" : "password"} // <-- THIS LINE IS NEW
+                  InputProps={{
+                    // <-- THIS ENTIRE BLOCK IS NEW
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={handleClickShowPassword}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       height: "56px",

@@ -22,8 +22,9 @@ const telecomTasksList = [
   "OFC (Optical Fiber Cable) issue",
   "Media Converter (MC) issue",
   "UTP Cable replacement",
-  "Network Switch port issue",
-  "Wireless access point issue",
+  "Modem issue",
+  "I/O Box issue",
+  "Camera issue",
 ];
 
 export default function TelecomReferralModal({ open, onClose, onSubmit }) {
@@ -43,6 +44,7 @@ export default function TelecomReferralModal({ open, onClose, onSubmit }) {
     onSubmit({
       tasks: selectedTasks,
       comment,
+      assignedTeam: "Telecom",
     });
     onClose();
   };

@@ -245,24 +245,30 @@ export default function AppLayout({ children }) {
           </Box>
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography sx={{ mr: 2, display: { xs: "none", sm: "block" } }}>
+            <Typography sx={{ mr: 1.5, display: { xs: "none", sm: "block" } }}>
               Welcome {user.name?.toUpperCase()}
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-              <Avatar
-                sx={{
-                  bgcolor: "secondary.main",
-                }}
-              >
-                {["admin", "sys_admin", "standard"].includes(user?.role) ? (
-                  // Apply fontSize directly to the icon
-                  <PersonOutlineIcon sx={{ fontSize: "1.9rem" }} />
-                ) : user.name ? (
-                  user.name.charAt(0)
-                ) : (
-                  "?"
-                )}
-              </Avatar>
+              {["admin", "sys_admin", "standard"].includes(user?.role) ? (
+                // If the role matches, display the image from the public folder
+                <Avatar
+                  alt={user.name}
+                  src="/purple_more_thicker.png"
+                  sx={{
+                    width: "45px", // Adjust size as needed to match the original Avatar
+                    height: "45px",
+                  }}
+                />
+              ) : (
+                // For all other roles, display the first initial
+                <Avatar
+                  sx={{
+                    bgcolor: "secondary.main",
+                  }}
+                >
+                  {user.name ? user.name.charAt(0) : "?"}
+                </Avatar>
+              )}
             </IconButton>
             <Menu
               id="menu-appbar"

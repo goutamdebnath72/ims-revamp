@@ -60,11 +60,13 @@ const VendorSearchForm = ({
           size="small"
         >
           <MenuItem value="Any">Any</MenuItem>
-          {departments.map((dept) => (
-            <MenuItem key={dept.code} value={dept.name}>
-              {dept.name}
-            </MenuItem>
-          ))}
+          {/* --- DEFENSIVE CHECK ADDED HERE --- */}
+          {Array.isArray(departments) &&
+            departments.map((dept) => (
+              <MenuItem key={dept.code} value={dept.name}>
+                {dept.name}
+              </MenuItem>
+            ))}
         </TextField>
         <TextField
           sx={{ flex: 1 }}
@@ -155,15 +157,12 @@ function IncidentSearchForm({
 
   const filteredIncidentTypes = React.useMemo(() => {
     if (!incidentTypes) return [{ name: "Any" }];
-
     let typesToFilter = incidentTypes;
-
     if (user?.role === "admin") {
       typesToFilter = incidentTypes.filter(
         (type) => !isSystemIncident({ incidentType: type.name })
       );
     }
-
     return [{ name: "Any" }, ...(typesToFilter || [])];
   }, [user, incidentTypes]);
 
@@ -191,7 +190,6 @@ function IncidentSearchForm({
     } else if (user?.role === "biometric_vendor") {
       finalCriteria.incidentType = "BIOMETRIC";
     }
-
     onSearch(finalCriteria);
   };
 
@@ -260,12 +258,13 @@ function IncidentSearchForm({
               <MenuItem key="any-dept" value="Any">
                 Any
               </MenuItem>
-              {/* Update this map to handle the loading state */}
-              {departments?.map((dept) => (
-                <MenuItem key={dept.code} value={dept.name}>
-                  {dept.name}
-                </MenuItem>
-              ))}
+              {/* --- DEFENSIVE CHECK ADDED HERE --- */}
+              {Array.isArray(departments) &&
+                departments.map((dept) => (
+                  <MenuItem key={dept.code} value={dept.name}>
+                    {dept.name}
+                  </MenuItem>
+                ))}
             </TextField>
             <TextField
               select

@@ -51,6 +51,7 @@
     "swr": "^2.2.5"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "dotenv-cli": "^7.4.2",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.4",
