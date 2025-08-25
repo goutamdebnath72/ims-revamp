@@ -5,15 +5,13 @@ import {
   editAuditComment,
 } from "@/lib/incident-repo";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from '@/lib/auth';
-import { INCIDENT_STATUS } from '@/lib/constants';
-
-
+import { authOptions } from "@/lib/auth";
+import { INCIDENT_STATUS, AUDIT_ACTIONS } from "@/lib/constants";
 
 // GET a single incident by ID
 export async function GET(request, { params }) {
+  const { id } = params; // Define id outside the try block
   try {
-    const { id } = await params;
     const incident = await getIncidentById(id);
     if (!incident) {
       return NextResponse.json(
@@ -33,18 +31,17 @@ export async function GET(request, { params }) {
 
 // PATCH/UPDATE an incident
 export async function PATCH(request, { params }) {
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  const { id } = params; // FIX #1: Define id outside and before the try block
+  // FIX #2: Remove unnecessary 'await'
   try {
-    const { id } = await params;
-    const body = await request.json();
-    console.log("--- BACKEND API CHECK: Received body:", body);
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    // Logic to handle editing just an audit trail comment
-    if (body.action === "editAuditComment") {
+    const body = await request.json();
+
+    if (body.action === AUDIT_ACTIONS.EDIT_COMMENT) {
       const updatedEntry = await editAuditComment(
         body.entryId,
         body.newComment
@@ -52,7 +49,6 @@ export async function PATCH(request, { params }) {
       return NextResponse.json(updatedEntry);
     }
 
-    // This is the full incident update path
     const user = session.user;
     const incidentToUpdate = await getIncidentById(id);
     if (!incidentToUpdate) {
@@ -62,15 +58,14 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // --- YOUR CUSTOM BUSINESS LOGIC IS PRESERVED HERE ---
     if (incidentToUpdate.status === INCIDENT_STATUS.NEW) {
-      body.status = "Processed";
+      body.status = INCIDENT_STATUS.PROCESSED;
     }
 
-    // Call the repo function with all the data
     const updatedIncident = await updateIncident(id, body, user);
     return NextResponse.json(updatedIncident);
   } catch (error) {
+    // Now, 'id' is available here for correct error logging
     console.error(`Failed to update incident ${id}:`, error);
     return NextResponse.json(
       { error: "Failed to update incident" },

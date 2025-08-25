@@ -15,12 +15,7 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
-import {
-  INCIDENT_STATUS,
-  USER_ROLES,
-  AUDIT_ACTIONS,
-  INCIDENT_TYPES,
-} from "@/lib/constants";
+import { INCIDENT_STATUS, AUDIT_ACTIONS } from "@/lib/constants";
 
 const priorities = ["Low", "Medium", "High"];
 const C_AND_IT_DEPT_CODES = [98540, 98500];
@@ -39,7 +34,6 @@ export default function IncidentActionForm({
   canUserConfirm,
   onUserConfirm,
   isDisabled,
-  // --- New props for Telecom Referral ---
   showReferToTelecomButton,
   onOpenTelecomReferralDialog,
 }) {
@@ -47,14 +41,6 @@ export default function IncidentActionForm({
   const user = session?.user;
 
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
-
-  // --- START: ADD THIS DEBUGGING BLOCK ---
-  React.useEffect(() => {
-    console.log("--- ACTION FORM PROPS CHECK ---");
-    console.log("isTypeLocked:", incident.isTypeLocked);
-    console.log("isPriorityLocked:", incident.isPriorityLocked);
-  }, [incident]);
-  // --- END: ADD THIS DEBUGGING BLOCK ---
 
   const [comment, setComment] = React.useState("");
   const [newType, setNewType] = React.useState("");
@@ -81,11 +67,9 @@ export default function IncidentActionForm({
       newType: newType === incident.incidentType?.name ? null : newType,
       newPriority: newPriority === incident.priority ? null : newPriority,
     };
-
     if (newType === "ESS Password") {
       payload.affectedTicketNo = affectedTicketNo;
     }
-
     onUpdate(payload);
     setComment("");
   };
@@ -94,25 +78,40 @@ export default function IncidentActionForm({
     "/api/incident-types",
     fetcher
   );
-
   const isPasswordReset = incident.auditTrail.some(
     (entry) => entry.action === "Password Reset"
   );
-
   const placeholderText = isDisabled
     ? "This form will be enabled once the support team processes your incident."
     : "";
 
   return (
-    <Paper elevation={3} sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        Take Action
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
-      <Stack spacing={2}>
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Box sx={{ flexShrink: 0 }}>
+        <Typography variant="h5" gutterBottom>
+          Take Action
+        </Typography>
+        <Divider />
+      </Box>
+      <Stack
+        spacing={3} // Increased spacing between elements
+        sx={{
+          flexGrow: 1,
+          overflow: "auto",
+          minHeight: 0,
+          pt: 2,
+        }}
+      >
         {isCITEmployee && (
-          <>
-            {/* This is the existing stack with the two dropdowns */}
+          <Box>
             <Stack direction="row" spacing={2}>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <FormControl
@@ -165,9 +164,6 @@ export default function IncidentActionForm({
                 </FormControl>
               </Box>
             </Stack>
-
-            {/* --- THIS IS THE NEW TEXTFIELD TO ADD --- */}
-            {/* It will appear only when "ESS Password" is selected */}
             {newType === "ESS Password" && (
               <TextField
                 required
@@ -177,18 +173,20 @@ export default function IncidentActionForm({
                 value={affectedTicketNo}
                 onChange={(e) => setAffectedTicketNo(e.target.value.trim())}
                 slotProps={{ input: { maxLength: 6 } }}
+                sx={{ mt: 2 }}
               />
             )}
-          </>
+          </Box>
         )}
-
-        {/* existing comment box (no changes here) */}
         <TextField
           id="incident-comment"
-          // This now conditionally removes the label when disabled
           label={isDisabled ? "" : "Provide a detailed update"}
           multiline
-          rows={4}
+          sx={{
+            flexGrow: 1, // Make the text field grow
+            "& .MuiInputBase-root": { height: "100%" },
+          }}
+          InputProps={{ sx: { height: "100%" } }}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           variant="outlined"
@@ -197,34 +195,9 @@ export default function IncidentActionForm({
           required
           disabled={isDisabled}
           placeholder={placeholderText}
-          // This new sx prop makes the disabled placeholder text clear
-          sx={{
-            "& .MuiInputBase-input.Mui-disabled::placeholder": {
-              opacity: 1,
-              color: "rgba(0, 0, 0, 0.6)",
-              WebkitTextFillColor: "rgba(0, 0, 0, 0.6)",
-            },
-          }}
         />
-
-        {/* --- ADDING THIS TEMPORARY DEBUGGING BLOCK --- */}
-        {/*<pre>
-          {JSON.stringify(
-            {
-              isDisabled,
-              comment,
-              isCommentEmpty: !comment.trim(),
-              isButtonDisabled: isDisabled || !comment.trim(),
-            },
-            null,
-            2
-          )}
-        </pre>*/}
-        {/* --- END OF DEBUGGING BLOCK --- */}
-        {/* --- START: NEW DYNAMIC BUTTON LOGIC --- */}
         <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
           {isRequestor ? (
-            // --- Buttons for the Standard User (Requestor) ---
             <>
               {(incident.status === INCIDENT_STATUS.NEW ||
                 incident.status === INCIDENT_STATUS.PROCESSED) && (
@@ -260,7 +233,6 @@ export default function IncidentActionForm({
               )}
             </>
           ) : (
-            // --- Buttons for Admins / Vendors (This part remains unchanged) ---
             <>
               {isVendor ? (
                 <Button
@@ -331,7 +303,6 @@ export default function IncidentActionForm({
             </>
           )}
         </Stack>
-        {/* --- END: NEW DYNAMIC BUTTON LOGIC --- */}
       </Stack>
     </Paper>
   );

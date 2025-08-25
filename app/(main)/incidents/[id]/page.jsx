@@ -51,7 +51,11 @@ const editCommentAPI = async (id, entryId, newComment) => {
   const response = await fetch(`/api/incidents/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "editAuditComment", entryId, newComment }),
+    body: JSON.stringify({
+      action: AUDIT_ACTIONS.EDIT_COMMENT,
+      entryId,
+      newComment,
+    }),
   });
   if (!response.ok) {
     const error = await response.json();
@@ -65,7 +69,6 @@ export default function IncidentDetailsPage() {
   const { showNotification } = React.useContext(NotificationContext);
   const { data: session } = useSession();
   const user = session?.user;
-
   const {
     data: incidentData,
     error,
@@ -76,7 +79,6 @@ export default function IncidentDetailsPage() {
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
   });
-  const incident = incidentData;
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = React.useState(false);
@@ -86,10 +88,81 @@ export default function IncidentDetailsPage() {
     React.useState(false);
   const [dialogContext, setDialogContext] = React.useState("");
   const [isReferralModalOpen, setReferralModalOpen] = React.useState(false);
-  const [referralData, setReferralData] = React.useState(null); // <-- NEW STATE TO HOLD REFERRAL DATA
-
+  const [referralData, setReferralData] = React.useState(null);
   const auditTrailRef = React.useRef(null);
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
+
+  React.useEffect(() => {
+    setTimeout(() => {
+      auditTrailRef.current?.scrollToBottom();
+    }, 0);
+  }, [incidentData?.auditTrail?.length]);
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "calc(100vh - 200px)",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ m: 4 }}>
+        Failed to load incident details.
+      </Alert>
+    );
+  }
+  if (!incidentData) {
+    return (
+      <Box sx={{ textAlign: "center", mt: 10 }}>
+        <Typography variant="h4" color="error">
+          Incident Not Found
+        </Typography>
+        <Typography>
+          The incident with ID "{params.id}" could not be found.
+        </Typography>
+      </Box>
+    );
+  }
+
+  const incident = incidentData;
+  const isAdmin =
+    user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SYS_ADMIN;
+  const isRequestor = user?.ticketNo === incident?.requestor?.ticketNo;
+  const isAssignedTelecomUser =
+    user?.department === TEAMS.TELECOM &&
+    incident?.assignedTeam === TEAMS.TELECOM;
+  const showActionArea = isAdmin || isRequestor || isAssignedTelecomUser;
+  const isResolved =
+    incident.status === INCIDENT_STATUS.RESOLVED ||
+    incident.status === INCIDENT_STATUS.CLOSED ||
+    isOptimisticallyResolved;
+  const isPasswordReset = incident.auditTrail.some(
+    (entry) => entry.action === AUDIT_ACTIONS.PASSWORD_RESET
+  );
+  const showResetButton =
+    isAdmin &&
+    !isResolved &&
+    incident?.incidentType?.name.toLowerCase() ===
+      INCIDENT_TYPES.ESS_PASSWORD.toLowerCase() &&
+    incident?.status !== INCIDENT_STATUS.NEW &&
+    !isPasswordReset;
+  const canUserClose =
+    isRequestor && incident.status === INCIDENT_STATUS.PROCESSED;
+  const canUserConfirm =
+    isRequestor && incident.status === INCIDENT_STATUS.RESOLVED && !isAdmin;
+  const canReferToTelecom =
+    isAdmin &&
+    incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
+    incident.status === INCIDENT_STATUS.PROCESSED &&
+    incident.assignedTeam !== TEAMS.TELECOM;
 
   const handlePasswordResetSuccess = () => {
     setIsResetModalOpen(false);
@@ -102,40 +175,26 @@ export default function IncidentDetailsPage() {
       "success"
     );
   };
-
-  React.useEffect(() => {
-    setTimeout(() => {
-      auditTrailRef.current?.scrollToBottom();
-    }, 0);
-  }, [incident?.auditTrail?.length]);
-
   const handleOpenDialog = (context) => {
     setDialogContext(context);
     setDialogOpen(true);
   };
-
   const handleUpdate = async (updateData) => {
-    // This function now also handles the referral data if it exists
     if (!updateData.comment && !referralData) return;
-
     const payload = { ...updateData };
     if (incident?.status === INCIDENT_STATUS.NEW) {
       payload.status = INCIDENT_STATUS.PROCESSED;
     }
-
-    // If referral data exists, combine it with the main update
     if (referralData) {
       payload.assignedTeam = referralData.assignedTeam;
       payload.telecomTasks = referralData.tasks;
       payload.status = INCIDENT_STATUS.PENDING_TELECOM;
-      payload.action = "Referred to Telecom";
-      // Combine comments
+      payload.action = AUDIT_ACTIONS.REFERRED_TO_TELECOM;
       payload.comment = `Referred to Telecom with the following tasks:\n- ${referralData.tasks.join(
         "\n- "
       )}\n\n---\n${updateData.comment || referralData.comment}`;
-      setReferralData(null); // Clear referral data after use
+      setReferralData(null);
     }
-
     const optimisticAuditEntry = {
       id: "optimistic-" + Math.random(),
       author: user.name,
@@ -143,7 +202,6 @@ export default function IncidentDetailsPage() {
       comment: payload.comment,
       timestamp: new Date().toISOString(),
     };
-
     mutate(
       (currentData) => ({
         ...currentData,
@@ -152,9 +210,7 @@ export default function IncidentDetailsPage() {
       }),
       false
     );
-
     setTimeout(() => auditTrailRef.current?.scrollToBottom(), 0);
-
     try {
       const updatedIncident = await updateIncidentAPI(params.id, payload);
       showNotification(
@@ -170,17 +226,10 @@ export default function IncidentDetailsPage() {
       mutate();
     }
   };
-
-  // This function now just saves the data from the modal and closes it.
-  // The main handleUpdate function will do the submission.
   const handleReferralSubmit = (dataFromModal) => {
     setReferralData(dataFromModal);
     setReferralModalOpen(false);
-    // You might want to trigger the main form's submit button here if the user
-    // expects the update to happen immediately after closing the modal.
-    // For now, it requires them to click "Submit Update" on the main form.
   };
-
   const handleConfirmResolve = async (resolutionData) => {
     let payload = { ...resolutionData };
     switch (resolutionData.action) {
@@ -200,11 +249,9 @@ export default function IncidentDetailsPage() {
       default:
         return;
     }
-
     if (resolutionData.action !== RESOLUTION_ACTIONS.RE_OPEN) {
       setOptimisticallyResolved(true);
     }
-
     try {
       const updatedIncident = await updateIncidentAPI(params.id, payload);
       showNotification(
@@ -222,7 +269,6 @@ export default function IncidentDetailsPage() {
       setOptimisticallyResolved(false);
     }
   };
-
   const handleCommentEdit = async (entryId, newComment) => {
     if (!incident) return;
     try {
@@ -232,73 +278,6 @@ export default function IncidentDetailsPage() {
       showNotification({ title: "Edit Failed", message: err.message }, "error");
     }
   };
-
-  if (!user) return null;
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "calc(100vh - 200px)",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 4 }}>
-        Failed to load incident details.
-      </Alert>
-    );
-  }
-
-  if (!incident) {
-    return (
-      <Box sx={{ textAlign: "center", mt: 10 }}>
-        <Typography variant="h4" color="error">
-          Incident Not Found
-        </Typography>
-        <Typography>
-          The incident with ID "{params.id}" could not be found.
-        </Typography>
-      </Box>
-    );
-  }
-
-  const isResolved =
-    incident.status === INCIDENT_STATUS.RESOLVED ||
-    incident.status === INCIDENT_STATUS.CLOSED ||
-    isOptimisticallyResolved;
-  const canTakeAction =
-    (user.role === USER_ROLES.ADMIN ||
-      user.role === USER_ROLES.SYS_ADMIN ||
-      user.role === USER_ROLES.NETWORK_VENDOR ||
-      user.role === USER_ROLES.BIOMETRIC_VENDOR) &&
-    !isResolved;
-  const isPasswordReset = incident.auditTrail.some(
-    (entry) => entry.action === AUDIT_ACTIONS.PASSWORD_RESET
-  );
-  const showResetButton =
-    canTakeAction &&
-    incident?.incidentType?.name.toLowerCase() ===
-      INCIDENT_TYPES.ESS_PASSWORD.toLowerCase() &&
-    incident?.status !== INCIDENT_STATUS.NEW &&
-    !isPasswordReset;
-  const isRequestor = user?.ticketNo === incident?.requestor?.ticketNo;
-  const canUserClose =
-    isRequestor && incident.status === INCIDENT_STATUS.PROCESSED;
-  const canUserConfirm =
-    isRequestor && incident.status === INCIDENT_STATUS.RESOLVED;
-  const canReferToTelecom =
-    (user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SYS_ADMIN) &&
-    incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
-    incident.status === INCIDENT_STATUS.PROCESSED &&
-    incident.assignedTeam !== "Telecom";
 
   return (
     <>
@@ -316,90 +295,91 @@ export default function IncidentDetailsPage() {
             onOpenDescriptionModal={() => setDescriptionModalOpen(true)}
           />
         </Box>
-        <Stack sx={{ flex: 5, minWidth: 0 }}>
+        <Stack sx={{ flex: 5, minWidth: 0, height: "100%" }} spacing={0.5}>
           <Box
             sx={{
-              flexGrow: 1,
+              flex: isAuditTrailExpanded ? "1 1 100%" : "1 1 calc(50% - 4px)", // USE CALC() TO ACCOUNT FOR SPACING
               minHeight: 0,
               display: "flex",
               position: "relative",
-              zIndex: 2,
+              transition: "flex 0.3s ease-in-out",
             }}
           >
             <IncidentAuditTrail
               ref={auditTrailRef}
               auditTrail={incident.auditTrail || []}
               incident={incident}
-              isResolved={isResolved}
               onCommentEdit={handleCommentEdit}
-              isExpanded={
-                !(
-                  (canTakeAction || isRequestor) &&
-                  incident.status !== INCIDENT_STATUS.CLOSED
-                ) || isAuditTrailExpanded
+              isExpanded={isAuditTrailExpanded}
+              onToggleExpand={
+                showActionArea && incident.status !== INCIDENT_STATUS.CLOSED
+                  ? () => setIsAuditTrailExpanded((prev) => !prev)
+                  : null
               }
-              onToggleExpand={() => setIsAuditTrailExpanded((prev) => !prev)}
             />
           </Box>
 
-          {(canTakeAction || isRequestor) &&
-            incident.status !== INCIDENT_STATUS.CLOSED &&
-            !isAuditTrailExpanded && (
-              <>
-                {canUserConfirm ? (
-                  <Paper elevation={3} sx={{ p: 3 }}>
-                    <Typography variant="h5" gutterBottom>
-                      Resolution Feedback
-                    </Typography>
-                    <Divider sx={{ mb: 2 }} />
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      The support team has marked this incident as resolved.
-                      Please provide your feedback to close the ticket or let us
-                      know if the issue persists.
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      onClick={() =>
-                        handleOpenDialog(
-                          DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION
-                        )
-                      }
-                      fullWidth
-                      size="large"
-                    >
-                      Confirm Resolution
-                    </Button>
-                  </Paper>
-                ) : (
-                  <IncidentActionForm
-                    incident={incident}
-                    onUpdate={handleUpdate}
-                    onOpenResolveDialog={() =>
-                      handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
-                    }
-                    showResetButton={showResetButton}
-                    onOpenResetDialog={() => setIsResetModalOpen(true)}
-                    isRequestor={isRequestor}
-                    canUserClose={canUserClose}
-                    onUserClose={() =>
-                      handleOpenDialog(DIALOG_CONTEXTS.USER_CLOSE)
-                    }
-                    canUserConfirm={canUserConfirm}
-                    onUserConfirm={() =>
+          {showActionArea && incident.status !== INCIDENT_STATUS.CLOSED && (
+            <Box
+              sx={{
+                flex: isAuditTrailExpanded ? "1 1 0%" : "1 1 calc(50% - 4px)", // USE CALC() TO ACCOUNT FOR SPACING
+                minHeight: 0,
+                opacity: isAuditTrailExpanded ? 0 : 1,
+                visibility: isAuditTrailExpanded ? "hidden" : "visible",
+                transition: "flex 0.3s ease-in-out, opacity 0.2s ease-in-out",
+                zIndex: 2,
+              }}
+            >
+              {canUserConfirm ? (
+                <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
+                  <Typography variant="h5" gutterBottom>
+                    Resolution Feedback
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    The support team has marked this incident as resolved.
+                    Please provide your feedback to close the ticket or let us
+                    know if the issue persists.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    onClick={() =>
                       handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
                     }
-                    isDisabled={
-                      incident.status === INCIDENT_STATUS.NEW && isRequestor
-                    }
-                    showReferToTelecomButton={canReferToTelecom}
-                    onOpenTelecomReferralDialog={() =>
-                      setReferralModalOpen(true)
-                    }
-                  />
-                )}
-              </>
-            )}
+                    fullWidth
+                    size="large"
+                  >
+                    Confirm Resolution
+                  </Button>
+                </Paper>
+              ) : (
+                <IncidentActionForm
+                  incident={incident}
+                  onUpdate={handleUpdate}
+                  onOpenResolveDialog={() =>
+                    handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
+                  }
+                  showResetButton={showResetButton}
+                  onOpenResetDialog={() => setIsResetModalOpen(true)}
+                  isRequestor={isRequestor}
+                  canUserClose={canUserClose}
+                  onUserClose={() =>
+                    handleOpenDialog(DIALOG_CONTEXTS.USER_CLOSE)
+                  }
+                  canUserConfirm={canUserConfirm}
+                  onUserConfirm={() =>
+                    handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
+                  }
+                  isDisabled={
+                    incident.status === INCIDENT_STATUS.NEW && isRequestor
+                  }
+                  showReferToTelecomButton={canReferToTelecom}
+                  onOpenTelecomReferralDialog={() => setReferralModalOpen(true)}
+                />
+              )}
+            </Box>
+          )}
         </Stack>
       </Box>
       <ResolutionDialog

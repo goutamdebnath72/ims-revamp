@@ -16,6 +16,7 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
+import { TEAMS } from "@/lib/constants";
 
 // TODO: Replace this placeholder list with your final list of tasks from the Telecom dept.
 const telecomTasksList = [
@@ -44,7 +45,7 @@ export default function TelecomReferralModal({ open, onClose, onSubmit }) {
     onSubmit({
       tasks: selectedTasks,
       comment,
-      assignedTeam: "Telecom",
+      assignedTeam: TEAMS.TELECOM,
     });
     onClose();
   };

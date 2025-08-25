@@ -20,14 +20,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { INCIDENT_STATUS } from "@/lib/constants";
 
 const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
-  {
-    auditTrail,
-    incident,
-    isResolved,
-    onCommentEdit,
-    isExpanded,
-    onToggleExpand,
-  },
+  { auditTrail, incident, onCommentEdit, isExpanded, onToggleExpand },
   ref
 ) {
   const scrollContainerRef = React.useRef(null);
@@ -54,9 +47,13 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
       }
     };
     checkOverflow();
+    const debouncedCheck = setTimeout(checkOverflow, 100); // Debounce for resize
     window.addEventListener("resize", checkOverflow);
-    return () => window.removeEventListener("resize", checkOverflow);
-  }, [auditTrail]); // Only depends on auditTrail
+    return () => {
+      clearTimeout(debouncedCheck);
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [auditTrail]);
 
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
@@ -69,7 +66,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
       .toFormat("ccc LLL d yyyy h:mm a");
   };
 
-  const showExpandButton = canExpand && !isResolved;
+  const showExpandButton = canExpand && onToggleExpand;
 
   if (!auditTrail || auditTrail.length === 0) {
     return (
@@ -108,7 +105,8 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
           <Typography variant="h5" gutterBottom sx={{ mb: 0 }}>
             Audit Trail
           </Typography>
-          {isResolved && (
+          {(incident.status === INCIDENT_STATUS.RESOLVED ||
+            incident.status === INCIDENT_STATUS.CLOSED) && (
             <Button
               variant="contained"
               size="small"
@@ -130,23 +128,16 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
           p: 0,
           py: 1.5,
           flexGrow: 1,
-          overflowY: "auto",
+          overflowY: "scroll",
         }}
       >
         {auditTrail.map((entry, index) => {
-          const isResolvedEntry = entry.action
-            .toLowerCase()
-            .includes("resolved");
-          // --- START: NEW, CORRECT LOGIC ---
-          // Find the index of the absolute last "resolved" or "closed" entry in the entire trail
           const finalActionIndex = auditTrail.findLastIndex(
             (e) =>
               e.action.toLowerCase().includes("resolved") ||
               e.action.toLowerCase().includes("closed")
           );
-          // The special styling should only apply if the current entry IS that final one
           const isTheFinalAction = index === finalActionIndex;
-          // --- END: NEW, CORRECT LOGIC ---
           const isFinalEntry =
             entry.action.toLowerCase().includes("resolved") ||
             entry.action.toLowerCase().includes("closed");
@@ -180,7 +171,6 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         }
                         incidentStatus={incident.status}
                       />
-                      {/* This part for showing the rating is correct */}
                       {entry.rating && (
                         <Box
                           sx={{ display: "flex", alignItems: "center", mt: 1 }}
@@ -217,7 +207,6 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                         display: "block",
                         textAlign: "right",
                         mt: 1,
-                        // Style restored from your old file
                         fontWeight: isFinalEntry ? "bold" : "normal",
                         color: "text.secondary",
                       }}
@@ -225,11 +214,9 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
                       <span>{`${entry.author} — `}</span>
                       <span
                         style={{
-                          // Style restored from your old file
                           textDecoration: isFinalEntry ? "underline" : "none",
                         }}
                       >
-                        {/* Correct date formatting from your new file */}
                         {entry.isEdited && entry.editedAt
                           ? `(edited) ${formatTimestamp(entry.editedAt)}`
                           : formatTimestamp(entry.timestamp)}
@@ -254,6 +241,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
             bgcolor: "background.paper",
             borderRadius: "50%",
             p: 0.25,
+            zIndex: 3, // <-- ADDED Z-INDEX
           }}
         >
           <IconButton

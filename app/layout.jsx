@@ -2,6 +2,7 @@ import * as React from "react";
 import { Suspense } from "react";
 import ThemeRegistry from "./ThemeRegistry";
 import { AppProviders } from "./providers";
+import './globals.css';
 
 export const metadata = {
   title: "IMS Application",
@@ -15,7 +16,7 @@ export default function RootLayout({ children }) {
       <body
         style={{
           margin: 0,
-          background: "linear-gradient(to top, #eef2f3, #ffffff)",
+          background: "#eef2f3",
           fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
         }}
       >
