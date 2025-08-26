@@ -2,7 +2,7 @@ import * as React from "react";
 import { Suspense } from "react";
 import ThemeRegistry from "./ThemeRegistry";
 import { AppProviders } from "./providers";
-import './globals.css';
+import { LoadingProvider } from "@/context/LoadingContext"; // Import the new provider
 
 export const metadata = {
   title: "IMS Application",
@@ -21,12 +21,10 @@ export default function RootLayout({ children }) {
         }}
       >
         <ThemeRegistry>
-          {/*
-              2. WRAP YOUR APP PROVIDERS IN SUSPENSE
-              This is the fix for the build error.
-            */}
           <Suspense fallback={<div>Loading...</div>}>
-            <AppProviders>{children}</AppProviders>
+            <AppProviders>
+              <LoadingProvider>{children}</LoadingProvider>
+            </AppProviders>
           </Suspense>
         </ThemeRegistry>
       </body>

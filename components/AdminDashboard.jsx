@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DashboardFilterContext } from "@/context/DashboardFilterContext";
 import { isSystemIncident } from "@/lib/incident-helpers";
 import {
@@ -20,6 +21,7 @@ import {
   Chip,
   Tooltip,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -32,35 +34,25 @@ import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 import ViewToggle from "@/components/ViewToggle";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
-import { INCIDENT_STATUS } from '@/lib/constants';
-
-
+import { INCIDENT_STATUS } from "@/lib/constants";
 
 export default function AdminDashboard() {
   const cardContainerStyles = {
-    height: 380, // Can adjust this "sweet spot" value
+    height: 380,
     display: "flex",
     flexDirection: "column",
   };
-
   const { data: session } = useSession();
   const user = session?.user;
+  const router = useRouter();
 
-  //console.log("DASHBOARD RENDER: User object is", user);
-
-  // --- REFACTORED ---
-  // Data now comes directly from the context.
-  // This assumes our DashboardFilterContext provides these values.
   const { filters, setFilters, resetFilters, incidents, isLoading, error } =
     React.useContext(DashboardFilterContext);
   const { dateRange, shift } = filters;
 
-  // --- DELETED ---
-  // The useSWR hook, buildQueryString function, and fetcher function have been removed.
-  // The context is now responsible for all data fetching.
-
   const [view, setView] = React.useState("general");
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [isNavigating, setIsNavigating] = React.useState(false); // State for card navigation
   const open = Boolean(anchorEl);
 
   const handleShiftChange = (event, newShift) => {
@@ -88,9 +80,14 @@ export default function AdminDashboard() {
     handleClose();
   };
 
+  const handleCardClick = (url) => {
+    setIsNavigating(true);
+    router.push(url);
+  };
+
   const incidentsToDisplay = React.useMemo(() => {
     const category = user?.role === "sys_admin" ? view : "general";
-    if (!incidents) return []; // Now uses incidents from context
+    if (!incidents) return [];
     return incidents.filter((incident) => {
       const isSys = isSystemIncident(incident);
       if (category === "system") return isSys;
@@ -188,7 +185,7 @@ export default function AdminDashboard() {
 
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
-    if (!start || !end) return "All Time"; // Handle "All Time"
+    if (!start || !end) return "All Time";
     const now = DateTime.local().setZone("Asia/Kolkata");
     if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
     if (
@@ -205,15 +202,6 @@ export default function AdminDashboard() {
       return start.toFormat("d MMM, yy");
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
-
-  // --- INSERT CONSOLE.LOG FOR DEBUGGING ---
-  /*console.log("DEBUG: Checking visibility conditions", { 
-    userRole: user?.role, 
-    currentView: view,
-    isAdmin: user?.role === "admin",
-    isSysAdminInGeneral: user?.role === "sys_admin" && view === "general"
-  });*/
-  // -----------------------------------------
 
   const showTeamAvailability =
     user?.role === "admin" ||
@@ -323,75 +311,72 @@ export default function AdminDashboard() {
         </Box>
       </Menu>
 
-      {/* This debug box now uses the state from the context */}
-      {/*<Box sx={{ p: 2, border: "2px solid red", borderRadius: 1 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
-          Context Debugger:
-        </Typography>
-        {isLoading && (
-          <Typography>
-            Current Status: <strong>Loading...</strong>
-          </Typography>
-        )}
-        {error && (
-          <Typography>
-            Current Status: <strong>Error!</strong> Failed to fetch data.
-          </Typography>
-        )}
-        {incidents && (
-          <Typography>
-            Current Status: <strong>Success!</strong> Found {incidents.length}{" "}
-            incidents.
-          </Typography>
-        )}
-        {!isLoading && !error && !incidents && (
-          <Typography>
-            Current Status: <strong>Idle</strong>
-          </Typography>
-        )}
-      </Box>*/}
-
-      <Stack direction="row" spacing={3}>
-        {statCardsData.map((card, index) => (
-          <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
-            <Card elevation={3} sx={{ height: "100%" }}>
-              <CardActionArea
-                component={Link}
-                href={constructCardUrl(card.filterStatus)}
-                sx={{ height: "100%" }}
-              >
-                <CardContent
-                  sx={{
-                    textAlign: "center",
-                    minHeight: 120,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
+      <Box sx={{ position: "relative" }}>
+        <Stack
+          direction="row"
+          spacing={3}
+          sx={{ opacity: isNavigating ? 0.5 : 1 }}
+        >
+          {statCardsData.map((card, index) => (
+            <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
+              <Card elevation={3} sx={{ height: "100%" }}>
+                <CardActionArea
+                  onClick={() =>
+                    handleCardClick(constructCardUrl(card.filterStatus))
+                  }
+                  sx={{ height: "100%" }}
+                  disabled={isNavigating}
                 >
-                  <Typography
-                    sx={{ fontSize: 14 }}
-                    color="text.secondary"
-                    gutterBottom
+                  <CardContent
+                    sx={{
+                      textAlign: "center",
+                      minHeight: 120,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                    }}
                   >
-                    {card.title}
-                  </Typography>
-                  <Typography
-                    variant={getNumberVariant(card.value)}
-                    component="div"
-                    color={`${card.color}.main`}
-                  >
-                    <CountUp end={card.value} duration={1.5} separator="," />
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
+                    <Typography
+                      sx={{ fontSize: 14 }}
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      {card.title}
+                    </Typography>
+                    <Typography
+                      variant={getNumberVariant(card.value)}
+                      component="div"
+                      color={`${card.color}.main`}
+                    >
+                      <CountUp end={card.value} duration={1.5} separator="," />
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </Box>
+          ))}
+        </Stack>
+        {isNavigating && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10,
+            }}
+          >
+            <CircularProgress />
           </Box>
-        ))}
-      </Stack>
+        )}
+      </Box>
+
       {showTeamAvailability ? (
         <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
-          {/* Left Column */}
           <Stack sx={{ flex: 7 }} spacing={3}>
             <Card
               elevation={3}
@@ -404,13 +389,11 @@ export default function AdminDashboard() {
             >
               <StatusChart data={statusChartData} />
             </Card>
-            {/* Add the styled wrapper around the card */}
             <Box sx={cardContainerStyles}>
               <RecentIncidentsCard incidents={incidentsToDisplay} />
             </Box>
           </Stack>
 
-          {/* Right Column */}
           <Stack sx={{ flex: 5 }} spacing={3}>
             <Card
               elevation={3}
@@ -422,7 +405,9 @@ export default function AdminDashboard() {
               }}
             >
               <PriorityChart
-                key={`${shift}-${String(dateRange.start)}-${String(dateRange.end)}`}
+                key={`${shift}-${String(dateRange.start)}-${String(
+                  dateRange.end
+                )}`}
                 data={priorityChartData}
                 view={view}
                 dateRange={dateRange}
@@ -430,14 +415,12 @@ export default function AdminDashboard() {
                 shift={shift}
               />
             </Card>
-            {/* Add the styled wrapper around the card */}
             <Box sx={cardContainerStyles}>
               <TeamAvailabilityCard />
             </Box>
           </Stack>
         </Stack>
       ) : (
-        //console.log("DEBUG: Executing RENDER PATH for --> System View Layout"),
         <Stack spacing={3}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
             <Box sx={{ flex: 7 }}>

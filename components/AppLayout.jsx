@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SettingsContext } from "@/context/SettingsContext";
+import { useLoading } from "@/context/LoadingContext"; // Import the new hook
 import { getCurrentShift } from "@/lib/date-helpers";
 import InfoTooltip from "./InfoTooltip";
 import {
@@ -25,6 +26,7 @@ import {
   Switch,
   Stack,
   Chip,
+  CircularProgress, // Import CircularProgress
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
@@ -33,11 +35,9 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from "@mui/icons-material/Spellcheck";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useSession, signOut } from "next-auth/react";
-import PersonIcon from "@mui/icons-material/Person";
 import { SearchContext } from "@/context/SearchContext";
-import { useContext } from "react";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
+// ... (spellCheckTooltipText and allMenuItems constants remain the same)
 const spellCheckTooltipText = (
   <Stack spacing={1.5}>
     <Box>
@@ -68,10 +68,7 @@ const spellCheckTooltipText = (
     </Box>
   </Stack>
 );
-
 const drawerWidth = 240;
-
-// --- FIX: ADDED 'network_vendor' TO THE ROLES THAT CAN SEE THESE MENU ITEMS ---
 const allMenuItems = [
   {
     text: "Dashboard",
@@ -105,7 +102,7 @@ const allMenuItems = [
     text: "Raise Incident",
     icon: <PostAddIcon />,
     href: "/raise",
-    roles: ["admin", "standard", "sys_admin"], // Vendor cannot raise incidents
+    roles: ["admin", "standard", "sys_admin"],
   },
   {
     text: "Pending Incidents (SYS)",
@@ -125,12 +122,17 @@ const allMenuItems = [
 export default function AppLayout({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { resetSearch } = useContext(SearchContext);
+  const { resetSearch } = React.useContext(SearchContext);
   const pathname = usePathname();
   const user = session?.user;
+
+  // Consume the new loading context
+  const { isNavigating, setIsNavigating } = useLoading();
+
   const logout = () => signOut({ callbackUrl: "/login" });
   const { isSpellcheckEnabled, toggleSpellcheck } =
     React.useContext(SettingsContext);
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
@@ -141,20 +143,22 @@ export default function AppLayout({ children }) {
     logout();
   };
 
+  // New unified click handler for all sidebar links
+  const handleLinkClick = (href) => {
+    if (pathname !== href) {
+      setIsNavigating(true);
+    }
+    if (href === "/search" && pathname === "/search") {
+      resetSearch();
+    } else {
+      router.push(href);
+    }
+  };
+
   const visibleMenuItems = allMenuItems.filter((item) =>
     item.roles.includes(user?.role)
   );
 
-  const handleSearchLinkClick = () => {
-    if (pathname === "/search") {
-      // If we are already on the page, reset its state first.
-      resetSearch();
-    }
-    // Then, in all cases, navigate to the search page.
-    router.push("/search");
-  };
-
-  const isCnIT = user?.role === "admin";
   const [currentShift, setCurrentShift] = React.useState(getCurrentShift());
 
   React.useEffect(() => {
@@ -172,15 +176,6 @@ export default function AppLayout({ children }) {
     const logoutTimer = setInterval(() => {
       if (user?.role === "admin" && user?.loginShift) {
         const latestShift = getCurrentShift();
-        /*console.log({
-          message: "Auto-logout check running...",
-          loginShift_from_session: user.loginShift,
-          currentShift_calculated_on_client: latestShift,
-          shouldLogout: latestShift !== user.loginShift,
-          currentTime_IST: new Date().toLocaleString("en-US", {
-            timeZone: "Asia/Kolkata",
-          }),
-        });*/
         if (latestShift !== user.loginShift) {
           logout();
         }
@@ -213,7 +208,7 @@ export default function AppLayout({ children }) {
             <Typography variant="h6" noWrap component="div">
               Incident Management System - DSP
             </Typography>
-            {isCnIT && (
+            {user?.role === "admin" && (
               <Chip
                 label={
                   <Box
@@ -250,17 +245,15 @@ export default function AppLayout({ children }) {
             </Typography>
             <IconButton onClick={handleMenu} sx={{ p: 0 }}>
               {["admin", "sys_admin", "standard"].includes(user?.role) ? (
-                // If the role matches, display the image from the public folder
                 <Avatar
                   alt={user.name}
                   src="/purple_more_thicker.png"
                   sx={{
-                    width: "45px", // Adjust size as needed to match the original Avatar
+                    width: "45px",
                     height: "45px",
                   }}
                 />
               ) : (
-                // For all other roles, display the first initial
                 <Avatar
                   sx={{
                     bgcolor: "secondary.main",
@@ -315,17 +308,13 @@ export default function AppLayout({ children }) {
             <React.Fragment key={item.text}>
               {item.divider && <Divider sx={{ my: 1 }} />}
               <ListItem disablePadding>
-                {item.text === "Search & Archive" ? (
-                  <ListItemButton onClick={handleSearchLinkClick}>
-                    <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.text} />
-                  </ListItemButton>
-                ) : (
-                  <ListItemButton LinkComponent={Link} href={item.href}>
-                    <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.text} />
-                  </ListItemButton>
-                )}
+                <ListItemButton
+                  onClick={() => handleLinkClick(item.href)}
+                  disabled={isNavigating}
+                >
+                  <ListItemIcon>{item.icon}</ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
               </ListItem>
             </React.Fragment>
           ))}
@@ -339,10 +328,31 @@ export default function AppLayout({ children }) {
           p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           overflow: "auto",
+          position: "relative", // Add for positioning context
         }}
       >
         <Toolbar />
         {children}
+
+        {/* --- ADD THIS LOADING OVERLAY BLOCK --- */}
+        {isNavigating && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "rgba(255, 255, 255, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        )}
       </Box>
     </Box>
   );
