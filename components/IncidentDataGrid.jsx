@@ -1,10 +1,10 @@
 "use client";
 
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
-import { Chip } from "@mui/material";
+import { Chip, CircularProgress } from "@mui/material";
 import { DateTime } from "luxon";
 
 const columns = [
@@ -14,7 +14,7 @@ const columns = [
     headerName: "Incident Type",
     flex: 1.5,
     minWidth: 200,
-    valueGetter: (_value, row) => row.incidentType?.name || "", //  common convention for unused parameters is to prefix with an underscore (_).
+    valueGetter: (_value, row) => row.incidentType?.name || "",
   },
   { field: "location", headerName: "Location", flex: 1.5, minWidth: 200 },
   {
@@ -74,37 +74,60 @@ const columns = [
 
 function IncidentDataGrid({ rows, loading }) {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false); // Add navigating state
 
   const handleRowClick = (params) => {
+    setIsNavigating(true); // Set navigating to true on click
     const incidentId = params.row.id;
     router.push(`/incidents/${incidentId}`);
   };
 
-   return (
-    <DataGrid
-      rows={rows.filter(row => row && row.id)}
-      columns={columns}
-      loading={loading}
-      onRowClick={handleRowClick}
-      hideFooterPagination={true}
-      stickyHeader
-      sx={{
-        "& .MuiDataGrid-row:hover": {
-          cursor: "pointer",
-        },
-      }}
-      initialState={{
-        pagination: {
-          paginationModel: { page: 0, pageSize: 20 },
-        },
-        sorting: {
-          sortModel: [{ field: "reportedOn", sort: "desc" }],
-        },
-      }}
-      pageSizeOptions={[10, 20, 50]}
-      checkboxSelection
-      disableRowSelectionOnClick
-    />
+  return (
+    <Box sx={{ position: "relative", height: "100%", width: "100%" }}>
+      <DataGrid
+        rows={rows.filter((row) => row && row.id)}
+        columns={columns}
+        loading={loading}
+        onRowClick={handleRowClick}
+        hideFooterPagination={true}
+        stickyHeader
+        sx={{
+          "& .MuiDataGrid-row:hover": {
+            cursor: "pointer",
+          },
+          // Make grid transparent when navigating to see spinner behind it
+          opacity: isNavigating ? 0.5 : 1,
+        }}
+        initialState={{
+          pagination: {
+            paginationModel: { page: 0, pageSize: 20 },
+          },
+          sorting: {
+            sortModel: [{ field: "reportedOn", sort: "desc" }],
+          },
+        }}
+        pageSizeOptions={[10, 20, 50]}
+        checkboxSelection
+        disableRowSelectionOnClick
+      />
+      {isNavigating && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )}
+    </Box>
   );
 }
 

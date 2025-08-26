@@ -11,18 +11,18 @@ import {
   Divider,
   Box,
   ListItemButton,
+  CircularProgress, // Import CircularProgress
 } from "@mui/material";
 import { DateTime } from "luxon";
 
 export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = React.useState(false); // Add loading state
 
   const recentIncidents = [...(incidents || [])]
     .sort((a, b) => {
-      const format = "d MMM yyyy HH:mm";
-      const dateA = DateTime.fromISO(a.reportedOn,{ zone: "Asia/Kolkata" }, format);
-      const dateB = DateTime.fromISO(b.reportedOn,{ zone: "Asia/Kolkata" }, format);
-      // Subtracting timestamps gives a reliable descending sort
+      const dateA = DateTime.fromISO(a.reportedOn, { zone: "Asia/Kolkata" });
+      const dateB = DateTime.fromISO(b.reportedOn, { zone: "Asia/Kolkata" });
       return dateB.toMillis() - dateA.toMillis();
     })
     .slice(0, 5);
@@ -42,13 +42,20 @@ export default function RecentIncidentsCard({ incidents }) {
   };
 
   const handleItemClick = (id) => {
+    setIsLoading(true); // Set loading to true on click
     router.push(`/incidents/${id}`);
   };
 
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, display: "flex", flexDirection: "column", height: "100%" }}
+      sx={{
+        p: 3,
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        position: "relative", // Make Paper a positioning context
+      }}
     >
       <Typography variant="h6" gutterBottom>
         Recent Activity
@@ -59,7 +66,6 @@ export default function RecentIncidentsCard({ incidents }) {
           width: "100%",
           bgcolor: "background.paper",
           p: 0,
-          //maxHeight: 220,
           overflowY: "auto",
         }}
       >
@@ -68,6 +74,7 @@ export default function RecentIncidentsCard({ incidents }) {
             key={incident.id}
             divider={index < recentIncidents.length - 1}
             onClick={() => handleItemClick(incident.id)}
+            disabled={isLoading} // Optionally disable button during load
             sx={{ py: 1.5 }}
           >
             <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
@@ -106,9 +113,9 @@ export default function RecentIncidentsCard({ incidents }) {
                     display: { xs: "none", md: "block" },
                   }}
                 >
-                  {DateTime.fromISO(incident.reportedOn,{ zone: "Asia/Kolkata" }).toFormat(
-                    "dd MMM, h:mm a"
-                  )}
+                  {DateTime.fromISO(incident.reportedOn, {
+                    zone: "Asia/Kolkata",
+                  }).toFormat("dd MMM, h:mm a")}
                 </Typography>
                 <Box sx={{ width: "95px" }}>
                   <Chip
@@ -132,6 +139,27 @@ export default function RecentIncidentsCard({ incidents }) {
           </Typography>
         )}
       </List>
+
+      {/* --- ADD THIS LOADING OVERLAY BLOCK --- */}
+      {isLoading && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+            borderRadius: "4px", // Match Paper's default border-radius
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )}
     </Paper>
   );
 }
