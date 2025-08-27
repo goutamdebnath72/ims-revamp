@@ -139,7 +139,21 @@ export default function IncidentDetailsPage() {
   const isAssignedTelecomUser =
     user?.department === TEAMS.TELECOM &&
     incident?.assignedTeam === TEAMS.TELECOM;
-  const showActionArea = isAdmin || isRequestor || isAssignedTelecomUser;
+
+  // --- NEW VENDOR LOGIC ---
+  const isNetworkVendor =
+    user?.role === USER_ROLES.NETWORK_VENDOR &&
+    incident.incidentType?.name === INCIDENT_TYPES.NETWORK;
+  const isBiometricVendor =
+    user?.role === USER_ROLES.BIOMETRIC_VENDOR &&
+    incident.incidentType?.name === "BIOMETRIC"; // Assuming a constant
+  const isAssignedVendor =
+    (isNetworkVendor || isBiometricVendor) &&
+    incident.status === INCIDENT_STATUS.PROCESSED;
+
+  const showActionArea =
+    isAdmin || isRequestor || isAssignedTelecomUser || isAssignedVendor;
+
   const isResolved =
     incident.status === INCIDENT_STATUS.RESOLVED ||
     incident.status === INCIDENT_STATUS.CLOSED ||
@@ -295,10 +309,10 @@ export default function IncidentDetailsPage() {
             onOpenDescriptionModal={() => setDescriptionModalOpen(true)}
           />
         </Box>
-        <Stack sx={{ flex: 5, minWidth: 0, height: "100%" }} spacing={0.5}>
+        <Stack sx={{ flex: 5, minWidth: 0, height: "100%" }} spacing={1}>
           <Box
             sx={{
-              flex: isAuditTrailExpanded ? "1 1 100%" : "1 1 calc(50% - 4px)", // USE CALC() TO ACCOUNT FOR SPACING
+              flex: isAuditTrailExpanded ? "1 1 100%" : "1 1 calc(50% - 4px)",
               minHeight: 0,
               display: "flex",
               position: "relative",
@@ -318,11 +332,10 @@ export default function IncidentDetailsPage() {
               }
             />
           </Box>
-
           {showActionArea && incident.status !== INCIDENT_STATUS.CLOSED && (
             <Box
               sx={{
-                flex: isAuditTrailExpanded ? "1 1 0%" : "1 1 calc(50% - 4px)", // USE CALC() TO ACCOUNT FOR SPACING
+                flex: isAuditTrailExpanded ? "1 1 0%" : "1 1 calc(50% - 4px)",
                 minHeight: 0,
                 opacity: isAuditTrailExpanded ? 0 : 1,
                 visibility: isAuditTrailExpanded ? "hidden" : "visible",
@@ -372,10 +385,14 @@ export default function IncidentDetailsPage() {
                     handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
                   }
                   isDisabled={
-                    incident.status === INCIDENT_STATUS.NEW && isRequestor
-                  }
+                    incident.status === INCIDENT_STATUS.NEW &&
+                    isRequestor &&
+                    !isAdmin
+                  } // Corrected isDisabled logic
                   showReferToTelecomButton={canReferToTelecom}
                   onOpenTelecomReferralDialog={() => setReferralModalOpen(true)}
+                  isAdmin={isAdmin} // Pass isAdmin prop
+                  isAssignedVendor={isAssignedVendor} // Pass isAssignedVendor prop
                 />
               )}
             </Box>

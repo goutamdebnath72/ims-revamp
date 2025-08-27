@@ -92,9 +92,11 @@ export default function LoginPage() {
       sx={{
         height: "100vh",
         width: "100%",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "row",
-        alignItems: "center",
+        //alignItems: "center", // This property will cause the flex items (the left and right columns)
+        // to default to alignItems: "stretch", making them fill the full 100vh height
         background: "linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)",
         padding: 0,
         opacity: 0,
@@ -125,7 +127,7 @@ export default function LoginPage() {
           alignItems: "center",
           justifyContent: "center",
           flex: "0 0 1px",
-          height: "700px",
+          height: "85%",
           backgroundColor: "rgba(0, 0, 0, 0.2)",
           alignSelf: "center",
           mx: 0,
@@ -144,9 +146,8 @@ export default function LoginPage() {
       >
         <Box
           sx={{
-            width: "100%",
-            maxWidth: "440px",
-            minHeight: "505px",
+            aspectRatio: 0.85,
+            height: "55%",
             position: "relative",
             display: "flex",
             flexDirection: "column",
@@ -160,7 +161,7 @@ export default function LoginPage() {
               px: 4,
               py: 3,
               width: "100%",
-              minHeight: "100%",
+              height: "100%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -170,15 +171,23 @@ export default function LoginPage() {
               border: "1px solid rgba(0, 0, 0, 0.05)",
             }}
           >
-            {/* Logo */}
-            <Box sx={{ mb: 2 }}>
+            {/* --- RESPONSIVE LOGO (JERK FIXED) --- */}
+            <Box
+              sx={{
+                position: "relative",
+                width: "35%",
+                maxWidth: "130px",
+                aspectRatio: "1 / 1.05",
+                mb: 2,
+              }}
+            >
               <Image
                 src="/sail-logo.png"
                 alt="SAIL Logo"
-                width={130}
-                height={0}
+                fill
                 priority
-                style={{ height: "auto", width: "130px" }}
+                sizes="(max-width: 600px) 30vw, 130px"
+                style={{ objectFit: "contain" }}
               />
             </Box>
 

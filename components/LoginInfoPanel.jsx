@@ -48,10 +48,9 @@ export default function LoginInfoPanel() {
     <Paper
       elevation={8}
       sx={{
-        width: "100%",
-        maxWidth: "450px",
-        minHeight: "650px",
-        maxHeight: "calc(100vh - 150px)",
+        aspectRatio: 0.692,
+        height: "71.4%",
+        //maxHeight: "calc(100vh - 150px)",
         overflowY: "auto",
         borderRadius: 2,
         bgcolor: "background.paper",

@@ -4,19 +4,25 @@ import * as React from "react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import InfoTooltip from "./InfoTooltip";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
-import Button from "@mui/material/Button";
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import FormHelperText from "@mui/material/FormHelperText";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
+import {
+  TextField,
+  MenuItem,
+  Button,
+  Box,
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText,
+  Stack,
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
+  FormLabel,
+} from "@mui/material";
 
 const priorities = ["Low", "Medium", "High"];
+
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 const contactTooltipText = (
@@ -50,12 +56,18 @@ const descriptionTooltipText = (
 export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const { data: session } = useSession();
   const user = session?.user;
-  const loggedInUserTicketNo = session?.user?.ticketNo;
   const isExecutive = user?.id?.startsWith("4");
+  const isAdmin = user?.role === "admin" || user?.role === "sys_admin";
+
+  const [raiseFor, setRaiseFor] = React.useState("self");
+  const [affectedTicketNoInput, setAffectedTicketNoInput] = React.useState("");
+  const [foundUser, setFoundUser] = React.useState(null);
+  const [lookupError, setLookupError] = React.useState("");
+  const [isLookingUp, setIsLookingUp] = React.useState(false);
 
   const [formData, setFormData] = React.useState({
     incidentType: "",
-    affectedTicketNo: "",
+    affectedTicketNo: "", // For ESS Password
     priority: "Medium",
     department: "",
     location: "",
@@ -75,13 +87,53 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   );
 
   React.useEffect(() => {
-    // This sets the user's default department only after the department list has loaded
+    const handler = setTimeout(() => {
+      if (affectedTicketNoInput && affectedTicketNoInput.length === 6) {
+        setIsLookingUp(true);
+        setLookupError("");
+        setFoundUser(null);
+        fetch(`/api/users/lookup/${affectedTicketNoInput}`)
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("User not found");
+            }
+            return res.json();
+          })
+          .then((data) => {
+            // --- THIS IS THE NEW LOGIC TO PREVENT SELF-SELECTION ---
+            if (affectedTicketNoInput === user?.ticketNo) {
+              setLookupError(
+                "Please use the 'For Myself' option to raise an incident for yourself."
+              );
+              setFoundUser(null);
+            } else {
+              setFoundUser(data);
+            }
+            // --- END OF NEW LOGIC ---
+          })
+          .catch((err) => {
+            setLookupError(err.message);
+            setFoundUser(null);
+          })
+          .finally(() => {
+            setIsLookingUp(false);
+          });
+      } else {
+        setFoundUser(null);
+        setLookupError("");
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [affectedTicketNoInput, user?.ticketNo]); // Added user.ticketNo to dependency array
+
+  React.useEffect(() => {
     if (user?.departmentCode && departmentsData?.length > 0) {
-      // First, find the full department object that matches the user's code
       const userDepartment = departmentsData.find(
         (dept) => dept.code === user.departmentCode
       );
-      // If we found it, set the form's state to use the department's unique ID
       if (userDepartment) {
         setFormData((prev) => ({ ...prev, department: userDepartment.id }));
       }
@@ -105,14 +157,20 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
           }
         }
         break;
-      case "affectedTicketNo":
+      case "affectedTicketNo": // For ESS Password
         if (!value) {
           error = "Required.";
-        } else if (value === loggedInUserTicketNo) {
-          // <-- ADDED THIS CHECK
+        } else if (value === user?.ticketNo) {
           error = "You cannot raise a password reset request for yourself.";
         } else if (!/^\d{6}$/.test(value)) {
           error = "Please enter a valid 6-digit Ticket No.";
+        }
+        break;
+      case "affectedTicketNoInput": // For "Raise for Other"
+        if (!value) {
+          error = "Required.";
+        } else if (!foundUser) {
+          error = "A valid user must be found for this ticket number.";
         }
         break;
       case "incidentType":
@@ -136,17 +194,12 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
-    // First, check if the value is a string before trying to trim it
     const isString = typeof value === "string";
-
     const processedValue =
       isString && name !== "description" && name !== "jobTitle"
         ? value.trimStart()
         : value;
-
     setFormData((prev) => ({ ...prev, [name]: processedValue }));
-
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -154,41 +207,98 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const newErrors = {};
+    let newErrors = {};
     const trimmedFormData = {};
-
-    // Trim all string values before validation and submission
     for (const key in formData) {
       const value = formData[key];
       trimmedFormData[key] = typeof value === "string" ? value.trim() : value;
     }
 
     Object.keys(trimmedFormData).forEach((key) => {
-      // Skip validating affectedTicketNo if it's not an ESS Password incident
       if (
         key === "affectedTicketNo" &&
         trimmedFormData.incidentType?.toLowerCase() !== "ess password"
       ) {
         return;
       }
-
       const error = validateField(key, trimmedFormData[key]);
       if (error) {
         newErrors[key] = error;
       }
     });
 
-    setErrors(newErrors);
+    if (isAdmin && raiseFor === "other") {
+      const affectedUserError = validateField(
+        "affectedTicketNoInput",
+        affectedTicketNoInput
+      );
+      if (affectedUserError) {
+        newErrors.affectedTicketNoInput = affectedUserError;
+      }
+    }
 
+    setErrors(newErrors);
     if (Object.keys(newErrors).length === 0) {
-      onSubmit(trimmedFormData);
+      const finalPayload = { ...trimmedFormData };
+      if (isAdmin && raiseFor === "other" && foundUser) {
+        finalPayload.affectedUserId = foundUser.id;
+      }
+      onSubmit(finalPayload);
     }
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
       <Stack spacing={3}>
-        {/* ROW 1 */}
+        {isAdmin && (
+          <FormControl>
+            <FormLabel
+              sx={{ mb: 1, fontSize: "0.9rem", color: "text.secondary" }}
+            >
+              For Whom?
+            </FormLabel>
+            <ToggleButtonGroup
+              value={raiseFor}
+              exclusive
+              onChange={(e, newValue) => {
+                if (newValue) setRaiseFor(newValue);
+              }}
+              aria-label="raise for self or other"
+            >
+              <ToggleButton value="self" aria-label="for myself">
+                For Myself
+              </ToggleButton>
+              <ToggleButton value="other" aria-label="for another user">
+                For Another User
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </FormControl>
+        )}
+
+        {isAdmin && raiseFor === "other" && (
+          <TextField
+            required
+            fullWidth
+            name="affectedTicketNoInput"
+            label="Affected User's Ticket No."
+            value={affectedTicketNoInput}
+            onChange={(e) => setAffectedTicketNoInput(e.target.value.trim())}
+            onBlur={handleBlur}
+            error={!!errors.affectedTicketNoInput || !!lookupError}
+            InputProps={{
+              endAdornment: isLookingUp ? <CircularProgress size={20} /> : null,
+            }}
+            helperText={
+              errors.affectedTicketNoInput ||
+              lookupError ||
+              (foundUser
+                ? `Found User: ${foundUser.name}`
+                : "Enter the 6-digit ticket number.")
+            }
+            slotProps={{ input: { maxLength: 6 } }}
+          />
+        )}
+
         <Stack direction="row" spacing={2}>
           <FormControl
             fullWidth
@@ -214,7 +324,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               <FormHelperText>{errors.incidentType}</FormHelperText>
             )}
           </FormControl>
-
           <FormControl fullWidth required>
             <InputLabel>Priority</InputLabel>
             <Select
@@ -230,7 +339,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               ))}
             </Select>
           </FormControl>
-
           <FormControl
             fullWidth
             required
@@ -255,7 +363,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               <FormHelperText>{errors.department}</FormHelperText>
             )}
           </FormControl>
-
           <TextField
             required
             fullWidth
@@ -268,8 +375,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             helperText={errors.location || " "}
           />
         </Stack>
-        {/* --- REVISED CODE BLOCK FOR THE CONDITIONAL FIELD --- */}
-        {/* This will now appear on its own line */}
         {formData.incidentType?.toLowerCase() === "ess password" && (
           <Stack>
             <TextField
@@ -288,9 +393,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             />
           </Stack>
         )}
-        {/* --- END OF REVISED CODE BLOCK --- */}
-
-        {/* ROW 2 */}
         <Stack direction="row" spacing={2}>
           <InfoTooltip title={contactTooltipText} placement="top-start">
             <TextField
@@ -305,7 +407,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               helperText={errors.contactNumber || " "}
             />
           </InfoTooltip>
-
           <InfoTooltip title={jobTitleTooltipText} placement="top-start">
             <TextField
               required
@@ -319,7 +420,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               helperText={errors.jobTitle || " "}
             />
           </InfoTooltip>
-
           <TextField
             fullWidth
             disabled
@@ -333,8 +433,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             value={user?.name || ""}
           />
         </Stack>
-
-        {/* ROW 3 */}
         <InfoTooltip title={descriptionTooltipText} placement="top-start">
           <TextField
             required
@@ -350,8 +448,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             helperText={errors.description || " "}
           />
         </InfoTooltip>
-
-        {/* ROW 4 */}
         <Box sx={{ position: "relative" }}>
           <Button
             variant="contained"

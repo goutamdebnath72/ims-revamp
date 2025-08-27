@@ -8,15 +8,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model Department {
-  id    String @id @default(cuid())
-  code  Int    @unique
-  name  String
-
-  // Explicit relation name to avoid ambiguity
-  users User[] @relation("DepartmentUsers")
+  id      String  @id @default(cuid())
+  code    Int     @unique
+  name    String
+  section String  @default("N/A")
+  users   User[]  @relation("DepartmentUsers")
 
   @@map("departments")
 }
@@ -30,36 +27,25 @@ model IncidentType {
 }
 
 model User {
-  id        String @id @default(cuid())
-  role      String
-  name      String
-  password  String
-  ticketNo  String @unique
-
-  // REQUIRED + UNIQUE; we’ll set this = ticketNo in seed
-  essUserId String? @unique
-
-  
-  designation         String?  // <-- no ?
-
+  id                  String     @id @default(cuid())
+  role                String
+  name                String
+  password            String
+  ticketNo            String     @unique
+  essUserId           String?    @unique
+  designation         String?
   contactNo           String?
   emailId             String?
   emailIdNic          String?
-  sailPNo             String? @unique
-
-  // Required but defaults to now
-  passwordLastChanged DateTime @default(now())
-
-  // Department relation (explicit name)
-  department          Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
+  sailPNo             String?    @unique
+  passwordLastChanged DateTime   @default(now())
+  department          Department?  @relation("DepartmentUsers", fields: [departmentId], references: [id])
   departmentId        String?
-  
+  incidentsRequested  Incident[] @relation("UserRequestor")
+  incidentsAffected   Incident[] @relation("AffectedUserIncidents")
 
-  // Back-relation for incidents requested by this user
-  incidentsRequested Incident[] @relation("UserRequestor")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
   @@map("users")
 }
@@ -72,8 +58,7 @@ model AuditEntry {
   comment    String
   rating     Int?
   isEdited   Boolean  @default(false)
-  editedAt   DateTime?  
-
+  editedAt   DateTime?
   incident   Incident @relation(fields: [incidentId], references: [id])
   incidentId String
 
@@ -81,7 +66,7 @@ model AuditEntry {
 }
 
 model Incident {
-  id               String    @id @default(cuid())
+  id               String       @id @default(cuid())
   shiftDate        DateTime
   jobTitle         String
   description      String
@@ -90,23 +75,20 @@ model Incident {
   location         String?
   ipAddress        String?
   jobFrom          String?
-  reportedOn       DateTime  @default(now())
+  reportedOn       DateTime     @default(now())
   isTypeLocked     Boolean?
   isPriorityLocked Boolean?
   affectedTicketNo String?
   rating           Int?
-
   telecomTasks     String[]
-  assignedTeam     String   @default("C&IT")
+  assignedTeam     String       @default("C&IT")
   etlTasks         String[]
-
   incidentType     IncidentType @relation(fields: [incidentTypeId], references: [id])
   incidentTypeId   String
-
-  // Explicit relation name and back-field lives on User.incidentsRequested
-  requestor        User   @relation("UserRequestor", fields: [requestorId], references: [id])
+  requestor        User         @relation("UserRequestor", fields: [requestorId], references: [id])
   requestorId      String
-
+  affectedUser     User?        @relation("AffectedUserIncidents", fields: [affectedUserId], references: [id])
+  affectedUserId   String?
   auditTrail       AuditEntry[]
 
   @@map("incidents")
