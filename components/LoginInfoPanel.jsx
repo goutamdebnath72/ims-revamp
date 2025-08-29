@@ -7,6 +7,33 @@ import Stack from "@mui/material/Stack";
 import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 
+const INFO_FS = "clamp(1.05rem, 1.55vw, 1.45rem)";
+// Legend sizing knobs — tuned to match your xs:1.28, sm:1.48, md:1.55
+export const LEGEND_FS = "clamp(1.28rem, calc(1rem + 0.6vw), 1.55rem)";
+// (optional) letter-spacing that grows gently but stays capped
+export const LEGEND_LS = "clamp(0.10em, calc(0.10em + 0.10vw), 0.15em)";
+export const PAX_LS = "clamp(0.02em, calc(0.012em + 0.10vw), 0.06em)";
+// Bullet controls — tweak these three to taste
+// Bullet controls (scale with text size)
+export const BULLET_SIZE = "clamp(0.40em, 0.48em, 0.58em)"; // diameter
+export const BULLET_TOP = "clamp(0.48lh, 0.64lh, 0.68lh)"; // ↓ bigger = lower
+export const BULLET_LEFT = "clamp(0.40rem, 0.45vw, 0.70rem)"; // → bigger = more gap
+
+/* How clamp() actually works
+   clamp(min, preferred, max) returns the preferred value, but clipped to the min/max range:
+
+   result = max(min(preferred, max), min)
+
+   So:
+   
+   If preferred is between min & max → we get preferred.
+   
+   If preferred < min → you get min.
+   
+   If preferred > max → you get max.
+
+   That’s why changing only the max didn’t move your bullet: your current viewport was already using the preferred term.*/
+
 /* Bullet + line item that scales smoothly */
 const InfoListItem = ({ children }) => (
   <Box
@@ -17,12 +44,13 @@ const InfoListItem = ({ children }) => (
       "&::before": {
         content: '""',
         position: "absolute",
-        left: "clamp(0.35rem, 1vw, 0.7rem)",
-        top: "clamp(0.55rem, 1vw, 0.7rem)",
-        width: "clamp(6px, 0.55vw, 9px)",
-        height: "clamp(6px, 0.55vw, 9px)",
+        left: BULLET_LEFT,
+        top: BULLET_TOP,
+        width: BULLET_SIZE,
+        height: BULLET_SIZE,
         backgroundColor: "#5d92e8",
         borderRadius: "50%",
+        //transform: "translateY(-50%)",
       },
     }}
   >
@@ -32,9 +60,9 @@ const InfoListItem = ({ children }) => (
         fontFamily:
           '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
         // a touch smaller minimum + tighter line-height to avoid overflow
-        fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
+        fontSize: INFO_FS,
         fontWeight: 400,
-        lineHeight: 1.5,
+        lineHeight: 1.6,
       }}
     >
       {children}
@@ -93,8 +121,8 @@ export default function LoginInfoPanel() {
               fontFamily: '"Helvetica Neue",Helvetica,Arial,sans-serif',
               fontWeight: 700,
               // trims min size & letter-spacing so it never pushes borders on 14"
-              fontSize: "clamp(0.82rem, 1.25vw, 1.4rem)",
-              letterSpacing: "clamp(0.03em, 0.16vw, 0.12em)",
+              fontSize: LEGEND_FS,
+              letterSpacing: LEGEND_LS,
               color: "common.black",
               whiteSpace: "nowrap",
               textOverflow: "ellipsis",
@@ -125,7 +153,7 @@ export default function LoginInfoPanel() {
                 fontFamily:
                   '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
                 fontWeight: 400,
-                fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
+                fontSize: INFO_FS,
               }}
             >
               Read Before Login
@@ -141,7 +169,7 @@ export default function LoginInfoPanel() {
                 fontFamily:
                   '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
                 fontWeight: 400,
-                fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
+                fontSize: INFO_FS,
               }}
             >
               Terms of Use
@@ -155,7 +183,8 @@ export default function LoginInfoPanel() {
               sx={{
                 display: "inline-block",
                 fontWeight: 700,
-                fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
+                fontSize: "clamp(0.88rem, 1.35vw, 1.6rem)",
+                letterSpacing: PAX_LS,
                 color: "primary.main",
                 backgroundColor: "#e3f2fd",
                 padding: "clamp(1px, 0.25vw, 3px) clamp(4px, 0.5vw, 8px)",
