@@ -9,14 +9,14 @@ import Paper from "@mui/material/Paper";
 
 const INFO_FS = "clamp(1.05rem, 1.55vw, 1.45rem)";
 // Legend sizing knobs — tuned to match your xs:1.28, sm:1.48, md:1.55
-export const LEGEND_FS = "clamp(1.28rem, calc(1rem + 0.6vw), 1.55rem)";
+export const LEGEND_FS = "clamp(1.1rem, calc(1rem + 0.25vw), 1.55rem)";
 // (optional) letter-spacing that grows gently but stays capped
-export const LEGEND_LS = "clamp(0.10em, calc(0.10em + 0.10vw), 0.15em)";
+export const LEGEND_LS = "clamp(0.05em, calc(0.10em + 0.01vw), 0.15em)";
 export const PAX_LS = "clamp(0.02em, calc(0.012em + 0.10vw), 0.06em)";
 // Bullet controls — tweak these three to taste
 // Bullet controls (scale with text size)
 export const BULLET_SIZE = "clamp(0.40em, 0.48em, 0.58em)"; // diameter
-export const BULLET_TOP = "clamp(0.48lh, 0.64lh, 0.68lh)"; // ↓ bigger = lower
+export const BULLET_TOP = "clamp(0.40lh, 0.58lh, 0.68lh)"; // ↓ bigger = lower
 export const BULLET_LEFT = "clamp(0.40rem, 0.45vw, 0.70rem)"; // → bigger = more gap
 
 /* How clamp() actually works
@@ -62,7 +62,7 @@ const InfoListItem = ({ children }) => (
         // a touch smaller minimum + tighter line-height to avoid overflow
         fontSize: INFO_FS,
         fontWeight: 400,
-        lineHeight: 1.6,
+        lineHeight: 1.5,
       }}
     >
       {children}
