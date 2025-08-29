@@ -7,34 +7,34 @@ import Stack from "@mui/material/Stack";
 import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 
-// A sub-component for the list items to ensure consistent styling
+/* Bullet + line item that scales smoothly */
 const InfoListItem = ({ children }) => (
   <Box
     sx={{
       position: "relative",
-      pl: { xs: "1.5rem", md: "2rem" },
+      // slightly lighter indent to gain line length on 14"
+      pl: "clamp(0.9rem, 1.6vw, 1.6rem)",
       "&::before": {
         content: '""',
         position: "absolute",
-        left: "0.5rem",
-        top: "0.6rem",
-        width: "9px",
-        height: "9px",
+        left: "clamp(0.35rem, 1vw, 0.7rem)",
+        top: "clamp(0.55rem, 1vw, 0.7rem)",
+        width: "clamp(6px, 0.55vw, 9px)",
+        height: "clamp(6px, 0.55vw, 9px)",
         backgroundColor: "#5d92e8",
         borderRadius: "50%",
       },
     }}
   >
     <Typography
-      variant="body1"
+      component="span"
       sx={{
-        // Prioritizing Gill Sans as it's the font from the reference image.
         fontFamily:
-          '"Gill Sans", "Gill Sans MT", "Helvetica Neue", Helvetica, Arial, sans-serif',
-        fontSize: { xs: "1rem", sm: "1.15rem", md: "1.4rem" },
-
+          '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
+        // a touch smaller minimum + tighter line-height to avoid overflow
+        fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
         fontWeight: 400,
-        lineHeight: 1.7,
+        lineHeight: 1.5,
       }}
     >
       {children}
@@ -42,84 +42,96 @@ const InfoListItem = ({ children }) => (
   </Box>
 );
 
-// The main LoginInfoPanel component
 export default function LoginInfoPanel() {
   return (
     <Paper
       elevation={8}
       sx={{
         aspectRatio: 0.692,
-        // Use a responsive width instead of aspect-ratio
-        //width: { xs: "90vw", sm: "450px" },
-        //maxWidth: "450px",
-
-        height: "75%",
-        //minHeight: "500px",
-        //maxHeight: "700px",
-        //overflowY: "auto",
+        // safe caps so it never overflows 14" fullscreen, but still generous on 24"
+        height: "clamp(420px, 68vh, 620px)",
+        maxWidth: "min(44vw, 540px)",
         overflow: "hidden",
         borderRadius: 2,
         bgcolor: "background.paper",
-        p: { xs: 2, md: 3 },
+        // trim outer padding a little on small screens
+        p: "clamp(0.6rem, 1.6vw, 1.1rem)",
         boxSizing: "border-box",
         display: "flex",
       }}
     >
+      {/* Black bordered box */}
       <Box
         component="fieldset"
         sx={{
           border: "2px solid black",
           borderRadius: 0,
-          // Use breakpoints for padding
-          padding: { xs: "1rem 1.5rem", md: "2rem 2.5rem" },
           width: "100%",
-          overflowY: "auto",
+          height: "100%",
+          // slightly tighter padding => more line length; also helps kill the scrollbar
+          padding: "clamp(0.8rem, 2vw, 1.6rem)",
+          margin: 0,
+          // allow children (legend) to shrink, and avoid a scrollbar unless truly needed
+          minWidth: 0,
+          overflowY: "hidden",
+          boxSizing: "border-box",
         }}
       >
+        {/* Legend (kept native, but shrink-safe) */}
         <Box
           component="legend"
           sx={{
-            px: "1rem",
+            px: "clamp(0.5rem, 1.2vw, 0.9rem)",
             mx: "auto",
+            maxWidth: "100%",
+            overflow: "hidden",
           }}
         >
           <Typography
-            variant="h2"
+            component="span"
             sx={{
-              fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+              fontFamily: '"Helvetica Neue",Helvetica,Arial,sans-serif',
               fontWeight: 700,
-              // Use breakpoints for font size and letter spacing
-              fontSize: { xs: "1.2rem", sm: "1.35rem", md: "1.6rem" },
-              letterSpacing: { xs: "0.1em", md: "0.18em" },
+              // trims min size & letter-spacing so it never pushes borders on 14"
+              fontSize: "clamp(0.82rem, 1.25vw, 1.4rem)",
+              letterSpacing: "clamp(0.03em, 0.16vw, 0.12em)",
               color: "common.black",
               whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+              lineHeight: 1,
             }}
           >
             NEED TO KNOW
           </Typography>
         </Box>
 
-        {/* List Content Section */}
-        <Stack spacing={4}>
+        {/* Bulleted content */}
+        <Stack
+          // slightly tighter rhythm; helps remove the scrollbar at 14"
+          spacing="clamp(0.9rem, 2vw, 1.4rem)"
+          sx={{ mt: "clamp(0.45rem, 1vw, 0.8rem)" }}
+        >
           <InfoListItem>
             Sign in using your Employee Self Service (Payslip Viewing)
             Credentials.
           </InfoListItem>
+
           <InfoListItem>
             <Link
               href="#"
               underline="always"
               sx={{
                 color: "text.primary",
-                // Ensure the link font matches the other items
                 fontFamily:
-                  '"Gill Sans", "Gill Sans MT", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
                 fontWeight: 400,
+                fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
               }}
             >
               Read Before Login
             </Link>
           </InfoListItem>
+
           <InfoListItem>
             <Link
               href="#"
@@ -127,23 +139,28 @@ export default function LoginInfoPanel() {
               sx={{
                 color: "text.primary",
                 fontFamily:
-                  '"Gill Sans", "Gill Sans MT", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
                 fontWeight: 400,
+                fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
               }}
             >
               Terms of Use
             </Link>
           </InfoListItem>
+
           <InfoListItem>
-            Help Desk PAX:{" "}
+            Help Desk PAX:&nbsp;
             <Box
               component="span"
               sx={{
-                fontWeight: "bold",
-                color: "primary.main", // Uses your theme's primary color
-                backgroundColor: "#e3f2fd", // A light blue background
-                padding: "2px 6px",
+                display: "inline-block",
+                fontWeight: 700,
+                fontSize: "clamp(0.88rem, 1.35vw, 1.25rem)",
+                color: "primary.main",
+                backgroundColor: "#e3f2fd",
+                padding: "clamp(1px, 0.25vw, 3px) clamp(4px, 0.5vw, 8px)",
                 borderRadius: "4px",
+                lineHeight: 1.2,
               }}
             >
               42046
