@@ -12,7 +12,7 @@ const InfoListItem = ({ children }) => (
   <Box
     sx={{
       position: "relative",
-      pl: "2rem",
+      pl: { xs: "1.5rem", md: "2rem" },
       "&::before": {
         content: '""',
         position: "absolute",
@@ -28,11 +28,11 @@ const InfoListItem = ({ children }) => (
     <Typography
       variant="body1"
       sx={{
-        // --- FINAL FONT IDENTIFICATION ---
         // Prioritizing Gill Sans as it's the font from the reference image.
         fontFamily:
           '"Gill Sans", "Gill Sans MT", "Helvetica Neue", Helvetica, Arial, sans-serif',
-        fontSize: "1.35rem",
+        fontSize: { xs: "1rem", sm: "1.15rem", md: "1.4rem" },
+
         fontWeight: 400,
         lineHeight: 1.7,
       }}
@@ -49,9 +49,15 @@ export default function LoginInfoPanel() {
       elevation={8}
       sx={{
         aspectRatio: 0.692,
-        height: "71.4%",
-        //maxHeight: "calc(100vh - 150px)",
-        overflowY: "auto",
+        // Use a responsive width instead of aspect-ratio
+        //width: { xs: "90vw", sm: "450px" },
+        //maxWidth: "450px",
+
+        height: "75%",
+        //minHeight: "500px",
+        //maxHeight: "700px",
+        //overflowY: "auto",
+        overflow: "hidden",
         borderRadius: 2,
         bgcolor: "background.paper",
         p: { xs: 2, md: 3 },
@@ -64,8 +70,10 @@ export default function LoginInfoPanel() {
         sx={{
           border: "2px solid black",
           borderRadius: 0,
-          p: { xs: 2, md: "2rem 3rem" },
+          // Use breakpoints for padding
+          padding: { xs: "1rem 1.5rem", md: "2rem 2.5rem" },
           width: "100%",
+          overflowY: "auto",
         }}
       >
         <Box
@@ -80,8 +88,9 @@ export default function LoginInfoPanel() {
             sx={{
               fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
               fontWeight: 700,
-              fontSize: "1.5rem",
-              letterSpacing: "0.18em",
+              // Use breakpoints for font size and letter spacing
+              fontSize: { xs: "1.2rem", sm: "1.35rem", md: "1.6rem" },
+              letterSpacing: { xs: "0.1em", md: "0.18em" },
               color: "common.black",
               whiteSpace: "nowrap",
             }}
@@ -125,7 +134,21 @@ export default function LoginInfoPanel() {
               Terms of Use
             </Link>
           </InfoListItem>
-          <InfoListItem>Help Desk PAX: 42046</InfoListItem>
+          <InfoListItem>
+            Help Desk PAX:{" "}
+            <Box
+              component="span"
+              sx={{
+                fontWeight: "bold",
+                color: "primary.main", // Uses your theme's primary color
+                backgroundColor: "#e3f2fd", // A light blue background
+                padding: "2px 6px",
+                borderRadius: "4px",
+              }}
+            >
+              42046
+            </Box>
+          </InfoListItem>
         </Stack>
       </Box>
     </Paper>
