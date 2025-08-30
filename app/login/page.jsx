@@ -1,342 +1,213 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
-import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
-import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
-import Alert from "@mui/material/Alert";
-import Image from "next/image";
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  InputAdornment,
+  Divider,
+} from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import LoginInfoPanel from "@/components/LoginInfoPanel";
-import { IconButton, InputAdornment } from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 export default function LoginPage() {
-  const [userId, setUserId] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [error, setError] = React.useState("");
-  const [showPassword, setShowPassword] = React.useState(false); // State for the eye icon
-  const router = useRouter();
-  const { status } = useSession();
+  const [showPw, setShowPw] = React.useState(false);
+  // --- Tweak knobs ---
+  const TITLE_MT = "clamp(0px, 0.0vw, 20px)"; // push "IMS Login" DOWN from the logo
+  const SUBTITLE_MT = "clamp(2px, 0.5vw, 18px)"; // push subtitle DOWN from the title
+  const SUBTITLE_FS = "clamp(1.05rem, 1.25vw, 1.35rem)"; // subtitle size ↑ (tweak freely)
+  // --- SAIL logo sizing knobs ---
+  const LOGO_AR = 0.9527; // width / height.
+  // e.g. if the image is 220×200px => 1.1 ; if 200×220px => 0.909
+  const LOGO_W = "clamp(128px, 7.0vw, 220px)"; // overall scale; tweak to taste
 
-  // This hook handles redirecting users who are already logged in.
-  React.useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/"); // Redirect to dashboard if already logged in
-    }
-  }, [status, router]);
-
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    setError("");
-
-    // --- DETAILED DEBUGGING LOG ---
-    console.log(`--- LOGIN ATTEMPT ---
-    Timestamp: ${new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Kolkata",
-    })}
-    User ID: ${userId}
-    -------------------------`);
-
-    const res = await signIn("credentials", {
-      redirect: false,
-      userId,
-      password,
-    });
-
-    if (res.ok) {
-      // --- DETAILED DEBUGGING LOG ---
-      console.log(`--- LOGIN SUCCESS ---
-      User ID: ${userId} successfully authenticated. Redirecting...
-      ---------------------`);
-      window.location.href = "/";
-    } else {
-      // --- DETAILED DEBUGGING LOG ---
-      console.log(`--- LOGIN FAILED ---
-      Reason: Invalid credentials for User ID: ${userId}
-      ----------------------`);
-      setError("Invalid User ID or Password");
-    }
-  };
-
-  // The loading check prevents the form from flashing while session is verified.
-  if (status === "loading" || status === "authenticated") {
-    return (
-      <Box
-        sx={{
-          height: "100vh",
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "1.8rem",
-          fontWeight: 600,
-          letterSpacing: "1px",
-          background: "linear-gradient(to top, #eef2f3, #ffffff)",
-        }}
-      >
-        Loading . . .
-      </Box>
-    );
-  }
-
-  // Actual UI (only shown if status is 'unauthenticated')
   return (
     <Box
       sx={{
-        height: "100vh",
-        width: "100%",
-        overflow: "hidden",
+        minHeight: "100vh",
+        width: "100vw", // full viewport -> halves are true halves
+        overflowX: "hidden",
         display: "flex",
-        flexDirection: "row",
-        //alignItems: "center", // This property will cause the flex items (the left and right columns)
-        // to default to alignItems: "stretch", making them fill the full 100vh height
+        alignItems: "center",
         background: "linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)",
-        padding: 0,
-        opacity: 0,
-        animation: "fadeIn 0.5s ease 0.1s forwards",
-        "@keyframes fadeIn": {
-          to: { opacity: 1 },
-        },
       }}
     >
-      {/* Left Column */}
+      {/* Full-width row split exactly in half with a 1px center rail */}
       <Box
         sx={{
-          display: "flex",
+          width: "100vw",
+          display: "grid",
+          gridTemplateColumns: "1fr 1px 1fr",
           alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 50%",
-          px: 2,
-          minWidth: "0",
+          justifyItems: "center",
+          px: "clamp(16px, 4vw, 48px)",
+          gap: "clamp(16px, 3vw, 48px)",
         }}
       >
-        <LoginInfoPanel />
-      </Box>
+        {/* LEFT HALF (card is centered inside its half) */}
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <LoginInfoPanel />
+        </Box>
 
-      {/* Vertical Divider */}
-      <Box
-        sx={{
-          display: { xs: "none", lg: "flex" },
-          alignItems: "center",
-          justifyContent: "center",
-          flex: "0 0 1px",
-          height: "85%",
-          backgroundColor: "rgba(0, 0, 0, 0.2)",
-          alignSelf: "center",
-          mx: 0,
-        }}
-      />
-
-      {/* Right Column */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flex: "0 0 50%",
-          px: 0,
-        }}
-      >
+        {/* EXACTLY CENTERED DIVIDER (85% viewport height) */}
         <Box
           sx={{
-            aspectRatio: 0.85,
-            height: "55%",
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            transition: "all 0.3s ease",
+            width: "1px",
+            height: "85vh",
+            backgroundColor: "rgba(0,0,0,.22)",
+            borderRadius: "1px",
+            alignSelf: "center",
+            justifySelf: "center",
           }}
-        >
-          <Paper
-            elevation={4}
+        />
+
+        {/* RIGHT HALF (card centered inside its half) */}
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          {/* Card shell: 60vh tall; width from a wider aspect (≈1.05) but capped */}
+          <Box
             sx={{
-              px: 4,
-              py: 3,
-              width: "100%",
-              height: "100%",
+              height: "60vh",
+              // width = height * 1.05 (wider), but never exceed a sane cap
+              width: "min(100%, calc(60vh * 0.85))",
+              maxWidth: "clamp(520px, 36vw, 720px)",
               display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: 2,
-              boxSizing: "border-box",
-              border: "1px solid rgba(0, 0, 0, 0.05)",
             }}
           >
-            {/* --- RESPONSIVE LOGO (JERK FIXED) --- */}
-            <Box
+            <Paper
+              elevation={8}
               sx={{
-                position: "relative",
-                width: "35%",
-                maxWidth: "130px",
-                aspectRatio: "1 / 1.05",
-                mb: 2,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                borderRadius: 2,
+                p: "clamp(18px, 2vw, 28px)",
+                boxSizing: "border-box",
+                overflow: "hidden",
+                gap: "clamp(8px, 1.1vw, 12px)",
               }}
             >
-              <Image
-                src="/sail-logo.png"
-                alt="SAIL Logo"
-                fill
-                priority
-                sizes="(max-width: 600px) 30vw, 130px"
-                style={{ objectFit: "contain" }}
-              />
-            </Box>
-
-            {/* Main Title */}
-            <Typography
-              component="h1"
-              variant="h4"
-              sx={{
-                mb: 1,
-                fontWeight: 400,
-                color: "#1a1a1a",
-                fontSize: "2rem",
-                textAlign: "center",
-              }}
-            >
-              IMS Login
-            </Typography>
-
-            {/* Subtitle */}
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 3,
-                color: "#666",
-                fontSize: "1rem",
-                textAlign: "center",
-                fontWeight: 400,
-              }}
-            >
-              Incident Management System - DSP
-            </Typography>
-
-            {/* Form */}
-            <Box
-              component="form"
-              onSubmit={handleLogin}
-              sx={{ width: "100%", maxWidth: "395px" }}
-            >
-              <Stack spacing={2.25}>
-                <TextField
-                  required
-                  fullWidth
-                  id="userId"
-                  label="User ID / Ticket No."
-                  name="userId"
-                  autoComplete="username"
-                  autoFocus
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  error={!!error}
-                  variant="outlined"
+              {/* --Reserved logo slot: aspect-ratio container-- to avoid layout shift */}
+              <Box
+                sx={{
+                  // the slot (reserved space) keeps the same aspect ratio as the image:
+                  width: `min(100%, ${LOGO_W})`,
+                  aspectRatio: LOGO_AR, // <— container’s height derives from width
+                  mx: "auto", // <— centers horizontally in the card
+                  flexShrink: 0,
+                  display: "grid",
+                  placeItems: "center", // keep the image perfectly centered inside
+                  mb: "clamp(6px, .8vw, 12px)",
+                }}
+              >
+                <Box
+                  component="img"
+                  alt="SAIL"
+                  src="/sail-logo.png"
                   sx={{
-                    "& .MuiOutlinedInput-root": {
-                      height: "56px",
-                      fontSize: "1rem",
-                      backgroundColor: "white",
-                      "& fieldset": { borderColor: "#ddd", borderWidth: "1px" },
-                      "&:hover fieldset": { borderColor: "#4A90E2" },
-                      "&.Mui-focused fieldset": {
-                        borderColor: "#4A90E2",
-                        borderWidth: "2px",
-                      },
-                    },
-                    "& .MuiInputLabel-root": {
-                      fontSize: "1rem",
-                      color: "#666",
-                      "&.Mui-focused": { color: "#4A90E2" },
-                    },
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain", // preserves the image’s native ratio
+                    display: "block",
                   }}
                 />
+              </Box>
+
+              {/* Titles */}
+              <Box sx={{ textAlign: "center", flexShrink: 0 }}>
+                <Typography
+                  component="h1"
+                  sx={{
+                    fontSize: "clamp(1.6rem, 2.2vw, 2.8rem)",
+                    fontWeight: 500,
+                    letterSpacing: 0.5,
+                    lineHeight: 1.1,
+                    mt: TITLE_MT,
+                  }}
+                >
+                  IMS Login
+                </Typography>
+                <Typography
+                  sx={{
+                    color: "text.secondary",
+                    fontSize: SUBTITLE_FS,
+                    lineHeight: 1.35,
+                    mt: SUBTITLE_MT,
+                  }}
+                >
+                  Incident Management System - DSP
+                </Typography>
+              </Box>
+
+              {/* Form body (scrolls if space is tight) */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "clamp(14px, 1.6vw, 22px)",
+                  overflow: "auto",
+                  flex: 1,
+                  mt: "clamp(12px, 1.2vw, 18px)",
+                  minHeight: 0,
+                }}
+              >
                 <TextField
-                  required
                   fullWidth
-                  name="password"
-                  label="Password"
-                  id="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  error={!!error}
-                  variant="outlined"
-                  type={showPassword ? "text" : "password"} // <-- THIS LINE IS NEW
+                  label="User ID / Ticket No. *"
+                  size="medium"
+                  inputProps={{
+                    style: { fontSize: "clamp(0.95rem, 1vw, 1.05rem)" },
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Password *"
+                  size="medium"
+                  type={showPw ? "text" : "password"}
+                  inputProps={{
+                    style: { fontSize: "clamp(0.95rem, 1vw, 1.05rem)" },
+                  }}
                   InputProps={{
-                    // <-- THIS ENTIRE BLOCK IS NEW
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={handleClickShowPassword}
+                          onClick={() => setShowPw((s) => !s)}
                           edge="end"
+                          aria-label={
+                            showPw ? "Hide password" : "Show password"
+                          }
                         >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                          {showPw ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
                       </InputAdornment>
                     ),
                   }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      height: "56px",
-                      fontSize: "1rem",
-                      backgroundColor: "white",
-                      "& fieldset": { borderColor: "#ddd", borderWidth: "1px" },
-                      "&:hover fieldset": { borderColor: "#4A90E2" },
-                      "&.Mui-focused fieldset": {
-                        borderColor: "#4A90E2",
-                        borderWidth: "2px",
-                      },
-                    },
-                    "& .MuiInputLabel-root": {
-                      fontSize: "1rem",
-                      color: "#666",
-                      "&.Mui-focused": { color: "#4A90E2" },
-                    },
-                  }}
                 />
-                {error && (
-                  <Alert severity="error" sx={{ fontSize: "0.9rem", py: 1 }}>
-                    {error}
-                  </Alert>
-                )}
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{
-                    py: 1.5,
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "1px",
-                    backgroundColor: "#4A90E2",
-                    borderRadius: "6px",
-                    height: "48px",
-                    boxShadow: "0 4px 12px rgba(74, 144, 226, 0.3)",
-                    transition: "all 0.25s ease-in-out",
-                    "&:hover": {
-                      backgroundColor: "#357ABD",
-                      boxShadow: "0 6px 16px rgba(74, 144, 226, 0.4)",
-                    },
-                    "&:active": {
-                      boxShadow: "0 2px 8px rgba(74, 144, 226, 0.3)",
-                    },
-                  }}
-                >
-                  SIGN IN
-                </Button>
-              </Stack>
-            </Box>
-          </Paper>
+              </Box>
+
+              {/* Button stays inside the card; never overflows */}
+              <Button
+                variant="contained"
+                size="large"
+                sx={{
+                  py: "clamp(10px, 1.1vw, 14px)",
+                  fontWeight: 600,
+                  letterSpacing: 0.4,
+                  fontSize: "clamp(0.95rem, 1vw, 1.05rem)",
+                  alignSelf: "stretch",
+                  flexShrink: 0,
+                }}
+              >
+                SIGN IN
+              </Button>
+            </Paper>
+          </Box>
         </Box>
       </Box>
     </Box>

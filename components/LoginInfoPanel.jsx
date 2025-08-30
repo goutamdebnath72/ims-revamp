@@ -1,202 +1,171 @@
 "use client";
 
 import * as React from "react";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Stack from "@mui/material/Stack";
-import Link from "@mui/material/Link";
-import Paper from "@mui/material/Paper";
+import {
+  Box,
+  Paper,
+  Typography,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Chip,
+} from "@mui/material";
 
-const INFO_FS = "clamp(1.05rem, 1.55vw, 1.45rem)";
-// Legend sizing knobs — tuned to match your xs:1.28, sm:1.48, md:1.55
-export const LEGEND_FS = "clamp(1.1rem, calc(1rem + 0.25vw), 1.55rem)";
-// (optional) letter-spacing that grows gently but stays capped
-export const LEGEND_LS = "clamp(0.05em, calc(0.10em + 0.01vw), 0.15em)";
-export const PAX_LS = "clamp(0.02em, calc(0.012em + 0.10vw), 0.06em)";
-// Bullet controls — tweak these three to taste
-// Bullet controls (scale with text size)
-export const BULLET_SIZE = "clamp(0.40em, 0.48em, 0.58em)"; // diameter
-export const BULLET_TOP = "clamp(0.40lh, 0.58lh, 0.68lh)"; // ↓ bigger = lower
-export const BULLET_LEFT = "clamp(0.40rem, 0.45vw, 0.70rem)"; // → bigger = more gap
-
-/* How clamp() actually works
-   clamp(min, preferred, max) returns the preferred value, but clipped to the min/max range:
-
-   result = max(min(preferred, max), min)
-
-   So:
-   
-   If preferred is between min & max → we get preferred.
-   
-   If preferred < min → you get min.
-   
-   If preferred > max → you get max.
-
-   That’s why changing only the max didn’t move your bullet: your current viewport was already using the preferred term.*/
-
-/* Bullet + line item that scales smoothly */
-const InfoListItem = ({ children }) => (
-  <Box
-    sx={{
-      position: "relative",
-      // slightly lighter indent to gain line length on 14"
-      pl: "clamp(0.9rem, 1.6vw, 1.6rem)",
-      "&::before": {
-        content: '""',
-        position: "absolute",
-        left: BULLET_LEFT,
-        top: BULLET_TOP,
-        width: BULLET_SIZE,
-        height: BULLET_SIZE,
-        backgroundColor: "#5d92e8",
-        borderRadius: "50%",
-        //transform: "translateY(-50%)",
-      },
-    }}
-  >
-    <Typography
-      component="span"
+function LegendTitle() {
+  return (
+    <Box
       sx={{
-        fontFamily:
-          '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
-        // a touch smaller minimum + tighter line-height to avoid overflow
-        fontSize: INFO_FS,
-        fontWeight: 400,
-        lineHeight: 1.5,
+        display: "grid",
+        gridTemplateColumns: "1fr auto 1fr",
+        alignItems: "center",
+        columnGap: "clamp(8px, 1vw, 14px)",
+        mb: "clamp(10px, 1.4vw, 16px)",
       }}
     >
-      {children}
-    </Typography>
-  </Box>
-);
+      <Box sx={{ height: 2, bgcolor: "text.primary", opacity: 0.7 }} />
+      <Typography
+        sx={{
+          fontSize: "clamp(1.0rem, 1.4vw, 1.25rem)",
+          fontWeight: 800,
+          letterSpacing: "0.18em",
+          whiteSpace: "nowrap",
+        }}
+      >
+        NEED TO KNOW
+      </Typography>
+      <Box sx={{ height: 2, bgcolor: "text.primary", opacity: 0.7 }} />
+    </Box>
+  );
+}
 
 export default function LoginInfoPanel() {
   return (
-    <Paper
-      elevation={8}
+    // Height fixed to 80vh, width from a slightly larger aspect (0.74) and capped
+    <Box
       sx={{
-        aspectRatio: 0.692,
-        // safe caps so it never overflows 14" fullscreen, but still generous on 24"
-        height: "clamp(420px, 68vh, 620px)",
-        maxWidth: "min(44vw, 540px)",
-        overflow: "hidden",
-        borderRadius: 2,
-        bgcolor: "background.paper",
-        // trim outer padding a little on small screens
-        p: "clamp(0.6rem, 1.6vw, 1.1rem)",
-        boxSizing: "border-box",
+        height: "80vh",
+        width: "min(100%, calc(80vh * 0.74))", // wider than before (0.66)
+        maxWidth: "clamp(520px, 38vw, 640px)",
         display: "flex",
       }}
     >
-      {/* Black bordered box */}
-      <Box
-        component="fieldset"
+      <Paper
+        elevation={8}
         sx={{
-          border: "2px solid black",
-          borderRadius: 0,
           width: "100%",
           height: "100%",
-          // slightly tighter padding => more line length; also helps kill the scrollbar
-          padding: "clamp(0.8rem, 2vw, 1.6rem)",
-          margin: 0,
-          // allow children (legend) to shrink, and avoid a scrollbar unless truly needed
-          minWidth: 0,
-          overflowY: "hidden",
+          display: "flex",
+          borderRadius: 2,
+          bgcolor: "background.paper",
+          p: "clamp(0.8rem, 1.6vw, 1.2rem)",
           boxSizing: "border-box",
+          overflow: "hidden",
         }}
       >
-        {/* Legend (kept native, but shrink-safe) */}
+        {/* Inner bordered region; scrolls if content ever exceeds 80vh */}
         <Box
-          component="legend"
           sx={{
-            px: "clamp(0.5rem, 1.2vw, 0.9rem)",
-            mx: "auto",
-            maxWidth: "100%",
-            overflow: "hidden",
+            border: "2px solid",
+            borderColor: "text.primary",
+            borderRadius: "6px",
+            p: "clamp(0.9rem, 1.7vw, 1.3rem)",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 10px 24px rgba(0,0,0,.06)",
+            overflow: "auto",
           }}
         >
-          <Typography
-            component="span"
+          <LegendTitle />
+
+          <List
+            disablePadding
             sx={{
-              fontFamily: '"Helvetica Neue",Helvetica,Arial,sans-serif',
-              fontWeight: 700,
-              // trims min size & letter-spacing so it never pushes borders on 14"
-              fontSize: LEGEND_FS,
-              letterSpacing: LEGEND_LS,
-              color: "common.black",
-              whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
-              lineHeight: 1,
+              "& .MuiListItem-root": {
+                px: 0,
+                py: "clamp(6px, 0.9vw, 10px)",
+              },
             }}
           >
-            NEED TO KNOW
-          </Typography>
+            <ListItem>
+              <ListItemIcon sx={{ minWidth: "28px", color: "#4b7bd6" }}>
+                •
+              </ListItemIcon>
+              <ListItemText
+                primaryTypographyProps={{
+                  sx: {
+                    fontSize: "clamp(0.95rem, 1.2vw, 1.15rem)",
+                    lineHeight: 1.5,
+                  },
+                }}
+                primary={
+                  <>
+                    Sign in using your Employee Self Service (Payslip Viewing)
+                    Credentials.
+                  </>
+                }
+              />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon sx={{ minWidth: "28px", color: "#4b7bd6" }}>
+                •
+              </ListItemIcon>
+              <ListItemText
+                primaryTypographyProps={{
+                  sx: {
+                    fontSize: "clamp(0.95rem, 1.2vw, 1.15rem)",
+                    textDecoration: "underline",
+                  },
+                }}
+                primary="Read Before Login"
+              />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon sx={{ minWidth: "28px", color: "#4b7bd6" }}>
+                •
+              </ListItemIcon>
+              <ListItemText
+                primaryTypographyProps={{
+                  sx: {
+                    fontSize: "clamp(0.95rem, 1.2vw, 1.15rem)",
+                    textDecoration: "underline",
+                  },
+                }}
+                primary="Terms of Use"
+              />
+            </ListItem>
+
+            <ListItem>
+              <ListItemIcon sx={{ minWidth: "28px", color: "#4b7bd6" }}>
+                •
+              </ListItemIcon>
+              <ListItemText
+                primaryTypographyProps={{
+                  sx: { fontSize: "clamp(0.95rem, 1.2vw, 1.15rem)" },
+                }}
+                primary={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <span>Help Desk PAX:</span>
+                    <Chip
+                      label="42046"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: "clamp(0.9rem, 1.1vw, 1.05rem)",
+                        px: "6px",
+                      }}
+                      color="primary"
+                      variant="outlined"
+                    />
+                  </Box>
+                }
+              />
+            </ListItem>
+          </List>
         </Box>
-
-        {/* Bulleted content */}
-        <Stack
-          // slightly tighter rhythm; helps remove the scrollbar at 14"
-          spacing="clamp(0.9rem, 2vw, 1.4rem)"
-          sx={{ mt: "clamp(0.45rem, 1vw, 0.8rem)" }}
-        >
-          <InfoListItem>
-            Sign in using your Employee Self Service (Payslip Viewing)
-            Credentials.
-          </InfoListItem>
-
-          <InfoListItem>
-            <Link
-              href="#"
-              underline="always"
-              sx={{
-                color: "text.primary",
-                fontFamily:
-                  '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
-                fontWeight: 400,
-                fontSize: INFO_FS,
-              }}
-            >
-              Read Before Login
-            </Link>
-          </InfoListItem>
-
-          <InfoListItem>
-            <Link
-              href="#"
-              underline="always"
-              sx={{
-                color: "text.primary",
-                fontFamily:
-                  '"Gill Sans","Gill Sans MT","Helvetica Neue",Helvetica,Arial,sans-serif',
-                fontWeight: 400,
-                fontSize: INFO_FS,
-              }}
-            >
-              Terms of Use
-            </Link>
-          </InfoListItem>
-
-          <InfoListItem>
-            Help Desk PAX:&nbsp;
-            <Box
-              component="span"
-              sx={{
-                display: "inline-block",
-                fontWeight: 700,
-                fontSize: "clamp(0.88rem, 1.35vw, 1.6rem)",
-                letterSpacing: PAX_LS,
-                color: "primary.main",
-                backgroundColor: "#e3f2fd",
-                padding: "clamp(1px, 0.25vw, 3px) clamp(4px, 0.5vw, 8px)",
-                borderRadius: "4px",
-                lineHeight: 1.2,
-              }}
-            >
-              42046
-            </Box>
-          </InfoListItem>
-        </Stack>
-      </Box>
-    </Paper>
+      </Paper>
+    </Box>
   );
 }
