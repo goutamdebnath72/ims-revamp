@@ -53,7 +53,7 @@ export default function LoginPage() {
      ------------------------- */
   const LOGIN_CARD_H = "70vh"; // login card height (outer shell)
   const LOGIN_CARD_AR = 0.8; // width = height * aspect
-  const LOGIN_CARD_MAX_W = "clamp(520px, 40vw, 760px)";
+  const LOGIN_CARD_MAX_W = "clamp(320px, 26vw, 650px)";
 
   /* -----------------------------
      SAIL logo aspect + scale knobs
@@ -75,8 +75,8 @@ export default function LoginPage() {
     logoMb: fluidPx(0, 15),
 
     // Title / subtitle
-    titleFS: fluidRem(1.5, 2.7),
-    titleLS: fluidEm(0.03, 0.03),
+    titleFS: fluidRem(1.3, 2.7),
+    titleLS: fluidEm(0.04, 0.03),
     titleMt: fluidPx(12, 14),
 
     subFS: fluidRem(0.9, 1.33),

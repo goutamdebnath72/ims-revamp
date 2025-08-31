@@ -46,38 +46,36 @@ function fluidEm(minEm, maxEm) {
    ---------------------------------------- */
 const NTK = {
   // Card geometry
-  ar: 0.7, // fixed aspect ratio (height = width * ar)
-  cardW: fluidPx(280, 500), // card width scales with viewport
+  ar: 0.70, // fixed aspect ratio (height = width * ar)
+  cardW: fluidPx(280, 600), // card width scales with viewport
   padOuter: fluidPx(10, 18), // padding outside the black rectangle (Paper padding)
 
   // Inner black rectangle geometry
-  innerAR: 0.6,
-  innerFracW: 0.98, // << width as a fraction of card width (0–1)
+  innerFrac: 0.93, // width as a fraction of card width (0–1)
   innerPad: fluidPx(12, 20), // padding inside the black rectangle
 
   // Heading controls
   headTop: fluidPx(6, 12), // top gap before the heading row inside the border
-  headFS: fluidRem(1.1, 1.45), // "NEED TO KNOW" font size
+  headFS: fluidRem(1.1, 1.25), // "NEED TO KNOW" font size
   headLS: fluidEm(0.16, 0.22), // letter spacing for "NEED TO KNOW"
-  headLineW: fluidPx(20, 80), // side line lengths
+  headLineW: fluidPx(20, 120), // side line lengths
   headLineH: fluidPx(2, 3), // side line thickness
 
   // List items
-  liFS: fluidRem(0.95, 1.30), // list font size
+  liFS: fluidRem(0.95, 1.15), // list font size
   liLH: 1.5, // list line-height (unitless, easy to tweak)
-  liGapY: fluidPx(8, 20), // vertical space between list items
+  liGapY: fluidPx(8, 14), // vertical space between list items
 
   // Bullets
   bulletSz: fluidPx(7, 12), // bullet diameter
   bulletGapX: fluidPx(10, 16), // gap between bullet and text
   bulletColor: "#4b7bd6",
-  bulletAlign: fluidEm(0.75, 1.0), // << vertical alignment knob (margin-top in em)
 
   // PAX chip
-  paxFS: fluidRem(1.05, 1.35),
-  paxLS: fluidEm(0.05, 0.09),
-  paxPx: fluidPx(7, 14),
-  paxPy: fluidPx(2, 10),
+  paxFS: fluidRem(1.05, 1.09),
+  paxLS: fluidEm(0.05, 0.07),
+  paxPx: fluidPx(7, 10),
+  paxPy: fluidPx(2, 4),
 };
 
 function LegendTitle() {
@@ -137,7 +135,7 @@ function Bullet() {
         borderRadius: "50%",
         bgcolor: NTK.bulletColor,
         flexShrink: 0,
-        mt: NTK.bulletAlign, // << use the alignment knob instead of a hard-coded value
+        mt: "0.55em", // aligns dot to first line of text nicely
         mr: NTK.bulletGapX,
       }}
     />
@@ -145,15 +143,6 @@ function Bullet() {
 }
 
 export default function LoginInfoPanel() {
-  // Compute inner height fraction so that pixel margins are equal on all sides:
-  // side margin (px) = (1 - innerFracW) * cardWidth / 2
-  // top  margin (px) = (1 - innerFracH) * cardHeight / 2
-  // with cardHeight = cardWidth * ar  → innerFracH = 1 - (1 - innerFracW) / ar
-  const innerFracH = Math.max(
-    0,
-    Math.min(1, 1 - (1 - NTK.innerFracW) / NTK.ar)
-  );
-
   return (
     // Card: width from viewport, height from fixed AR
     <Box
@@ -168,20 +157,19 @@ export default function LoginInfoPanel() {
         sx={{
           width: "100%",
           height: "100%",
-          p: NTK.padOuter, // padding outside the black rectangle (uniform)
+          p: NTK.padOuter, // padding outside the black rectangle
           borderRadius: 2,
           bgcolor: "background.paper",
           boxSizing: "border-box",
           display: "flex",
         }}
       >
-        {/* Inner black rectangle with UNIFORM gap all around */}
+        {/* Inner black rectangle: width is proportional, height via same AR */}
         <Box
           sx={{
-            // width/height fractions chosen so side & top/bottom pixel gaps are equal
-            width: `${NTK.innerFracW * 100}%`,
-            height: `${innerFracH * 100}%`,
-            m: "auto", // center both axes
+            width: `${NTK.innerFrac * 100}%`,
+            aspectRatio: NTK.ar,
+            mx: "auto",
             border: "2px solid",
             borderColor: "text.primary",
             borderRadius: "6px",
