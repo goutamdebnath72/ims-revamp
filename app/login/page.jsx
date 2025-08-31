@@ -52,13 +52,13 @@ export default function LoginPage() {
      Card shell quick controls
      ------------------------- */
   const LOGIN_CARD_H = "70vh"; // login card height (outer shell)
-  const LOGIN_CARD_AR = 0.80; // width = height * aspect
+  const LOGIN_CARD_AR = 0.8; // width = height * aspect
   const LOGIN_CARD_MAX_W = "clamp(520px, 40vw, 760px)";
 
   /* -----------------------------
      SAIL logo aspect + scale knobs
      ----------------------------- */
-  // Set this to our PNG's real ratio (width / height).  
+  // Set this to our PNG's real ratio (width / height).
   const SAIL_LOGO_AR = 0.9527;
   // Width of the reserved logo slot; height comes from aspectRatio.
   const TOK_logoW = fluidPx(80, 150);
@@ -89,9 +89,11 @@ export default function LoginPage() {
     inputFS: fluidRem(0.95, 1.05),
 
     // Button
-    btnMt: fluidPx(10, 16),
-    btnPy: fluidPx(12, 16),
-    btnFS: fluidRem(0.8, 1.05),
+    btnMt: fluidPx(10, 16), // space above the button
+    btnH: fluidPx(44, 56), // << fixed button HEIGHT (decouples from font)
+    btnPx: fluidPx(16, 24), // horizontal padding (optional)
+    btnFS: fluidRem(1.0, 1.14), // button font-size (now independent)
+    btnLS: fluidEm(0.1, 0.12), // << letter-spacing for "SIGN IN"
   };
 
   return (
@@ -264,10 +266,14 @@ export default function LoginPage() {
                 size="large"
                 sx={{
                   mt: TOK.btnMt,
-                  py: TOK.btnPy,
-                  fontSize: TOK.btnFS,
-                  fontWeight: 600,
-                  letterSpacing: 0.4,
+                  height: TOK.btnH, // fixed height
+                  minHeight: TOK.btnH,
+                  py: 0, // vertical padding no longer controls height
+                  px: TOK.btnPx, // optional: control width feel
+                  fontSize: TOK.btnFS, // text can scale freely…
+                  lineHeight: 1, // …without inflating height
+                  letterSpacing: TOK.btnLS, // << letter-spacing token
+                  fontWeight: 700,
                   alignSelf: "stretch",
                 }}
               >
