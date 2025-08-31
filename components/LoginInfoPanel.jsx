@@ -41,11 +41,11 @@ function LegendTitle() {
 
 export default function LoginInfoPanel() {
   return (
-    // Height fixed to 80vh, width from a slightly larger aspect (0.74) and capped
+    // 80% viewport height; width from a slightly wider aspect (0.74)
     <Box
       sx={{
         height: "80vh",
-        width: "min(100%, calc(80vh * 0.74))", // wider than before (0.66)
+        width: "min(100%, calc(80vh * 0.74))",
         maxWidth: "clamp(520px, 38vw, 640px)",
         display: "flex",
       }}
@@ -63,7 +63,7 @@ export default function LoginInfoPanel() {
           overflow: "hidden",
         }}
       >
-        {/* Inner bordered region; scrolls if content ever exceeds 80vh */}
+        {/* inner bordered region; scrolls if ever needed */}
         <Box
           sx={{
             border: "2px solid",
