@@ -173,10 +173,17 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
           error = "A valid user must be found for this ticket number.";
         }
         break;
+      case "jobTitle":
+        if (!value) {
+          error = "Required.";
+          // ===== ADD THIS CONDITION =====
+        } else if (value.length > 25) {
+          error = "Job Title cannot exceed 25 characters.";
+        }
+        break;
       case "incidentType":
       case "location":
       case "description":
-      case "jobTitle":
       case "department":
         if (!value) error = "Required.";
         break;
@@ -417,7 +424,10 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               onChange={handleChange}
               onBlur={handleBlur}
               error={!!errors.jobTitle}
-              helperText={errors.jobTitle || " "}
+              // ===== ADD THIS LINE to enforce the limit =====
+              inputProps={{ maxLength: 25 }}
+              // ===== CHANGE THIS LINE to show the counter =====
+              helperText={errors.jobTitle || `${formData.jobTitle.length} / 25`}
             />
           </InfoTooltip>
           <TextField

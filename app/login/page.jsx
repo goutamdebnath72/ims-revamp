@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+// Import useState for state and signIn for authentication
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 import {
   Box,
   Paper,
@@ -17,11 +20,10 @@ import LoginInfoPanel from "@/components/LoginInfoPanel";
 /* ===========================
    Fluid scaling math (desktop)
    =========================== */
-const VW_MIN = 1200; // lower end of your target desktop widths (~13")
-const VW_MAX = 1920; // upper end (~24")
+const VW_MIN = 1200;
+const VW_MAX = 1920;
 
 function fluidPx(minPx, maxPx) {
-  // clamp(min, calc(b + m*vw), max)
   const m = ((maxPx - minPx) / (VW_MAX - VW_MIN)) * 100;
   const b = minPx - (m * VW_MIN) / 100;
   return `clamp(${minPx}px, calc(${b}px + ${m}vw), ${maxPx}px)`;
@@ -48,53 +50,67 @@ function fluidEm(minEm, maxEm) {
 export default function LoginPage() {
   const [showPw, setShowPw] = React.useState(false);
 
-  /* -------------------------
-     Card shell quick controls
-     ------------------------- */
-  const LOGIN_CARD_H = "70vh"; // login card height (outer shell)
-  const LOGIN_CARD_AR = 0.8; // width = height * aspect
+  // State variables to hold user input and loading status
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // The function that runs when the form is submitted
+  const handleLogin = async (event) => {
+    event.preventDefault(); // Prevents the browser from reloading the page
+    setLoading(true);
+    console.log("Attempting to sign in with:", { userId, password });
+
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        userId: userId,
+        password: password,
+      });
+
+      console.log("NextAuth signIn result:", result);
+
+      if (result.error) {
+        console.error("Login failed:", result.error);
+        alert("Login failed! Please check your User ID and Password.");
+        setLoading(false);
+      } else if (result.ok) {
+        console.log("Login successful, redirecting...");
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("An unexpected error occurred:", error);
+      alert("An unexpected error occurred during login.");
+      setLoading(false);
+    }
+  };
+
+  /* Card shell quick controls */
+  const LOGIN_CARD_H = "70vh";
+  const LOGIN_CARD_AR = 0.8;
   const LOGIN_CARD_MAX_W = "clamp(320px, 26vw, 650px)";
 
-  /* -----------------------------
-     SAIL logo aspect + scale knobs
-     ----------------------------- */
-  // Set this to our PNG's real ratio (width / height).
-  const SAIL_LOGO_AR = 0.9527;
-  // Width of the reserved logo slot; height comes from aspectRatio.
-  const TOK_logoW = fluidPx(80, 150);
-
-  /* ----------------------------------------
-     ALL design tokens driven by viewport math
-     ---------------------------------------- */
   const TOK = {
-    // Paper padding + row spacing
     pad: fluidPx(12, 28),
     gapRows: fluidPx(0, 15),
-
-    // Logo spacing
     logoMb: fluidPx(0, 15),
-
-    // Title / subtitle
     titleFS: fluidRem(1.3, 2.7),
     titleLS: fluidEm(0.04, 0.03),
     titleMt: fluidPx(12, 14),
-
     subFS: fluidRem(0.9, 1.33),
     subMt: fluidPx(8, 12),
-
-    // Form block
-    fieldsMt: fluidPx(16, 28),
-    fieldsGap: fluidPx(14, 29),
+    fieldsMt: fluidPx(22, 28),
+    fieldsGap: fluidPx(18, 29),
     inputH: fluidPx(42, 56),
     inputFS: fluidRem(0.95, 1.05),
-
-    // Button
-    btnMt: fluidPx(10, 16), // space above the button
-    btnH: fluidPx(44, 56), // << fixed button HEIGHT (decouples from font)
-    btnPx: fluidPx(16, 24), // horizontal padding (optional)
-    btnFS: fluidRem(1.0, 1.14), // button font-size (now independent)
-    btnLS: fluidEm(0.1, 0.12), // << letter-spacing for "SIGN IN"
+    btnMt: fluidPx(10, 16),
+    btnH: fluidPx(44, 56),
+    btnPx: fluidPx(16, 24),
+    btnFS: fluidRem(1.0, 1.14),
+    btnLS: fluidEm(0.1, 0.12),
   };
+  const SAIL_LOGO_AR = 0.9527;
+  const TOK_logoW = fluidPx(80, 150);
 
   return (
     <Box
@@ -107,7 +123,6 @@ export default function LoginPage() {
         background: "linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)",
       }}
     >
-      {/* Full-width row split exactly in half with a 1px center rail */}
       <Box
         sx={{
           width: "100vw",
@@ -119,12 +134,9 @@ export default function LoginPage() {
           gap: "clamp(16px, 3vw, 48px)",
         }}
       >
-        {/* LEFT HALF (Need-to-know) */}
         <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
           <LoginInfoPanel />
         </Box>
-
-        {/* CENTER DIVIDER - exactly centered & 85% viewport height */}
         <Box
           sx={{
             width: "1px",
@@ -135,8 +147,6 @@ export default function LoginPage() {
             justifySelf: "center",
           }}
         />
-
-        {/* RIGHT HALF (Login card) */}
         <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
           <Box
             sx={{
@@ -147,19 +157,20 @@ export default function LoginPage() {
             }}
           >
             <Paper
+              component="form"
+              onSubmit={handleLogin}
               elevation={8}
               sx={{
                 width: "100%",
-                height: "100%",
                 display: "grid",
-                gridTemplateRows: "auto auto auto 1fr auto", // logo, title, subtitle, form, button
+                gridTemplateRows: "auto auto auto 1fr auto",
                 rowGap: TOK.gapRows,
                 borderRadius: 2,
                 p: TOK.pad,
                 boxSizing: "border-box",
               }}
             >
-              {/* -------- Reserved logo slot (keeps AR, no layout shift) -------- */}
+              {/* Logo */}
               <Box
                 sx={{
                   width: `min(100%, ${TOK_logoW})`,
@@ -175,16 +186,11 @@ export default function LoginPage() {
                   component="img"
                   alt="SAIL"
                   src="/sail-logo.png"
-                  sx={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    display: "block",
-                  }}
+                  sx={{ width: "100%", height: "100%", objectFit: "contain" }}
                 />
               </Box>
 
-              {/* ---------------- Title ---------------- */}
+              {/* Title */}
               <Typography
                 component="h1"
                 sx={{
@@ -199,7 +205,7 @@ export default function LoginPage() {
                 IMS Login
               </Typography>
 
-              {/* ---------------- Subtitle ---------------- */}
+              {/* Subtitle */}
               <Typography
                 sx={{
                   color: "text.secondary",
@@ -212,7 +218,7 @@ export default function LoginPage() {
                 Incident Management System - DSP
               </Typography>
 
-              {/* ---------------- Form body (scroll-safe) ---------------- */}
+              {/* Form Fields */}
               <Box
                 sx={{
                   display: "flex",
@@ -220,27 +226,34 @@ export default function LoginPage() {
                   gap: TOK.fieldsGap,
                   overflow: "auto",
                   minHeight: 0,
-                  mt: TOK.fieldsMt,
+                  pt: TOK.fieldsMt,
                 }}
               >
                 <TextField
                   fullWidth
                   label="User ID / Ticket No. *"
                   size="medium"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
                   sx={{
-                    "& .MuiOutlinedInput-root": { height: TOK.inputH },
-                    "& .MuiInputBase-input": { fontSize: TOK.inputFS },
+                    "& .MuiInputBase-input": {
+                      fontSize: TOK.inputFS,
+                      padding: `${fluidPx(9, 15)} 14px`,
+                    },
                   }}
                 />
-
                 <TextField
                   fullWidth
                   label="Password *"
                   size="medium"
                   type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   sx={{
-                    "& .MuiOutlinedInput-root": { height: TOK.inputH },
-                    "& .MuiInputBase-input": { fontSize: TOK.inputFS },
+                    "& .MuiInputBase-input": {
+                      fontSize: TOK.inputFS,
+                      padding: `${fluidPx(9, 15)} 14px`,
+                    },
                   }}
                   InputProps={{
                     endAdornment: (
@@ -260,24 +273,27 @@ export default function LoginPage() {
                 />
               </Box>
 
-              {/* ---------------- Button ---------------- */}
+              {/* Submit Button */}
               <Button
                 variant="contained"
                 size="large"
+                type="submit"
+                disabled={loading || !userId || !password}
                 sx={{
                   mt: TOK.btnMt,
-                  height: TOK.btnH, // fixed height
+                  height: TOK.btnH,
                   minHeight: TOK.btnH,
-                  py: 0, // vertical padding no longer controls height
-                  px: TOK.btnPx, // optional: control width feel
-                  fontSize: TOK.btnFS, // text can scale freely…
-                  lineHeight: 1, // …without inflating height
-                  letterSpacing: TOK.btnLS, // << letter-spacing token
+                  py: 0,
+                  px: TOK.btnPx,
+                  fontSize: TOK.btnFS,
+                  lineHeight: 1,
+                  letterSpacing: TOK.btnLS,
                   fontWeight: 700,
                   alignSelf: "stretch",
                 }}
               >
-                SIGN IN
+                {/* Show loading text */}
+                {loading ? "SIGNING IN..." : "SIGN IN"}
               </Button>
             </Paper>
           </Box>
