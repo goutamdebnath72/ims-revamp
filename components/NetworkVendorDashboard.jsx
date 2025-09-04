@@ -26,9 +26,17 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import StatusChart from "@/components/StatusChart";
 import PriorityChart from "@/components/PriorityChart";
 import RecentIncidentsCard from "@/components/RecentIncidentsCard";
+import { useSession } from "next-auth/react";
+import { TEAMS } from "@/lib/constants";
 
 // This is a specialized dashboard for the Network Vendor role.
 export default function NetworkVendorDashboard() {
+  const { data: session } = useSession();
+  const isTelecomUser = session?.user?.id === "telecom";
+  const dashboardTitle = isTelecomUser
+    ? "Telecom Dashboard"
+    : "Network Incidents Dashboard";
+
   const cardContainerStyles = {
     height: 380, // You can adjust this "sweet spot" value
     display: "flex",
@@ -100,25 +108,52 @@ export default function NetworkVendorDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  // 3. Filter incidents from the context data
-  const networkIncidents = React.useMemo(() => {
-    if (!incidents) return [];
-    return incidents.filter(
-      (incident) => incident.incidentType?.name === "NETWORK"
-    );
-  }, [incidents]);
+  // This is the new, corrected logic
+const filteredIncidents = React.useMemo(() => {
+  if (!incidents) return [];
 
-  const processedIncidents = networkIncidents.filter(
+  if (isTelecomUser) {
+    // For Telecom, show only incidents that are assigned to them AND are pending their action.
+    return incidents.filter(
+      (incident) =>
+        incident.assignedTeam === TEAMS.TELECOM &&
+        incident.status === "Pending Telecom Action"
+    );
+  } else {
+    // For Network Vendor, show all NETWORK incidents not assigned to Telecom.
+    return incidents.filter(
+      (incident) =>
+        incident.incidentType?.name === "NETWORK" &&
+        incident.assignedTeam !== TEAMS.TELECOM
+    );
+  }
+}, [incidents, isTelecomUser]);
+
+  const pendingIncidents = filteredIncidents.filter(
+    (i) => i.status === "Pending Telecom Action"
+  ).length;
+  const processedIncidents = filteredIncidents.filter(
     (i) => i.status === "Processed"
   ).length;
-  const resolvedIncidents = networkIncidents.filter(
+  const resolvedIncidents = filteredIncidents.filter(
     (i) => i.status === "Resolved"
   ).length;
-  const closedIncidents = networkIncidents.filter(
+  const closedIncidents = filteredIncidents.filter(
     (i) => i.status === "Closed"
   ).length;
 
   const statCardsData = [
+    // Conditionally add the "Pending" card ONLY for Telecom users
+    ...(isTelecomUser
+      ? [
+          {
+            title: "Pending Action",
+            value: pendingIncidents,
+            color: "warning",
+            filterStatus: "Pending Telecom Action",
+          },
+        ]
+      : []),
     {
       title: "Assigned (Processed)",
       value: processedIncidents,
@@ -142,7 +177,16 @@ export default function NetworkVendorDashboard() {
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("incidentType", "NETWORK");
+
+    // ===== THIS IS THE FIX =====
+    // Create the correct search link based on the user type
+    if (isTelecomUser) {
+      params.append("assignedTeam", TEAMS.TELECOM);
+    } else {
+      params.append("incidentType", "NETWORK");
+    }
+    // ===========================
+
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -150,6 +194,8 @@ export default function NetworkVendorDashboard() {
   };
 
   const statusChartData = [
+    // Conditionally add the "Pending" data ONLY for Telecom users
+    ...(isTelecomUser ? [{ name: "Pending", count: pendingIncidents }] : []),
     { name: "Processed", count: processedIncidents },
     { name: "Resolved", count: resolvedIncidents },
     { name: "Closed", count: closedIncidents },
@@ -158,7 +204,7 @@ export default function NetworkVendorDashboard() {
   const priorityChartData = [
     {
       name: "High",
-      value: networkIncidents.filter(
+      value: filteredIncidents.filter(
         (i) =>
           i.priority === "High" &&
           (i.status === "Processed" || i.status === "Pending Telecom Action")
@@ -166,7 +212,7 @@ export default function NetworkVendorDashboard() {
     },
     {
       name: "Medium",
-      value: networkIncidents.filter(
+      value: filteredIncidents.filter(
         (i) =>
           i.priority === "Medium" &&
           (i.status === "Processed" || i.status === "Pending Telecom Action")
@@ -174,7 +220,7 @@ export default function NetworkVendorDashboard() {
     },
     {
       name: "Low",
-      value: networkIncidents.filter(
+      value: filteredIncidents.filter(
         (i) =>
           i.priority === "Low" &&
           (i.status === "Processed" || i.status === "Pending Telecom Action")
@@ -247,7 +293,7 @@ export default function NetworkVendorDashboard() {
       <Stack direction="row" alignItems="center" spacing={2}>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
-            Network Incidents Dashboard
+            {dashboardTitle}
           </Typography>
         </Box>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
@@ -338,7 +384,7 @@ export default function NetworkVendorDashboard() {
           </Box>
         </Stack>
         <Box sx={cardContainerStyles}>
-          <RecentIncidentsCard incidents={networkIncidents} />
+          <RecentIncidentsCard incidents={filteredIncidents} />
         </Box>{" "}
       </Stack>
     </Stack>

@@ -46,12 +46,12 @@ export default function DashboardPage() {
       case USER_ROLES.SYS_ADMIN:
         return <AdminDashboard />;
       case USER_ROLES.NETWORK_VENDOR:
-      case USER_ROLES.TELECOM:
+      case USER_ROLES.TELECOM_USER:
       case USER_ROLES.ETL:
         return <NetworkVendorDashboard />;
-      case "biometric_vendor":
+      case USER_ROLES.BIOMETRIC_VENDOR:
         return <BiometricVendorDashboard />;
-      case "standard":
+      case USER_ROLES.STANDARD:
       default:
         return <StandardUserDashboard />;
     }

@@ -30,7 +30,9 @@ const getCurrentShift = () => {
   return "C";
 };
 
-// Creates a fresh, role-aware default state by accepting the user object
+// This is the new, corrected function
+// This is the original, stable version
+// THIS IS THE STABLE VERSION THAT DOES NOT CRASH
 const createInitialState = (user) => {
   const now = DateTime.local().setZone("Asia/Kolkata");
   const today = { start: now.startOf("day"), end: now.endOf("day") };
@@ -42,10 +44,9 @@ const createInitialState = (user) => {
     return { dateRange: today, shift: "All" };
   }
 
-  // The fallback for any other case (e.g., before login)
+  // The fallback for any other case
   return { dateRange: { start: null, end: null }, shift: "All" };
 };
-// --- END OF CORRECTED LOGIC ---
 
 export function DashboardFilterProvider({ children }) {
   const { data: session, status: sessionStatus } = useSession();

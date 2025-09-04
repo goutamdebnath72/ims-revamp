@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getAllIncidents, createIncident } from "@/lib/incident-repo";
 import { getShiftTimestamps } from "@/lib/date-helpers";
+import { TEAMS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,11 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const filters = Object.fromEntries(searchParams.entries());
+    // 🔒 If logged in as the Telecom account, only return Telecom-assigned incidents.
+    //    This prevents "all network incidents" from showing up without a referral.
+    if (user?.id === "telecom") {
+      filters.assignedTeam = TEAMS.TELECOM; // exact constant, case-sensitive
+    }
     const result = await getAllIncidents(filters, user);
     return NextResponse.json(result);
   } catch (error) {

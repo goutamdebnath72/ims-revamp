@@ -16,6 +16,25 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Box from "@mui/material/Box";
 import { INCIDENT_STATUS, AUDIT_ACTIONS, USER_ROLES } from "@/lib/constants";
+import { fluidPx, fluidRem } from "@/utils/fluidScale";
+
+// --- Design Tokens Object ---
+const TOK = {
+  cardPad: fluidPx(12, 24), // Card padding
+  headerFS: fluidRem(1.0, 1.5), // "Take Action" font size
+  headerMb: fluidPx(8, 20), // Margin below header
+  formSpacing: fluidPx(5, 20), // Gap between form sections
+  dropdownsPt: fluidPx(8, 12), // Padding top for dropdowns (for label fix)
+  dropdownsMb: fluidPx(5, 20), // Margin below dropdowns
+  dropdownH: fluidPx(28, 42), // Dropdown height
+  dropdownFS: fluidRem(0.65, 1), // Dropdown font size
+  dropdownLabelFS: fluidRem(0.6, 0.9), // Dropdown label font size
+  dropdownLabelX: fluidPx(10, 14), // Left/Right position
+  dropdownLabelY: fluidPx(-5, -9), // Up/Down position
+  textAreaH: fluidPx(80, 150), // Fluid height for the text area (replaces rows={6})
+  buttonH: fluidPx(28, 42), // Button height
+  buttonFS: fluidRem(0.55, 0.9), // Button font size
+};
 
 const priorities = ["Low", "Medium", "High"];
 
@@ -35,7 +54,12 @@ const VendorActionForm = ({
         id="incident-comment"
         label="Provide a detailed update"
         multiline
-        rows={8}
+        sx={{
+          "& .MuiInputBase-multiline": {
+            minHeight: TOK.textAreaH,
+            fontSize: fluidRem(0.9, 1),
+          },
+        }}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         variant="outlined"
@@ -48,7 +72,7 @@ const VendorActionForm = ({
         onClick={() => onUpdate({ comment })}
         disabled={isSubmitting || !comment.trim()}
         fullWidth
-        size="large"
+        sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
       >
         {isSubmitting ? "Submitting..." : "Submit Update"}
       </Button>
@@ -76,15 +100,30 @@ const AdminActionForm = ({
   newPriority,
   setNewPriority,
 }) => {
+  const referredToTelecom =
+    incident?.assignedTeam === "TELECOM" ||
+    incident?.status === "Pending Telecom Action" ||
+    (Array.isArray(incident?.telecomTasks) && incident.telecomTasks.length > 0);
+
+  const canReferToTelecom = showReferToTelecomButton && !referredToTelecom;
   const isNew = incident.status === INCIDENT_STATUS.NEW;
   const isPasswordReset = incident.auditTrail.some(
     (entry) => entry.action === "Password Reset"
   );
-
   return (
-    <Stack spacing={3} sx={{ flexGrow: 1, justifyContent: "space-between" }}>
+    <Stack
+      sx={{
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: TOK.formSpacing,
+      }}
+    >
       <Box>
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ mb: TOK.dropdownsMb, pt: TOK.dropdownsPt }}
+        >
           <FormControl
             fullWidth
             size="small"
@@ -94,12 +133,23 @@ const AdminActionForm = ({
               isLoadingTypes ||
               incident.isTypeLocked
             }
+            // --- 💡 STYLES MOVED HERE TO CONTROL THE SHRUNK LABEL ---
+            sx={{
+              "& .MuiInputLabel-shrink": {
+                fontSize: TOK.dropdownLabelFS,
+                transform: `translate(${TOK.dropdownLabelX}, ${TOK.dropdownLabelY}) scale(0.75)`,
+              },
+            }}
           >
             <InputLabel>Change Incident Type</InputLabel>
             <Select
               value={newType}
               label="Change Incident Type"
               onChange={(e) => setNewType(e.target.value)}
+              sx={{
+                height: TOK.dropdownH,
+                fontSize: TOK.dropdownFS,
+              }}
             >
               {incidentTypes &&
                 incidentTypes.map((type) => (
@@ -113,12 +163,23 @@ const AdminActionForm = ({
             fullWidth
             size="small"
             disabled={isNew || isPasswordReset || incident.isPriorityLocked}
+            // --- 💡 STYLES MOVED HERE TO CONTROL THE SHRUNK LABEL ---
+            sx={{
+              "& .MuiInputLabel-shrink": {
+                fontSize: TOK.dropdownLabelFS,
+                transform: `translate(${TOK.dropdownLabelX}, ${TOK.dropdownLabelY}) scale(0.75)`,
+              },
+            }}
           >
             <InputLabel>Change Priority</InputLabel>
             <Select
               value={newPriority}
               label="Change Priority"
               onChange={(e) => setNewPriority(e.target.value)}
+              sx={{
+                height: TOK.dropdownH,
+                fontSize: TOK.dropdownFS,
+              }}
             >
               {priorities.map((p) => (
                 <MenuItem key={p} value={p}>
@@ -132,7 +193,12 @@ const AdminActionForm = ({
           id="incident-comment"
           label="Provide a detailed update"
           multiline
-          rows={6}
+          sx={{
+            "& .MuiInputBase-multiline": {
+              minHeight: TOK.textAreaH,
+              fontSize: fluidRem(0.9, 1),
+            },
+          }}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           variant="outlined"
@@ -142,12 +208,12 @@ const AdminActionForm = ({
         />
       </Box>
       <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-        {showReferToTelecomButton && (
+        {canReferToTelecom && (
           <Button
             variant="outlined"
             color="secondary"
             onClick={onOpenTelecomReferralDialog}
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS }}
           >
             Refer to Telecom
           </Button>
@@ -158,6 +224,8 @@ const AdminActionForm = ({
             onClick={onOpenResetDialog}
             sx={{
               flex: 1,
+              height: TOK.buttonH,
+              fontSize: TOK.buttonFS,
               color: "#d32f2f",
               borderColor: "#d32f2f",
               "&:hover": {
@@ -173,7 +241,7 @@ const AdminActionForm = ({
           variant="outlined"
           color="success"
           onClick={onOpenResolveDialog}
-          sx={{ flex: 1 }}
+          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS }}
           disabled={isNew}
         >
           Resolve Incident
@@ -188,7 +256,7 @@ const AdminActionForm = ({
                 newPriority === incident.priority ? null : newPriority,
             })
           }
-          sx={{ flex: 1 }}
+          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS }}
           disabled={isSubmitting || !comment.trim()}
         >
           {isSubmitting ? "Submitting..." : "Submit Update"}
@@ -213,14 +281,24 @@ const StandardUserActionForm = ({
 }) => {
   const placeholderText =
     "This form will be enabled once the support team processes your incident.";
-
   return (
-    <Stack spacing={2} sx={{ flexGrow: 1, justifyContent: "space-between" }}>
+    <Stack
+      sx={{
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: TOK.formSpacing,
+      }}
+    >
       <TextField
         id="incident-comment"
         label={isDisabled ? "" : "Provide a detailed update"}
         multiline
-        rows={8}
+        sx={{
+          "& .MuiInputBase-multiline": {
+            minHeight: TOK.textAreaH,
+            fontSize: fluidRem(0.9, 1),
+          },
+        }}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         variant="outlined"
@@ -239,6 +317,7 @@ const StandardUserActionForm = ({
               onClick={() => onUpdate({ comment })}
               disabled={isDisabled || isSubmitting || !comment.trim()}
               fullWidth
+              sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
             >
               Submit Update
             </Button>
@@ -247,6 +326,7 @@ const StandardUserActionForm = ({
               onClick={onUserClose}
               disabled={isDisabled || isSubmitting}
               fullWidth
+              sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
             >
               Close Incident
             </Button>
@@ -259,6 +339,7 @@ const StandardUserActionForm = ({
             onClick={onUserConfirm}
             disabled={isDisabled || isSubmitting}
             fullWidth
+            sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
           >
             Confirm Resolution
           </Button>
@@ -290,7 +371,6 @@ export default function IncidentActionForm({
   const [comment, setComment] = React.useState("");
   const [newType, setNewType] = React.useState("");
   const [newPriority, setNewPriority] = React.useState("");
-
   const { data: incidentTypes, isLoading: isLoadingTypes } = useSWR(
     "/api/incident-types",
     fetcher
@@ -305,7 +385,16 @@ export default function IncidentActionForm({
 
   const { data: session } = useSession();
   const user = session?.user;
-  const isSubmitting = onUpdate.isSubmitting; // Assuming onUpdate is a mutate function from SWR or similar
+  const isSubmitting = onUpdate.isSubmitting;
+
+  const handleUpdateAndClear = async (data) => {
+    try {
+      await onUpdate(data);
+      setComment("");
+    } catch (error) {
+      console.error("Update failed, not clearing comment field.", error);
+    }
+  };
 
   const renderForm = () => {
     if (isAdmin) {
@@ -313,7 +402,7 @@ export default function IncidentActionForm({
         <AdminActionForm
           {...{
             incident,
-            onUpdate,
+            onUpdate: handleUpdateAndClear,
             isSubmitting,
             comment,
             setComment,
@@ -337,7 +426,7 @@ export default function IncidentActionForm({
       return (
         <VendorActionForm
           {...{
-            onUpdate,
+            onUpdate: handleUpdateAndClear,
             isSubmitting,
             comment,
             setComment,
@@ -351,7 +440,7 @@ export default function IncidentActionForm({
         <StandardUserActionForm
           {...{
             incident,
-            onUpdate,
+            onUpdate: handleUpdateAndClear,
             onUserClose,
             onUserConfirm,
             canUserConfirm,
@@ -364,21 +453,26 @@ export default function IncidentActionForm({
         />
       );
     }
-    return null; // Should not happen if showActionArea is calculated correctly
+    return null;
   };
 
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}
+      sx={{
+        p: TOK.cardPad,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
-      <Box sx={{ flexShrink: 0, mb: 2 }}>
-        <Typography variant="h5" gutterBottom>
+      <Box sx={{ flexShrink: 0, mb: TOK.headerMb }}>
+        <Typography variant="h5" gutterBottom sx={{ fontSize: TOK.headerFS }}>
           Take Action
         </Typography>
         <Divider />
       </Box>
-      {renderForm()}
+      <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 1 }}>{renderForm()}</Box>
     </Paper>
   );
 }

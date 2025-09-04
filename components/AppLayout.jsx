@@ -69,6 +69,7 @@ const spellCheckTooltipText = (
   </Stack>
 );
 const drawerWidth = 240;
+// This is the stable version using strings
 const allMenuItems = [
   {
     text: "Dashboard",
@@ -80,7 +81,7 @@ const allMenuItems = [
       "sys_admin",
       "network_vendor",
       "biometric_vendor",
-      "telecom",
+      "telecom_user", // <-- The fix is here
       "etl",
     ],
   },
@@ -94,7 +95,7 @@ const allMenuItems = [
       "sys_admin",
       "network_vendor",
       "biometric_vendor",
-      "telecom",
+      "telecom_user", // <-- The fix is here
       "etl",
     ],
   },
