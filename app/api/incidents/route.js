@@ -15,11 +15,8 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const filters = Object.fromEntries(searchParams.entries());
-    // 🔒 If logged in as the Telecom account, only return Telecom-assigned incidents.
-    //    This prevents "all network incidents" from showing up without a referral.
-    if (user?.id === "telecom") {
-      filters.assignedTeam = TEAMS.TELECOM; // exact constant, case-sensitive
-    }
+
+    // The filtering logic is now correctly handled inside getAllIncidents based on the user's role.
     const result = await getAllIncidents(filters, user);
     return NextResponse.json(result);
   } catch (error) {
