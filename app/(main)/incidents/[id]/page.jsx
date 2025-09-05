@@ -343,11 +343,10 @@ export default function IncidentDetailsPage() {
           {showActionArea && incident.status !== INCIDENT_STATUS.CLOSED && (
             <Box
               sx={{
+                display: isAuditTrailExpanded ? "none" : "block",
                 flex: isAuditTrailExpanded ? "1 1 0%" : "1 1 calc(50% - 4px)",
                 minHeight: 0,
-                opacity: isAuditTrailExpanded ? 0 : 1,
-                visibility: isAuditTrailExpanded ? "hidden" : "visible",
-                transition: "flex 0.3s ease-in-out, opacity 0.2s ease-in-out",
+                transition: "flex 0.3s ease-in-out",
                 zIndex: 2,
               }}
             >
