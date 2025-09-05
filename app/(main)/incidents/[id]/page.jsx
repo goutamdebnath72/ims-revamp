@@ -12,6 +12,7 @@ import ResolutionDialog from "@/components/ResolutionDialog";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import DescriptionModal from "@/components/DescriptionModal";
 import TelecomReferralModal from "@/components/TelecomReferralModal";
+import TelecomETLActionForm from "@/components/TelecomETLActionForm";
 import {
   Box,
   Stack,
@@ -136,6 +137,8 @@ export default function IncidentDetailsPage() {
   const isAdmin =
     user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SYS_ADMIN;
   const isRequestor = user?.ticketNo === incident?.requestor?.ticketNo;
+  const isTelecomUser = user?.role === USER_ROLES.TELECOM_USER;
+  const isEtlUser = user?.role === USER_ROLES.ETL;
   const isAssignedTelecomUser =
     user?.department === TEAMS.TELECOM &&
     incident?.assignedTeam === TEAMS.TELECOM;
@@ -152,7 +155,12 @@ export default function IncidentDetailsPage() {
     incident.status === INCIDENT_STATUS.PROCESSED;
 
   const showActionArea =
-    isAdmin || isRequestor || isAssignedTelecomUser || isAssignedVendor;
+    isAdmin ||
+    isRequestor ||
+    isAssignedTelecomUser ||
+    isAssignedVendor ||
+    isTelecomUser ||
+    isEtlUser;
 
   const isResolved =
     incident.status === INCIDENT_STATUS.RESOLVED ||
@@ -366,6 +374,14 @@ export default function IncidentDetailsPage() {
                     Confirm Resolution
                   </Button>
                 </Paper>
+              ) : isTelecomUser || isEtlUser ? (
+                <TelecomETLActionForm
+                  incident={incident}
+                  onUpdate={handleUpdate}
+                  onOpenResolveDialog={() =>
+                    handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
+                  }
+                />
               ) : (
                 <IncidentActionForm
                   incident={incident}
