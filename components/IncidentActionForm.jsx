@@ -287,16 +287,22 @@ const StandardUserActionForm = ({
         flexGrow: 1,
         justifyContent: "space-between",
         gap: TOK.formSpacing,
+        pt: 3, // <-- Add this line to create the blank space at the top
       }}
     >
       <TextField
         id="incident-comment"
         label={isDisabled ? "" : "Provide a detailed update"}
+        InputLabelProps={{ shrink: true }}
         multiline
         sx={{
           "& .MuiInputBase-multiline": {
-            minHeight: TOK.textAreaH,
+            minHeight: fluidPx(120, 200),
             fontSize: fluidRem(0.9, 1),
+          },
+          // Add this block to align the cursor to the top
+          "& .MuiInputBase-root": {
+            alignItems: "flex-start",
           },
         }}
         value={comment}
@@ -366,6 +372,8 @@ export default function IncidentActionForm({
   onOpenTelecomReferralDialog,
   isAdmin,
   isAssignedVendor,
+  isTelecomUser,
+  isAnimating,
 }) {
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
   const [comment, setComment] = React.useState("");
@@ -472,7 +480,20 @@ export default function IncidentActionForm({
         </Typography>
         <Divider />
       </Box>
-      <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 1 }}>{renderForm()}</Box>
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflowY: "auto",
+          pr: 1,
+          // Conditionally hide scrollbar during animation
+          "&::-webkit-scrollbar": {
+            display: isAnimating ? "none" : "initial",
+          },
+          scrollbarWidth: isAnimating ? "none" : "auto", // For Firefox
+        }}
+      >
+        {renderForm()}
+      </Box>{" "}
     </Paper>
   );
 }

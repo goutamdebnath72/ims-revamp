@@ -92,6 +92,7 @@ export default function IncidentDetailsPage() {
   const [referralData, setReferralData] = React.useState(null);
   const auditTrailRef = React.useRef(null);
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
+  const [isAnimating, setIsAnimating] = React.useState(false);
 
   React.useEffect(() => {
     setTimeout(() => {
@@ -301,6 +302,21 @@ export default function IncidentDetailsPage() {
     }
   };
 
+    // --- ADD THIS NEW FUNCTION HERE ---
+  const handleToggleExpand = () => {
+    // Don't allow another animation if one is already in progress
+    if (isAnimating) return;
+
+    setIsAnimating(true);
+    setIsAuditTrailExpanded((prev) => !prev);
+
+    // After the CSS transition is finished (300ms), turn off the animation state
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 300); // This duration must match your CSS transition duration
+  };
+  // --- END OF NEW FUNCTION ---
+
   return (
     <>
       <Box
@@ -335,7 +351,7 @@ export default function IncidentDetailsPage() {
               isExpanded={isAuditTrailExpanded}
               onToggleExpand={
                 showActionArea && incident.status !== INCIDENT_STATUS.CLOSED
-                  ? () => setIsAuditTrailExpanded((prev) => !prev)
+                  ? handleToggleExpand
                   : null
               }
             />
@@ -380,6 +396,7 @@ export default function IncidentDetailsPage() {
                   onOpenResolveDialog={() =>
                     handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
                   }
+                  isAnimating={isAnimating}
                 />
               ) : (
                 <IncidentActionForm
@@ -408,6 +425,7 @@ export default function IncidentDetailsPage() {
                   onOpenTelecomReferralDialog={() => setReferralModalOpen(true)}
                   isAdmin={isAdmin} // Pass isAdmin prop
                   isAssignedVendor={isAssignedVendor} // Pass isAssignedVendor prop
+                  isAnimating={isAnimating}
                 />
               )}
             </Box>

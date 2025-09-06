@@ -18,3 +18,33 @@
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.4);
 }
+
+/* --- Global Scrollbar Styles --- */
+
+/* For Webkit-based browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 8px;  /* Width of the vertical scrollbar */
+  height: 8px; /* Height of the horizontal scrollbar */
+}
+
+/* The scrollbar track (the path it moves along) */
+*::-webkit-scrollbar-track {
+  background: #f1f1f1; /* A very light grey for the track */
+}
+
+/* The draggable scrolling handle */
+*::-webkit-scrollbar-thumb {
+  background: #aaa;      /* A muted grey for the handle */
+  border-radius: 10px;   /* Rounded corners for the handle */
+}
+
+/* The handle on hover */
+*::-webkit-scrollbar-thumb:hover {
+  background: #888;      /* A darker grey when you hover over it */
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;           /* "auto" or "thin" */
+  scrollbar-color: #aaa #f1f1f1;  /* thumb color and track color */
+}

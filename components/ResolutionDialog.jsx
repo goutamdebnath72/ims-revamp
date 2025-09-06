@@ -114,7 +114,7 @@ export default function ResolutionDialog({
 
         {/* Closing Reason Dropdown (for Admin or User) */}
         {action === RESOLUTION_ACTIONS.CLOSE && (
-          <FormControl fullWidth required sx={{ mb: 2 }} size="small">
+          <FormControl fullWidth required sx={{ mb: 2, mt: 1 }} size="small">
             <InputLabel>Reason for Closing</InputLabel>
             <Select
               value={closingReason}

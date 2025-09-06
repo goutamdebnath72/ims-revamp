@@ -2,7 +2,8 @@ import * as React from "react";
 import { Suspense } from "react";
 import ThemeRegistry from "./ThemeRegistry";
 import { AppProviders } from "./providers";
-import { LoadingProvider } from "@/context/LoadingContext"; // Import the new provider
+import { LoadingProvider } from "@/context/LoadingContext";
+import './globals.css';
 
 export const metadata = {
   title: "IMS Application",
