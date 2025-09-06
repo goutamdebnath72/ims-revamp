@@ -59,6 +59,9 @@ const VendorActionForm = ({
             minHeight: TOK.textAreaH,
             fontSize: fluidRem(0.9, 1),
           },
+          "& .MuiInputBase-root": {
+            alignItems: "flex-start",
+          },
         }}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
@@ -198,6 +201,9 @@ const AdminActionForm = ({
               minHeight: TOK.textAreaH,
               fontSize: fluidRem(0.9, 1),
             },
+            "& .MuiInputBase-root": {
+            alignItems: "flex-start",
+          },
           }}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
