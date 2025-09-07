@@ -103,10 +103,7 @@ const AdminActionForm = ({
   newPriority,
   setNewPriority,
 }) => {
-  const referredToTelecom =
-    incident?.assignedTeam === "TELECOM" ||
-    incident?.status === "Pending Telecom Action" ||
-    (Array.isArray(incident?.telecomTasks) && incident.telecomTasks.length > 0);
+  const referredToTelecom = incident?.status === "Pending Telecom Action";
 
   const canReferToTelecom = showReferToTelecomButton && !referredToTelecom;
   const isNew = incident.status === INCIDENT_STATUS.NEW;
@@ -202,8 +199,8 @@ const AdminActionForm = ({
               fontSize: fluidRem(0.9, 1),
             },
             "& .MuiInputBase-root": {
-            alignItems: "flex-start",
-          },
+              alignItems: "flex-start",
+            },
           }}
           value={comment}
           onChange={(e) => setComment(e.target.value)}

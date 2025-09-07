@@ -181,11 +181,21 @@ export default function IncidentDetailsPage() {
     isRequestor && incident.status === INCIDENT_STATUS.PROCESSED;
   const canUserConfirm =
     isRequestor && incident.status === INCIDENT_STATUS.RESOLVED && !isAdmin;
+
+  // --- START: DEBUGGING BLOCK ---
+  console.log("--- Debugging 'Refer to Telecom' Button ---");
+  console.log("1. isAdmin:", isAdmin);
+  console.log("2. Incident Type:", incident.incidentType?.name);
+  console.log("3. Expected Type:", INCIDENT_TYPES.NETWORK);
+  console.log("4. Incident Status:", incident.status);
+  console.log("5. Expected Status:", INCIDENT_STATUS.PROCESSED);
+  // --- END: DEBUGGING BLOCK ---
+
   const canReferToTelecom =
     isAdmin &&
-    incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
-    incident.status === INCIDENT_STATUS.PROCESSED &&
-    incident.assignedTeam !== TEAMS.TELECOM;
+    incident.incidentType?.name?.toLowerCase() ===
+      INCIDENT_TYPES.NETWORK?.toLowerCase() &&
+    incident.status === INCIDENT_STATUS.PROCESSED;
 
   const handlePasswordResetSuccess = () => {
     setIsResetModalOpen(false);
@@ -302,7 +312,7 @@ export default function IncidentDetailsPage() {
     }
   };
 
-    // --- ADD THIS NEW FUNCTION HERE ---
+  // --- ADD THIS NEW FUNCTION HERE ---
   const handleToggleExpand = () => {
     // Don't allow another animation if one is already in progress
     if (isAnimating) return;
