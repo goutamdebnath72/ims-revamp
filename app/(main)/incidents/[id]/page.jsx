@@ -12,7 +12,6 @@ import ResolutionDialog from "@/components/ResolutionDialog";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import DescriptionModal from "@/components/DescriptionModal";
 import TelecomReferralModal from "@/components/TelecomReferralModal";
-import TelecomETLActionForm from "@/components/TelecomETLActionForm";
 import {
   Box,
   Stack,
@@ -100,13 +99,13 @@ export default function IncidentDetailsPage() {
     }, 0);
   }, [incidentData?.auditTrail?.length]);
 
-    // --- ADD THIS NEW USEEFFECT HOOK HERE ---
+  // --- ADD THIS NEW USEEFFECT HOOK HERE ---
   React.useEffect(() => {
     // This effect runs only when referralData changes
     if (referralData) {
       // It automatically calls handleUpdate with the referral data.
       handleUpdate({ comment: referralData.comment || "" });
-      
+
       // It then closes the modal
       setReferralModalOpen(false);
     }
@@ -274,9 +273,9 @@ export default function IncidentDetailsPage() {
     }
   };
   const handleReferralSubmit = (dataFromModal) => {
-    setReferralData(dataFromModal);    
+    setReferralData(dataFromModal);
   };
-  
+
   const handleConfirmResolve = async (resolutionData) => {
     let payload = { ...resolutionData };
     switch (resolutionData.action) {
@@ -413,15 +412,6 @@ export default function IncidentDetailsPage() {
                     Confirm Resolution
                   </Button>
                 </Paper>
-              ) : isTelecomUser || isEtlUser ? (
-                <TelecomETLActionForm
-                  incident={incident}
-                  onUpdate={handleUpdate}
-                  onOpenResolveDialog={() =>
-                    handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
-                  }
-                  isAnimating={isAnimating}
-                />
               ) : (
                 <IncidentActionForm
                   incident={incident}
@@ -444,12 +434,15 @@ export default function IncidentDetailsPage() {
                     incident.status === INCIDENT_STATUS.NEW &&
                     isRequestor &&
                     !isAdmin
-                  } // Corrected isDisabled logic
+                  }
                   showReferToTelecomButton={canReferToTelecom}
                   onOpenTelecomReferralDialog={() => setReferralModalOpen(true)}
-                  isAdmin={isAdmin} // Pass isAdmin prop
-                  isAssignedVendor={isAssignedVendor} // Pass isAssignedVendor prop
+                  isAdmin={isAdmin}
+                  isAssignedVendor={isAssignedVendor}
                   isAnimating={isAnimating}
+                  // --- Pass the Telecom/ETL roles down ---
+                  isTelecomUser={isTelecomUser}
+                  isEtlUser={isEtlUser}
                 />
               )}
             </Box>

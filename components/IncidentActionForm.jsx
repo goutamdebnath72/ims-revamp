@@ -35,6 +35,16 @@ const TOK = {
   buttonH: fluidPx(28, 42), // Button height
   buttonFS: fluidRem(0.55, 0.9), // Button font size
 };
+// --- NEW TELECOM and ETL -SPECIFIC CONSTANTS ---
+const TELECOM_ETL_TOK = {
+  cardPad: fluidPx(12, 24),
+  headerFS: fluidRem(1.0, 1.5),
+  headerMb: fluidPx(8, 40),
+  formSpacing: fluidPx(5, 40),
+  textAreaH: fluidPx(80, 180),
+  buttonH: fluidPx(28, 42),
+  buttonFS: fluidRem(0.55, 0.9),
+};
 // --- NEW VENDOR-SPECIFIC CONSTANTS ---
 const VENDOR_TOK = {
   formSpacing: fluidPx(10, 20),
@@ -105,6 +115,7 @@ const VendorActionForm = ({
 };
 
 // --- ADMIN-SPECIFIC FORM COMPONENT ---
+// --- ADMIN-SPECIFIC FORM COMPONENT ---
 const AdminActionForm = ({
   incident,
   onUpdate,
@@ -123,20 +134,28 @@ const AdminActionForm = ({
   setNewType,
   newPriority,
   setNewPriority,
+  isFormDisabled,
 }) => {
-  const referredToTelecom = incident?.status === "Pending Telecom Action";
-
+  const referredToTelecom =
+    incident?.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION;
   const canReferToTelecom = showReferToTelecomButton && !referredToTelecom;
   const isNew = incident.status === INCIDENT_STATUS.NEW;
   const isPasswordReset = incident.auditTrail.some(
     (entry) => entry.action === "Password Reset"
   );
+
   return (
     <Stack
       sx={{
         flexGrow: 1,
         justifyContent: "space-between",
         gap: TOK.formSpacing,
+        // This is the definitive fix for deactivation
+        ...(isFormDisabled && {
+          opacity: 0.5,
+          pointerEvents: "none",
+          filter: "grayscale(1)",
+        }),
       }}
     >
       <Box>
@@ -154,7 +173,6 @@ const AdminActionForm = ({
               isLoadingTypes ||
               incident.isTypeLocked
             }
-            // --- 💡 STYLES MOVED HERE TO CONTROL THE SHRUNK LABEL ---
             sx={{
               "& .MuiInputLabel-shrink": {
                 fontSize: TOK.dropdownLabelFS,
@@ -184,7 +202,6 @@ const AdminActionForm = ({
             fullWidth
             size="small"
             disabled={isNew || isPasswordReset || incident.isPriorityLocked}
-            // --- 💡 STYLES MOVED HERE TO CONTROL THE SHRUNK LABEL ---
             sx={{
               "& .MuiInputLabel-shrink": {
                 fontSize: TOK.dropdownLabelFS,
@@ -383,6 +400,77 @@ const StandardUserActionForm = ({
   );
 };
 
+// --- TELECOM-SPECIFIC FORM COMPONENT (NEW) ---
+const TelecomActionForm = ({
+  onUpdate,
+  isSubmitting,
+  comment,
+  setComment,
+  isSpellcheckEnabled,
+  onOpenResolveDialog,
+  hasUpdated, // This prop will be passed from the parent
+}) => {
+  return (
+    <Stack
+      sx={{
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: TELECOM_ETL_TOK.formSpacing,
+        pt: 3, // Proactively add the buffer to prevent label clipping
+      }}
+    >
+      <TextField
+        id="incident-comment-telecom"
+        label="Provide a detailed update"
+        multiline
+        //InputLabelProps={{ shrink: true }}
+        placeholder="Start typing to enable the Update button..."
+        sx={{
+          "& .MuiInputBase-multiline": {
+            minHeight: TELECOM_ETL_TOK.textAreaH,
+          },
+          "& .MuiInputBase-root": {
+            alignItems: "flex-start",
+          },
+        }}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        variant="outlined"
+        fullWidth
+        spellCheck={isSpellcheckEnabled}
+        required
+      />
+      <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={onOpenResolveDialog}
+          disabled={!hasUpdated} // Preserving the key logic
+          sx={{
+            flex: 1,
+            height: TELECOM_ETL_TOK.buttonH,
+            fontSize: TELECOM_ETL_TOK.buttonFS,
+          }}
+        >
+          Resolve Incident
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => onUpdate({ comment })}
+          disabled={isSubmitting || !comment.trim()}
+          sx={{
+            flex: 1,
+            height: TELECOM_ETL_TOK.buttonH,
+            fontSize: TELECOM_ETL_TOK.buttonFS,
+          }}
+        >
+          {isSubmitting ? "Updating..." : "Update Comment"}
+        </Button>
+      </Stack>
+    </Stack>
+  );
+};
+
 // --- MAIN FORM COMPONENT ---
 export default function IncidentActionForm({
   incident,
@@ -407,6 +495,7 @@ export default function IncidentActionForm({
   const [comment, setComment] = React.useState("");
   const [newType, setNewType] = React.useState("");
   const [newPriority, setNewPriority] = React.useState("");
+  const [hasUpdated, setHasUpdated] = React.useState(false);
   const { data: incidentTypes, isLoading: isLoadingTypes } = useSWR(
     "/api/incident-types",
     fetcher
@@ -416,6 +505,13 @@ export default function IncidentActionForm({
     if (incident) {
       setNewType(incident.incidentType?.name || "");
       setNewPriority(incident.priority || "");
+      // Check if any telecom/etl user has already commented
+      const hasAction = incident.auditTrail.some(
+        (entry) =>
+          entry.authorRole === USER_ROLES.TELECOM_USER ||
+          entry.authorRole === USER_ROLES.ETL
+      );
+      setHasUpdated(hasAction); // <-- Add these 5 lines
     }
   }, [incident]);
 
@@ -427,10 +523,25 @@ export default function IncidentActionForm({
     try {
       await onUpdate(data);
       setComment("");
+      setHasUpdated(true); // <-- Add this line
     } catch (error) {
       console.error("Update failed, not clearing comment field.", error);
     }
   };
+  // --- START: DEBUGGING BLOCK ---
+  console.log("--- Debugging Admin Form Deactivation ---");
+  console.log("1. isAdmin:", isAdmin);
+  console.log("2. Incident Status from DB:", `"${incident.status}"`);
+  console.log(
+    "3. Expected Status from Constants:",
+    `"${INCIDENT_STATUS.PENDING_TELECOM_ACTION}"`
+  );
+  // --- END: DEBUGGING BLOCK ---
+
+  // --- ADD THIS NEW CONSTANT ---
+  const isFormDisabledForAdmin =
+    isAdmin && incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION;
+  // We can add || incident.status === INCIDENT_STATUS.PENDING_ETL later
 
   const renderForm = () => {
     if (isAdmin) {
@@ -454,6 +565,22 @@ export default function IncidentActionForm({
             setNewType,
             newPriority,
             setNewPriority,
+            isFormDisabled: isFormDisabledForAdmin,
+          }}
+        />
+      );
+    }
+    if (isTelecomUser) {
+      return (
+        <TelecomActionForm
+          {...{
+            onUpdate: handleUpdateAndClear,
+            isSubmitting,
+            comment,
+            setComment,
+            isSpellcheckEnabled,
+            onOpenResolveDialog,
+            hasUpdated,
           }}
         />
       );
