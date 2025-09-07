@@ -100,6 +100,19 @@ export default function IncidentDetailsPage() {
     }, 0);
   }, [incidentData?.auditTrail?.length]);
 
+    // --- ADD THIS NEW USEEFFECT HOOK HERE ---
+  React.useEffect(() => {
+    // This effect runs only when referralData changes
+    if (referralData) {
+      // It automatically calls handleUpdate with the referral data.
+      handleUpdate({ comment: referralData.comment || "" });
+      
+      // It then closes the modal
+      setReferralModalOpen(false);
+    }
+  }, [referralData]); // Dependency: This hook runs only when referralData is updated
+  // --- END OF NEW HOOK ---
+
   if (isLoading) {
     return (
       <Box
@@ -261,9 +274,9 @@ export default function IncidentDetailsPage() {
     }
   };
   const handleReferralSubmit = (dataFromModal) => {
-    setReferralData(dataFromModal);
-    setReferralModalOpen(false);
+    setReferralData(dataFromModal);    
   };
+  
   const handleConfirmResolve = async (resolutionData) => {
     let payload = { ...resolutionData };
     switch (resolutionData.action) {
