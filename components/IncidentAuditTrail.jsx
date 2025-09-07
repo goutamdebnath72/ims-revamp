@@ -43,7 +43,13 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
     const checkOverflow = () => {
       if (scrollContainerRef.current) {
         const { scrollHeight, clientHeight } = scrollContainerRef.current;
-        setCanExpand(scrollHeight > clientHeight);
+        const isOverflowing = scrollHeight > clientHeight;
+
+        // This new logic prevents the button from disappearing after expansion.
+        // It will only hide the button if content doesn't overflow when the card is retracted.
+        if (!isExpanded || isOverflowing) {
+          setCanExpand(isOverflowing);
+        }
       }
     };
     checkOverflow();
@@ -53,7 +59,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
       clearTimeout(debouncedCheck);
       window.removeEventListener("resize", checkOverflow);
     };
-  }, [auditTrail]);
+  }, [auditTrail, isExpanded]);
 
   const handleDownload = () => {
     generateIncidentPdf(incident, auditTrail);
@@ -128,7 +134,7 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
           p: 0,
           py: 1.5,
           flexGrow: 1,
-          overflowY: "scroll",
+          overflowY: "auto",
         }}
       >
         {auditTrail.map((entry, index) => {

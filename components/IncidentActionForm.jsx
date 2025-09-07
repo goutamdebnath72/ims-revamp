@@ -35,6 +35,14 @@ const TOK = {
   buttonH: fluidPx(28, 42), // Button height
   buttonFS: fluidRem(0.55, 0.9), // Button font size
 };
+// --- NEW VENDOR-SPECIFIC CONSTANTS ---
+const VENDOR_TOK = {
+  formSpacing: fluidPx(10, 20),
+  textAreaH: fluidPx(120, 190), // Define a taller height just for vendors
+  buttonH: fluidPx(30, 45),
+  buttonFS: fluidRem(0.6, 1.0),
+  buttonLetterSpacing: fluidPx(0.5, 1.2),
+};
 
 const priorities = ["Low", "Medium", "High"];
 
@@ -49,18 +57,27 @@ const VendorActionForm = ({
   isSpellcheckEnabled,
 }) => {
   return (
-    <Stack spacing={2} sx={{ flexGrow: 1, justifyContent: "space-between" }}>
+    <Stack
+      sx={{
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: VENDOR_TOK.formSpacing, // Use vendor-specific gap
+        pt: 3, // Buffer to prevent label clipping
+      }}
+    >
       <TextField
-        id="incident-comment"
+        id="incident-comment-vendor"
         label="Provide a detailed update"
         multiline
+        //InputLabelProps={{ shrink: true }} // Permanently shrink label
+        placeholder="Provide your update here..."
         sx={{
           "& .MuiInputBase-multiline": {
-            minHeight: TOK.textAreaH,
+            minHeight: VENDOR_TOK.textAreaH, // Use vendor-specific height
             fontSize: fluidRem(0.9, 1),
           },
           "& .MuiInputBase-root": {
-            alignItems: "flex-start",
+            alignItems: "flex-start", // Align cursor to the top
           },
         }}
         value={comment}
@@ -75,7 +92,11 @@ const VendorActionForm = ({
         onClick={() => onUpdate({ comment })}
         disabled={isSubmitting || !comment.trim()}
         fullWidth
-        sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
+        sx={{
+          height: VENDOR_TOK.buttonH, // Use vendor-specific height
+          fontSize: VENDOR_TOK.buttonFS, // Use vendor-specific font size
+          letterSpacing: VENDOR_TOK.buttonLetterSpacing,
+        }}
       >
         {isSubmitting ? "Submitting..." : "Submit Update"}
       </Button>
@@ -306,6 +327,10 @@ const StandardUserActionForm = ({
           // Add this block to align the cursor to the top
           "& .MuiInputBase-root": {
             alignItems: "flex-start",
+          },
+          // This block to enhance the clarity of placeholder
+          "& .Mui-disabled::placeholder": {
+            opacity: 1,
           },
         }}
         value={comment}

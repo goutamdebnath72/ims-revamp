@@ -147,10 +147,11 @@ export default function IncidentDetailsPage() {
   // --- NEW VENDOR LOGIC ---
   const isNetworkVendor =
     user?.role === USER_ROLES.NETWORK_VENDOR &&
-    incident.incidentType?.name === INCIDENT_TYPES.NETWORK;
+    incident.incidentType?.name?.toLowerCase() ===
+      INCIDENT_TYPES.NETWORK?.toLowerCase();
   const isBiometricVendor =
     user?.role === USER_ROLES.BIOMETRIC_VENDOR &&
-    incident.incidentType?.name === "BIOMETRIC"; // Assuming a constant
+    incident.incidentType?.name?.toLowerCase() === "BIOMETRIC".toLowerCase();
   const isAssignedVendor =
     (isNetworkVendor || isBiometricVendor) &&
     incident.status === INCIDENT_STATUS.PROCESSED;
