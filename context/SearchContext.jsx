@@ -11,7 +11,7 @@ import useSWR from "swr";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
-import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants"; // <-- 1. Import the new constant
 
 export const SearchContext = createContext();
 
@@ -38,18 +38,19 @@ export function SearchProvider({ children }) {
   const user = session?.user;
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); // <-- 2. Create state for page size
   const [criteria, setCriteria] = useState(createDefaultCriteria());
   const [hasSearched, setHasSearched] = useState(false);
 
-  // --- This new block ensures a default limit is always set ---
-  const apiParams = new URLSearchParams(searchParams.toString());
-  if (!apiParams.has("limit")) {
-    apiParams.set("limit", "10"); // Set default limit to 10 if not present
-  }
-  // --- End of new block ---
+  // This new block ensures the API URL is always correct
+  const apiParams = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("limit", params.get("limit") || pageSize.toString());
+    return params.toString();
+  }, [searchParams, pageSize]);
 
   const { data, error, isLoading } = useSWR(
-    hasSearched ? `/api/incidents?${searchParams.toString()}` : null,
+    hasSearched ? `/api/incidents?${apiParams}` : null,
     fetcher,
     {
       refreshInterval:
@@ -63,15 +64,11 @@ export function SearchProvider({ children }) {
   const handleSearch = (newCriteria) => {
     const params = new URLSearchParams();
     params.append("page", "1");
-    params.append("limit", "10");
+    params.append("limit", pageSize.toString()); // <-- 3. Use the pageSize state here
     Object.entries(newCriteria).forEach(([key, value]) => {
       if (key === "dateRange") {
-        if (value.start) {
-          params.append("startDate", value.start.toISO());
-        }
-        if (value.end) {
-          params.append("endDate", value.end.toISO());
-        }
+        if (value.start) params.append("startDate", value.start.toISO());
+        if (value.end) params.append("endDate", value.end.toISO());
       } else if (value && value !== "Any") {
         params.append(key, value);
       }
@@ -81,20 +78,18 @@ export function SearchProvider({ children }) {
 
   const handlePageChange = useCallback(
     (newPage) => {
-      // Add useCallback
       const params = new URLSearchParams(searchParams.toString());
       params.set("page", newPage.toString());
       router.push(`/search?${params.toString()}`);
     },
     [searchParams, router]
-  ); // Adding dependencies
+  );
 
   const resetSearch = useCallback(() => {
-    // Adding useCallback
     setCriteria(createDefaultCriteria());
     setHasSearched(false);
     setPage(1);
-  }, []); // No dependencies needed
+  }, []);
 
   useEffect(() => {
     const urlParams = Object.fromEntries(searchParams.entries());
@@ -116,11 +111,14 @@ export function SearchProvider({ children }) {
         },
       });
       setPage(urlParams.page ? parseInt(urlParams.page, 10) : 1);
+      setPageSize(
+        urlParams.limit ? parseInt(urlParams.limit, 10) : DEFAULT_PAGE_SIZE
+      ); // <-- 4. Sync pageSize with URL
       setHasSearched(true);
     } else {
       resetSearch();
     }
-  }, [searchParams]);
+  }, [searchParams, resetSearch]);
 
   const value = useMemo(
     () => ({
@@ -135,6 +133,8 @@ export function SearchProvider({ children }) {
       handleSearch,
       handlePageChange,
       resetSearch,
+      pageSize,
+      setPageSize, // <-- 5. Expose pageSize to the UI
     }),
     [
       criteria,
@@ -147,6 +147,7 @@ export function SearchProvider({ children }) {
       handleSearch,
       handlePageChange,
       resetSearch,
+      pageSize,
     ]
   );
 

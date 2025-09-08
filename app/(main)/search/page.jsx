@@ -2,18 +2,21 @@
 
 import React, { useContext } from "react";
 import { SearchContext } from "@/context/SearchContext";
+// --- Imports updated for the new spinner ---
 import { Box, Typography, Paper, Stack, IconButton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import IncidentSearchForm from "@/components/IncidentSearchForm";
 import IncidentDataGrid from "@/components/IncidentDataGrid";
 import { DateTime } from "luxon";
-import useSWR from "swr"; // Keep swr for dropdown data
+import useSWR from "swr";
+import { useRouter } from "next/navigation";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function SearchPage() {
-  // Get all state and functions from the new context
   const {
     criteria,
     hasSearched,
@@ -23,15 +26,44 @@ export default function SearchPage() {
     handleSearch,
     handlePageChange,
     setCriteria,
-    user, // ADDING THIS
+    user,
+    pageSize,
+    setPageSize,
   } = useContext(SearchContext);
-
-  // Fetch dropdown data locally in the page component
+  const router = useRouter();
   const { data: incidentTypesData } = useSWR("/api/incident-types", fetcher);
   const { data: departmentsData } = useSWR("/api/departments", fetcher);
   const incidentTypes = incidentTypesData || [];
   const departments = departmentsData || [];
 
+  // --- This is the new block with the full, correct logic ---
+
+  // This function now handles the state update AND triggers the new search
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+
+    // Build new search params from the current URL, keeping existing filters
+    const params = new URLSearchParams(window.location.search);
+    params.set("page", "1"); // Always reset to page 1
+    params.set("limit", newPageSize.toString());
+
+    // Trigger the search instantly by pushing the new URL
+    router.push(`/search?${params.toString()}`);
+  };
+
+  const handleIncrementPageSize = () => {
+    if (pageSize < 50) {
+      handlePageSizeChange(pageSize + 5);
+    }
+  };
+
+  const handleDecrementPageSize = () => {
+    if (pageSize > 10) {
+      handlePageSizeChange(pageSize - 5);
+    }
+  };
+
+  // --- Existing helper functions (PRESERVED) ---
   const getHeading = () => {
     if (
       user?.role === "sys_admin" &&
@@ -41,12 +73,10 @@ export default function SearchPage() {
     return "Search & Archive";
   };
 
-  // --- ADDING THIS FUNCTION FOR FORMATTING THE DASHBOARD FILTER ---
   const formatFilterText = () => {
     const parts = [];
     const { dateRange, shift } = criteria;
 
-    // Format the date part
     if (dateRange?.start && dateRange?.end) {
       const start = DateTime.fromISO(dateRange.start);
       const end = DateTime.fromISO(dateRange.end);
@@ -65,14 +95,12 @@ export default function SearchPage() {
       parts.push("All Time");
     }
 
-    // Format the shift part
     if (shift && shift !== "Any") {
       parts.push(`Shift: ${shift}`);
     }
 
     return parts.join("  |  ");
   };
-  // ------------------------------------
 
   return (
     <Stack
@@ -83,19 +111,13 @@ export default function SearchPage() {
         height: "calc(100vh - 112px)",
       }}
     >
-      <Paper
-        elevation={2}
-        sx={{
-          p: 2,
-          bgcolor: "background.default", // Match the results paper
-        }}
-      >
+      <Paper elevation={2} sx={{ p: 2, bgcolor: "background.default" }}>
         <Typography variant="h4" sx={{ mb: 2 }}>
           {getHeading()}
         </Typography>
         <IncidentSearchForm
           criteria={criteria}
-          onCriteriaChange={setCriteria} // Pass this down
+          onCriteriaChange={setCriteria}
           onSearch={handleSearch}
           isLoading={isLoading}
           incidentTypes={incidentTypes}
@@ -105,29 +127,23 @@ export default function SearchPage() {
 
       <Paper
         elevation={2}
-        sx={{ p: 2, display: "flex", flexDirection: "column", flexGrow: 1 }}
+        sx={{
+          p: 2,
+          display: "flex",
+          flexDirection: "column",
+          ...(!hasSearched && { flexGrow: 1 }),
+        }}
       >
         {hasSearched ? (
           <>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                mb: 2,
-                gap: 2,
-              }}
-            >
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2, gap: 2 }}>
               <Typography variant="h5" component="h2">
                 Search Results
               </Typography>
               <Typography
                 variant="body1"
                 color="text.primary"
-                sx={{
-                  fontWeight: 500,
-                  position: "relative", // Adding this
-                  top: "1px", // Adding this to nudge the text down
-                }}
+                sx={{ fontWeight: 500, position: "relative", top: "1px" }}
               >
                 ({formatFilterText()})
               </Typography>
@@ -136,7 +152,8 @@ export default function SearchPage() {
               <IncidentDataGrid
                 rows={incidentData?.incidents || []}
                 loading={isLoading}
-                hideFooterPagination={true}
+                hideFooter={true}
+                autoHeight
               />
             </Box>
             <Box
@@ -151,13 +168,34 @@ export default function SearchPage() {
                 <Typography variant="body2" sx={{ mr: "auto" }}>
                   Showing{" "}
                   <strong>
-                    {(incidentData.currentPage - 1) * 20 + 1}–
-                    {(incidentData.currentPage - 1) * 20 +
+                    {(incidentData.currentPage - 1) * pageSize + 1}–
+                    {(incidentData.currentPage - 1) * pageSize +
                       incidentData.incidents.length}
                   </strong>{" "}
                   of <strong>{incidentData.totalIncidents}</strong>
                 </Typography>
               )}
+              {/* --- This is the NEW Page Size Spinner --- */}
+              <Stack direction="row" alignItems="center" sx={{ mx: 2 }}>
+                <IconButton
+                  onClick={handleDecrementPageSize}
+                  disabled={pageSize <= 10}
+                  size="small"
+                >
+                  <RemoveIcon />
+                </IconButton>
+                <Box sx={{ px: 2, minWidth: "80px", textAlign: "center" }}>
+                  <Typography variant="body2">{pageSize} per page</Typography>
+                </Box>
+                <IconButton
+                  onClick={handleIncrementPageSize}
+                  disabled={pageSize >= 50}
+                  size="small"
+                >
+                  <AddIcon />
+                </IconButton>
+              </Stack>
+
               <Typography variant="body2" sx={{ mr: 2 }}>
                 Page {incidentData?.currentPage || 0} of{" "}
                 {incidentData?.totalPages || 0}
