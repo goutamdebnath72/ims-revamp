@@ -166,7 +166,7 @@ export default function IncidentDetailsPage() {
     incident.incidentType?.name?.toLowerCase() === "BIOMETRIC".toLowerCase();
   const isAssignedVendor =
     (isNetworkVendor || isBiometricVendor) &&
-    incident.status === INCIDENT_STATUS.PROCESSED;
+    incident.status?.toLowerCase() !== INCIDENT_STATUS.NEW?.toLowerCase();
 
   const showActionArea =
     isAdmin ||

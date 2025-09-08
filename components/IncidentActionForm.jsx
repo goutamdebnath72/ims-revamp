@@ -20,22 +20,23 @@ import { fluidPx, fluidRem } from "@/utils/fluidScale";
 
 // --- Design Tokens Object ---
 const TOK = {
-  cardPad: fluidPx(12, 24), // Card padding
-  headerFS: fluidRem(1.0, 1.5), // "Take Action" font size
-  headerMb: fluidPx(8, 20), // Margin below header
-  formSpacing: fluidPx(5, 20), // Gap between form sections
-  dropdownsPt: fluidPx(8, 12), // Padding top for dropdowns (for label fix)
-  dropdownsMb: fluidPx(5, 20), // Margin below dropdowns
-  dropdownH: fluidPx(28, 42), // Dropdown height
-  dropdownFS: fluidRem(0.65, 1), // Dropdown font size
-  dropdownLabelFS: fluidRem(0.6, 0.9), // Dropdown label font size
-  dropdownLabelX: fluidPx(10, 14), // Left/Right position
-  dropdownLabelY: fluidPx(-5, -9), // Up/Down position
-  textAreaH: fluidPx(80, 150), // Fluid height for the text area (replaces rows={6})
-  buttonH: fluidPx(28, 42), // Button height
-  buttonFS: fluidRem(0.55, 0.9), // Button font size
+  cardPad: fluidPx(12, 24),
+  headerFS: fluidRem(1.0, 1.5),
+  headerMb: fluidPx(8, 20),
+  formSpacing: fluidPx(5, 20),
+  dropdownsPt: fluidPx(8, 12),
+  dropdownsMb: fluidPx(5, 20),
+  dropdownH: fluidPx(28, 42),
+  dropdownFS: fluidRem(0.65, 1),
+  dropdownLabelFS: fluidRem(0.6, 0.9),
+  dropdownLabelX: fluidPx(10, 14),
+  dropdownLabelY: fluidPx(-5, -9),
+  textAreaH: fluidPx(80, 150),
+  buttonH: fluidPx(28, 42),
+  buttonFS: fluidRem(0.55, 0.9),
 };
-// --- NEW TELECOM and ETL -SPECIFIC CONSTANTS ---
+
+// --- TELECOM and ETL -SPECIFIC CONSTANTS ---
 const TELECOM_ETL_TOK = {
   cardPad: fluidPx(12, 24),
   headerFS: fluidRem(1.0, 1.5),
@@ -45,10 +46,11 @@ const TELECOM_ETL_TOK = {
   buttonH: fluidPx(28, 42),
   buttonFS: fluidRem(0.55, 0.9),
 };
-// --- NEW VENDOR-SPECIFIC CONSTANTS ---
+
+// --- VENDOR-SPECIFIC CONSTANTS ---
 const VENDOR_TOK = {
   formSpacing: fluidPx(10, 20),
-  textAreaH: fluidPx(120, 190), // Define a taller height just for vendors
+  textAreaH: fluidPx(120, 190),
   buttonH: fluidPx(30, 45),
   buttonFS: fluidRem(0.6, 1.0),
   buttonLetterSpacing: fluidPx(0.5, 1.2),
@@ -58,6 +60,31 @@ const priorities = ["Low", "Medium", "High"];
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
+// --- CENTRALIZED SWITCHBOARD FOR DISABLING FORMS ---
+const getFormDisabledState = ({
+  incident,
+  isAdmin,
+  isRequestor,
+  isAssignedVendor,
+}) => {
+  // Rule 1: For Admins...
+  if (isAdmin && incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION) {
+    return true;
+  }
+  // Rule 2: For Standard Users...
+  if (isRequestor && incident.status === INCIDENT_STATUS.NEW) {
+    return true;
+  }
+  // Rule 3: For Vendors (NEW)
+  if (
+    isAssignedVendor &&
+    incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
+  ) {
+    return true;
+  }
+  return false;
+};
+
 // --- VENDOR-SPECIFIC FORM COMPONENT ---
 const VendorActionForm = ({
   onUpdate,
@@ -65,29 +92,35 @@ const VendorActionForm = ({
   comment,
   setComment,
   isSpellcheckEnabled,
+  isDisabled, // Receives the 'switch' from the parent
 }) => {
   return (
     <Stack
       sx={{
         flexGrow: 1,
         justifyContent: "space-between",
-        gap: VENDOR_TOK.formSpacing, // Use vendor-specific gap
-        pt: 3, // Buffer to prevent label clipping
+        gap: VENDOR_TOK.formSpacing,
+        pt: 3,
+        // This block handles the visual "greyed out" style
+        ...(isDisabled && {
+          opacity: 0.6,
+          pointerEvents: "none",
+          filter: "grayscale(1)",
+        }),
       }}
     >
       <TextField
         id="incident-comment-vendor"
         label="Provide a detailed update"
         multiline
-        //InputLabelProps={{ shrink: true }} // Permanently shrink label
         placeholder="Provide your update here..."
         sx={{
           "& .MuiInputBase-multiline": {
-            minHeight: VENDOR_TOK.textAreaH, // Use vendor-specific height
+            minHeight: VENDOR_TOK.textAreaH,
             fontSize: fluidRem(0.9, 1),
           },
           "& .MuiInputBase-root": {
-            alignItems: "flex-start", // Align cursor to the top
+            alignItems: "flex-start",
           },
         }}
         value={comment}
@@ -96,15 +129,17 @@ const VendorActionForm = ({
         fullWidth
         spellCheck={isSpellcheckEnabled}
         required
+        disabled={isDisabled} // <-- This is the crucial line for the text box
       />
       <Button
         variant="contained"
         onClick={() => onUpdate({ comment })}
-        disabled={isSubmitting || !comment.trim()}
+        // This correctly combines the master switch with its own logic
+        disabled={isDisabled || isSubmitting || !comment.trim()}
         fullWidth
         sx={{
-          height: VENDOR_TOK.buttonH, // Use vendor-specific height
-          fontSize: VENDOR_TOK.buttonFS, // Use vendor-specific font size
+          height: VENDOR_TOK.buttonH,
+          fontSize: VENDOR_TOK.buttonFS,
           letterSpacing: VENDOR_TOK.buttonLetterSpacing,
         }}
       >
@@ -114,7 +149,6 @@ const VendorActionForm = ({
   );
 };
 
-// --- ADMIN-SPECIFIC FORM COMPONENT ---
 // --- ADMIN-SPECIFIC FORM COMPONENT ---
 const AdminActionForm = ({
   incident,
@@ -134,7 +168,7 @@ const AdminActionForm = ({
   setNewType,
   newPriority,
   setNewPriority,
-  isFormDisabled,
+  isDisabled,
 }) => {
   const referredToTelecom =
     incident?.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION;
@@ -150,9 +184,8 @@ const AdminActionForm = ({
         flexGrow: 1,
         justifyContent: "space-between",
         gap: TOK.formSpacing,
-        // This is the definitive fix for deactivation
-        ...(isFormDisabled && {
-          opacity: 0.5,
+        ...(isDisabled && {
+          opacity: 0.6,
           pointerEvents: "none",
           filter: "grayscale(1)",
         }),
@@ -185,10 +218,7 @@ const AdminActionForm = ({
               value={newType}
               label="Change Incident Type"
               onChange={(e) => setNewType(e.target.value)}
-              sx={{
-                height: TOK.dropdownH,
-                fontSize: TOK.dropdownFS,
-              }}
+              sx={{ height: TOK.dropdownH, fontSize: TOK.dropdownFS }}
             >
               {incidentTypes &&
                 incidentTypes.map((type) => (
@@ -214,10 +244,7 @@ const AdminActionForm = ({
               value={newPriority}
               label="Change Priority"
               onChange={(e) => setNewPriority(e.target.value)}
-              sx={{
-                height: TOK.dropdownH,
-                fontSize: TOK.dropdownFS,
-              }}
+              sx={{ height: TOK.dropdownH, fontSize: TOK.dropdownFS }}
             >
               {priorities.map((p) => (
                 <MenuItem key={p} value={p}>
@@ -236,9 +263,7 @@ const AdminActionForm = ({
               minHeight: TOK.textAreaH,
               fontSize: fluidRem(0.9, 1),
             },
-            "& .MuiInputBase-root": {
-              alignItems: "flex-start",
-            },
+            "& .MuiInputBase-root": { alignItems: "flex-start" },
           }}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
@@ -308,6 +333,7 @@ const AdminActionForm = ({
 };
 
 // --- STANDARD USER-SPECIFIC FORM COMPONENT ---
+// --- STANDARD USER-SPECIFIC FORM COMPONENT ---
 const StandardUserActionForm = ({
   incident,
   onUpdate,
@@ -328,7 +354,13 @@ const StandardUserActionForm = ({
         flexGrow: 1,
         justifyContent: "space-between",
         gap: TOK.formSpacing,
-        pt: 3, // <-- Add this line to create the blank space at the top
+        pt: 3,
+        // Add this block for the consistent deactivation style
+        ...(isDisabled && {
+          opacity: 0.6,
+          pointerEvents: "none",
+          filter: "grayscale(1)",
+        }),
       }}
     >
       <TextField
@@ -341,11 +373,9 @@ const StandardUserActionForm = ({
             minHeight: fluidPx(120, 200),
             fontSize: fluidRem(0.9, 1),
           },
-          // Add this block to align the cursor to the top
           "& .MuiInputBase-root": {
             alignItems: "flex-start",
           },
-          // This block to enhance the clarity of placeholder
           "& .Mui-disabled::placeholder": {
             opacity: 1,
           },
@@ -408,7 +438,7 @@ const TelecomActionForm = ({
   setComment,
   isSpellcheckEnabled,
   onOpenResolveDialog,
-  hasUpdated, // This prop will be passed from the parent
+  hasUpdated,
 }) => {
   return (
     <Stack
@@ -416,22 +446,18 @@ const TelecomActionForm = ({
         flexGrow: 1,
         justifyContent: "space-between",
         gap: TELECOM_ETL_TOK.formSpacing,
-        pt: 3, // Proactively add the buffer to prevent label clipping
+        pt: 3,
       }}
     >
       <TextField
         id="incident-comment-telecom"
         label="Provide a detailed update"
         multiline
-        //InputLabelProps={{ shrink: true }}
+        InputLabelProps={{ shrink: true }}
         placeholder="Start typing to enable the Update button..."
         sx={{
-          "& .MuiInputBase-multiline": {
-            minHeight: TELECOM_ETL_TOK.textAreaH,
-          },
-          "& .MuiInputBase-root": {
-            alignItems: "flex-start",
-          },
+          "& .MuiInputBase-multiline": { minHeight: TELECOM_ETL_TOK.textAreaH },
+          "& .MuiInputBase-root": { alignItems: "flex-start" },
         }}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
@@ -445,7 +471,7 @@ const TelecomActionForm = ({
           variant="contained"
           color="success"
           onClick={onOpenResolveDialog}
-          disabled={!hasUpdated} // Preserving the key logic
+          disabled={!hasUpdated}
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
@@ -483,13 +509,13 @@ export default function IncidentActionForm({
   onUserClose,
   canUserConfirm,
   onUserConfirm,
-  isDisabled,
   showReferToTelecomButton,
   onOpenTelecomReferralDialog,
   isAdmin,
   isAssignedVendor,
   isTelecomUser,
   isAnimating,
+  isEtlUser, // Removed isDisabled from here
 }) {
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
   const [comment, setComment] = React.useState("");
@@ -505,13 +531,12 @@ export default function IncidentActionForm({
     if (incident) {
       setNewType(incident.incidentType?.name || "");
       setNewPriority(incident.priority || "");
-      // Check if any telecom/etl user has already commented
       const hasAction = incident.auditTrail.some(
         (entry) =>
           entry.authorRole === USER_ROLES.TELECOM_USER ||
           entry.authorRole === USER_ROLES.ETL
       );
-      setHasUpdated(hasAction); // <-- Add these 5 lines
+      setHasUpdated(hasAction);
     }
   }, [incident]);
 
@@ -523,25 +548,18 @@ export default function IncidentActionForm({
     try {
       await onUpdate(data);
       setComment("");
-      setHasUpdated(true); // <-- Add this line
+      setHasUpdated(true);
     } catch (error) {
       console.error("Update failed, not clearing comment field.", error);
     }
   };
-  // --- START: DEBUGGING BLOCK ---
-  console.log("--- Debugging Admin Form Deactivation ---");
-  console.log("1. isAdmin:", isAdmin);
-  console.log("2. Incident Status from DB:", `"${incident.status}"`);
-  console.log(
-    "3. Expected Status from Constants:",
-    `"${INCIDENT_STATUS.PENDING_TELECOM_ACTION}"`
-  );
-  // --- END: DEBUGGING BLOCK ---
 
-  // --- ADD THIS NEW CONSTANT ---
-  const isFormDisabledForAdmin =
-    isAdmin && incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION;
-  // We can add || incident.status === INCIDENT_STATUS.PENDING_ETL later
+  const isFormDeactivated = getFormDisabledState({
+    incident,
+    isAdmin,
+    isRequestor,
+    isAssignedVendor,
+  });
 
   const renderForm = () => {
     if (isAdmin) {
@@ -565,7 +583,7 @@ export default function IncidentActionForm({
             setNewType,
             newPriority,
             setNewPriority,
-            isFormDisabled: isFormDisabledForAdmin,
+            isDisabled: isFormDeactivated,
           }}
         />
       );
@@ -594,6 +612,7 @@ export default function IncidentActionForm({
             comment,
             setComment,
             isSpellcheckEnabled,
+            isDisabled: isFormDeactivated,
           }}
         />
       );
@@ -611,7 +630,7 @@ export default function IncidentActionForm({
             comment,
             setComment,
             isSpellcheckEnabled,
-            isDisabled,
+            isDisabled: isFormDeactivated,
           }}
         />
       );
@@ -640,15 +659,12 @@ export default function IncidentActionForm({
           flexGrow: 1,
           overflowY: "auto",
           pr: 1,
-          // Conditionally hide scrollbar during animation
-          "&::-webkit-scrollbar": {
-            display: isAnimating ? "none" : "initial",
-          },
-          scrollbarWidth: isAnimating ? "none" : "auto", // For Firefox
+          "&::-webkit-scrollbar": { display: isAnimating ? "none" : "initial" },
+          scrollbarWidth: isAnimating ? "none" : "auto",
         }}
       >
         {renderForm()}
-      </Box>{" "}
+      </Box>
     </Paper>
   );
 }

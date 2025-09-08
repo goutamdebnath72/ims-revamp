@@ -27,29 +27,31 @@ import StatusChart from "@/components/StatusChart";
 import PriorityChart from "@/components/PriorityChart";
 import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 import { useSession } from "next-auth/react";
-import { TEAMS } from "@/lib/constants";
+// --- THIS IS THE CORRECTED IMPORT ---
+import {
+  TEAMS,
+  INCIDENT_STATUS,
+  INCIDENT_PRIORITY,
+  USER_ROLES,
+  INCIDENT_TYPES,
+} from "@/lib/constants";
 
-// This is a specialized dashboard for the Network Vendor role.
 export default function NetworkVendorDashboard() {
   const { data: session } = useSession();
-  const isTelecomUser = session?.user?.id === "telecom";
+  const isTelecomUser = session?.user?.role === USER_ROLES.TELECOM_USER;
   const dashboardTitle = isTelecomUser
     ? "Telecom Dashboard"
     : "Network Incidents Dashboard";
-
   const cardContainerStyles = {
-    height: 380, // You can adjust this "sweet spot" value
+    height: 380,
     display: "flex",
     flexDirection: "column",
   };
 
-  // 1. Get ALL necessary state and functions from the context
   const { filters, setFilters, resetFilters, incidents } = React.useContext(
     DashboardFilterContext
   );
   const { dateRange, shift } = filters;
-
-  // 2. Remove all local useState for filters. Use the context's state.
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
@@ -80,77 +82,62 @@ export default function NetworkVendorDashboard() {
 
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
-    if (!start || !end) return "All Time"; // Handle "All Time"
-
+    if (!start || !end) return "All Time";
     const now = DateTime.local().setZone("Asia/Kolkata");
-
-    // Check for "Today"
     if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
-
-    // Check for "This Week"
     if (
       start.hasSame(now.startOf("week"), "day") &&
       end.hasSame(now.endOf("day"), "day")
     )
       return "This Week";
-
-    // Check for "This Month"
     if (
       start.hasSame(now.startOf("month"), "day") &&
       end.hasSame(now.endOf("day"), "day")
     )
       return "This Month";
-
-    // Fallback for custom ranges
     if (start.toISODate() === end.toISODate())
       return start.toFormat("d MMM, yy");
-
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  // This is the new, corrected logic
-const filteredIncidents = React.useMemo(() => {
-  if (!incidents) return [];
-
-  if (isTelecomUser) {
-    // For Telecom, show only incidents that are assigned to them AND are pending their action.
-    return incidents.filter(
-      (incident) =>
-        incident.assignedTeam === TEAMS.TELECOM &&
-        incident.status === "Pending Telecom Action"
-    );
-  } else {
-    // For Network Vendor, show all NETWORK incidents not assigned to Telecom.
-    return incidents.filter(
-      (incident) =>
-        incident.incidentType?.name === "NETWORK" &&
-        incident.assignedTeam !== TEAMS.TELECOM
-    );
-  }
-}, [incidents, isTelecomUser]);
+  const filteredIncidents = React.useMemo(() => {
+    if (!incidents) return [];
+    if (isTelecomUser) {
+      return incidents.filter(
+        (incident) =>
+          incident.assignedTeam === TEAMS.TELECOM &&
+          incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
+      );
+    } else {
+      return incidents.filter(
+        (incident) =>
+          incident.incidentType?.name?.toLowerCase() ===
+          INCIDENT_TYPES.NETWORK?.toLowerCase()
+      );
+    }
+  }, [incidents, isTelecomUser]);
 
   const pendingIncidents = filteredIncidents.filter(
-    (i) => i.status === "Pending Telecom Action"
+    (i) => i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
   ).length;
   const processedIncidents = filteredIncidents.filter(
-    (i) => i.status === "Processed"
+    (i) => i.status === INCIDENT_STATUS.PROCESSED
   ).length;
   const resolvedIncidents = filteredIncidents.filter(
-    (i) => i.status === "Resolved"
+    (i) => i.status === INCIDENT_STATUS.RESOLVED
   ).length;
   const closedIncidents = filteredIncidents.filter(
-    (i) => i.status === "Closed"
+    (i) => i.status === INCIDENT_STATUS.CLOSED
   ).length;
 
   const statCardsData = [
-    // Conditionally add the "Pending" card ONLY for Telecom users
     ...(isTelecomUser
       ? [
           {
             title: "Pending Action",
             value: pendingIncidents,
             color: "warning",
-            filterStatus: "Pending Telecom Action",
+            filterStatus: INCIDENT_STATUS.PENDING_TELECOM_ACTION,
           },
         ]
       : []),
@@ -158,35 +145,30 @@ const filteredIncidents = React.useMemo(() => {
       title: "Assigned (Processed)",
       value: processedIncidents,
       color: "info",
-      filterStatus: "Processed",
+      filterStatus: INCIDENT_STATUS.PROCESSED,
     },
     {
       title: "Resolved Incidents",
       value: resolvedIncidents,
       color: "success",
-      filterStatus: "Resolved",
+      filterStatus: INCIDENT_STATUS.RESOLVED,
     },
     {
       title: "Closed",
       value: closedIncidents,
       color: "default",
-      filterStatus: "Closed",
+      filterStatus: INCIDENT_STATUS.CLOSED,
     },
   ];
 
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-
-    // ===== THIS IS THE FIX =====
-    // Create the correct search link based on the user type
     if (isTelecomUser) {
       params.append("assignedTeam", TEAMS.TELECOM);
     } else {
-      params.append("incidentType", "NETWORK");
+      params.append("incidentType", INCIDENT_TYPES.NETWORK);
     }
-    // ===========================
-
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -194,7 +176,6 @@ const filteredIncidents = React.useMemo(() => {
   };
 
   const statusChartData = [
-    // Conditionally add the "Pending" data ONLY for Telecom users
     ...(isTelecomUser ? [{ name: "Pending", count: pendingIncidents }] : []),
     { name: "Processed", count: processedIncidents },
     { name: "Resolved", count: resolvedIncidents },
@@ -206,24 +187,27 @@ const filteredIncidents = React.useMemo(() => {
       name: "High",
       value: filteredIncidents.filter(
         (i) =>
-          i.priority === "High" &&
-          (i.status === "Processed" || i.status === "Pending Telecom Action")
+          i.priority === INCIDENT_PRIORITY.HIGH &&
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
       ).length,
     },
     {
       name: "Medium",
       value: filteredIncidents.filter(
         (i) =>
-          i.priority === "Medium" &&
-          (i.status === "Processed" || i.status === "Pending Telecom Action")
+          i.priority === INCIDENT_PRIORITY.MEDIUM &&
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
       ).length,
     },
     {
       name: "Low",
       value: filteredIncidents.filter(
         (i) =>
-          i.priority === "Low" &&
-          (i.status === "Processed" || i.status === "Pending Telecom Action")
+          i.priority === INCIDENT_PRIORITY.LOW &&
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
       ).length,
     },
   ].filter((item) => item.value > 0);
@@ -296,9 +280,7 @@ const filteredIncidents = React.useMemo(() => {
             {dashboardTitle}
           </Typography>
         </Box>
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-          {/* Placeholder for any potential center items */}
-        </Box>
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }} />
         <Box
           sx={{
             flex: 1,
@@ -308,7 +290,6 @@ const filteredIncidents = React.useMemo(() => {
             gap: 1,
           }}
         >
-          {/* --- FIX: REORDERED THE ITEMS BELOW --- */}
           <ReplayIcon
             onClick={resetFilters}
             sx={{ cursor: "pointer", color: "action.active" }}
@@ -379,13 +360,13 @@ const filteredIncidents = React.useMemo(() => {
               data={priorityChartData}
               dateRange={dateRange}
               shift={shift}
-              incidentTypeFilter="NETWORK"
+              incidentTypeFilter={INCIDENT_TYPES.NETWORK}
             />
           </Box>
         </Stack>
         <Box sx={cardContainerStyles}>
           <RecentIncidentsCard incidents={filteredIncidents} />
-        </Box>{" "}
+        </Box>
       </Stack>
     </Stack>
   );
