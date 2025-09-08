@@ -4,7 +4,7 @@ import React, { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
-import { Chip, CircularProgress } from "@mui/material";
+import { Chip, CircularProgress, Tooltip } from "@mui/material";
 import { DateTime } from "luxon";
 
 const columns = [
@@ -53,13 +53,15 @@ const columns = [
           ? { color: "#fff" }
           : {};
       return (
-        <Chip
-          label={status}
-          color={color}
-          size="small"
-          variant={variant}
-          sx={chipStyles}
-        />
+        <Tooltip title={status} arrow>
+          <Chip
+            label={status}
+            color={color}
+            size="small"
+            variant={variant}
+            sx={chipStyles}
+          />
+        </Tooltip>
       );
     },
   },
@@ -89,8 +91,9 @@ function IncidentDataGrid({ rows, loading }) {
         columns={columns}
         loading={loading}
         onRowClick={handleRowClick}
-        hideFooterPagination={true}
+        hideFooter={true}
         stickyHeader
+        autoHeight
         sx={{
           "& .MuiDataGrid-row:hover": {
             cursor: "pointer",

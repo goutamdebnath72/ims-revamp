@@ -10,6 +10,7 @@ import {
   Chip,
   Divider,
   Box,
+  Tooltip,
   ListItemButton,
   CircularProgress, // Import CircularProgress
 } from "@mui/material";
@@ -118,12 +119,16 @@ export default function RecentIncidentsCard({ incidents }) {
                   }).toFormat("dd MMM, h:mm a")}
                 </Typography>
                 <Box sx={{ width: "95px" }}>
-                  <Chip
-                    label={incident.status}
-                    color={getStatusChipColor(incident.status)}
-                    variant={incident.status === "New" ? "outlined" : "filled"}
-                    size="small"
-                  />
+                  <Tooltip title={incident.status} arrow>
+                    <Chip
+                      label={incident.status}
+                      color={getStatusChipColor(incident.status)}
+                      variant={
+                        incident.status === "New" ? "outlined" : "filled"
+                      }
+                      size="small"
+                    />
+                  </Tooltip>
                 </Box>
               </Box>
             </Box>

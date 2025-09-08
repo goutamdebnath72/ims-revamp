@@ -66,22 +66,37 @@ const getFormDisabledState = ({
   isAdmin,
   isRequestor,
   isAssignedVendor,
+  isTelecomUser, // <-- 1. ADDED MISSING PARAMETER
 }) => {
-  // Rule 1: For Admins...
-  if (isAdmin && incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION) {
+  // Rule for Admins
+  if (
+    isAdmin &&
+    (incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
+      incident.status === INCIDENT_STATUS.RESOLVED ||
+      incident.status === INCIDENT_STATUS.CLOSED)
+  ) {
     return true;
   }
-  // Rule 2: For Standard Users...
+  // Rule for Standard Users
   if (isRequestor && incident.status === INCIDENT_STATUS.NEW) {
     return true;
   }
-  // Rule 3: For Vendors (NEW)
+  // Rule for Vendors
   if (
     isAssignedVendor &&
     incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
   ) {
     return true;
   }
+  // Rule for Telecom Users (NEW)
+  if (
+    isTelecomUser &&
+    (incident.status === INCIDENT_STATUS.RESOLVED ||
+      incident.status === INCIDENT_STATUS.CLOSED)
+  ) {
+    return true;
+  }
+  // Default case: The form is enabled.
   return false;
 };
 
@@ -439,6 +454,7 @@ const TelecomActionForm = ({
   isSpellcheckEnabled,
   onOpenResolveDialog,
   hasUpdated,
+  isDisabled,
 }) => {
   return (
     <Stack
@@ -447,6 +463,11 @@ const TelecomActionForm = ({
         justifyContent: "space-between",
         gap: TELECOM_ETL_TOK.formSpacing,
         pt: 3,
+        ...(isDisabled && {
+          opacity: 0.6,
+          pointerEvents: "none",
+          filter: "grayscale(1)",
+        }),
       }}
     >
       <TextField
@@ -465,13 +486,14 @@ const TelecomActionForm = ({
         fullWidth
         spellCheck={isSpellcheckEnabled}
         required
+        disabled={isDisabled} // <-- FIX 1: Added disabled prop
       />
       <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
         <Button
           variant="contained"
           color="success"
           onClick={onOpenResolveDialog}
-          disabled={!hasUpdated}
+          disabled={isDisabled || !hasUpdated} // <-- FIX 2: Added isDisabled check
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
@@ -483,7 +505,7 @@ const TelecomActionForm = ({
         <Button
           variant="contained"
           onClick={() => onUpdate({ comment })}
-          disabled={isSubmitting || !comment.trim()}
+          disabled={isDisabled || isSubmitting || !comment.trim()} // <-- FIX 3: Added isDisabled check
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
@@ -522,6 +544,7 @@ export default function IncidentActionForm({
   const [newType, setNewType] = React.useState("");
   const [newPriority, setNewPriority] = React.useState("");
   const [hasUpdated, setHasUpdated] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { data: incidentTypes, isLoading: isLoadingTypes } = useSWR(
     "/api/incident-types",
     fetcher
@@ -542,15 +565,20 @@ export default function IncidentActionForm({
 
   const { data: session } = useSession();
   const user = session?.user;
-  const isSubmitting = onUpdate.isSubmitting;
 
   const handleUpdateAndClear = async (data) => {
+    setIsSubmitting(true); // 1. Immediately disable the submit button
+    setComment(""); // 2. Immediately clear the text box
+
     try {
-      await onUpdate(data);
-      setComment("");
+      await onUpdate(data); // 3. Now, wait for the API call to finish
       setHasUpdated(true);
     } catch (error) {
-      console.error("Update failed, not clearing comment field.", error);
+      console.error("Update failed", error);
+      // If the update fails, you might want to restore the user's comment
+      // setComment(data.comment);
+    } finally {
+      setIsSubmitting(false); // 4. Re-enable the button when done (success or fail)
     }
   };
 
@@ -559,6 +587,7 @@ export default function IncidentActionForm({
     isAdmin,
     isRequestor,
     isAssignedVendor,
+    isTelecomUser,
   });
 
   const renderForm = () => {
@@ -599,6 +628,7 @@ export default function IncidentActionForm({
             isSpellcheckEnabled,
             onOpenResolveDialog,
             hasUpdated,
+            isDisabled: isFormDeactivated,
           }}
         />
       );

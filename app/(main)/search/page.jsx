@@ -77,7 +77,11 @@ export default function SearchPage() {
   return (
     <Stack
       spacing={2}
-      sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 112px)' }}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 112px)",
+      }}
     >
       <Paper
         elevation={2}
@@ -182,7 +186,7 @@ export default function SearchPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              textAlign: "center",              
+              textAlign: "center",
               color: "text.secondary",
             }}
           >

@@ -1,14 +1,17 @@
 "use client";
 
 import * as React from "react";
-import Paper from "@mui/material/Paper";
-import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import Stack from "@mui/material/Stack";
 import { DateTime } from "luxon";
-import Button from "@mui/material/Button";
+import {
+  Box,
+  Button,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 
 function DetailItem({ label, value, component = "div" }) {
   return (
@@ -145,12 +148,16 @@ export default function IncidentDetailsCard({
               <DetailItem
                 label="Status"
                 value={
-                  <Chip
-                    label={incident.status}
-                    color={getStatusChipColor(incident.status)}
-                    variant={incident.status === "New" ? "outlined" : "filled"}
-                    size="small"
-                  />
+                  <Tooltip title={incident.status} arrow>
+                    <Chip
+                      label={incident.status}
+                      color={getStatusChipColor(incident.status)}
+                      variant={
+                        incident.status === "New" ? "outlined" : "filled"
+                      }
+                      size="small"
+                    />
+                  </Tooltip>
                 }
               />
             </Box>

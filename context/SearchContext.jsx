@@ -11,6 +11,7 @@ import useSWR from "swr";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants";
 
 export const SearchContext = createContext();
 
@@ -40,6 +41,13 @@ export function SearchProvider({ children }) {
   const [criteria, setCriteria] = useState(createDefaultCriteria());
   const [hasSearched, setHasSearched] = useState(false);
 
+  // --- This new block ensures a default limit is always set ---
+  const apiParams = new URLSearchParams(searchParams.toString());
+  if (!apiParams.has("limit")) {
+    apiParams.set("limit", "10"); // Set default limit to 10 if not present
+  }
+  // --- End of new block ---
+
   const { data, error, isLoading } = useSWR(
     hasSearched ? `/api/incidents?${searchParams.toString()}` : null,
     fetcher,
@@ -55,7 +63,7 @@ export function SearchProvider({ children }) {
   const handleSearch = (newCriteria) => {
     const params = new URLSearchParams();
     params.append("page", "1");
-    params.append("limit", "20"); 
+    params.append("limit", "10");
     Object.entries(newCriteria).forEach(([key, value]) => {
       if (key === "dateRange") {
         if (value.start) {
@@ -71,13 +79,18 @@ export function SearchProvider({ children }) {
     router.push(`/search?${params.toString()}`);
   };
 
-   const handlePageChange = useCallback((newPage) => { // Add useCallback
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", newPage.toString());
-    router.push(`/search?${params.toString()}`);
-  }, [searchParams, router]); // Adding dependencies
+  const handlePageChange = useCallback(
+    (newPage) => {
+      // Add useCallback
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", newPage.toString());
+      router.push(`/search?${params.toString()}`);
+    },
+    [searchParams, router]
+  ); // Adding dependencies
 
-  const resetSearch = useCallback(() => { // Adding useCallback
+  const resetSearch = useCallback(() => {
+    // Adding useCallback
     setCriteria(createDefaultCriteria());
     setHasSearched(false);
     setPage(1);
@@ -123,7 +136,18 @@ export function SearchProvider({ children }) {
       handlePageChange,
       resetSearch,
     }),
-    [criteria, hasSearched, page, data, isLoading, error, user, handleSearch, handlePageChange, resetSearch]
+    [
+      criteria,
+      hasSearched,
+      page,
+      data,
+      isLoading,
+      error,
+      user,
+      handleSearch,
+      handlePageChange,
+      resetSearch,
+    ]
   );
 
   return (
