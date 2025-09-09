@@ -21,12 +21,7 @@ import {
 } from "@mui/material";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
-import {
-  AUDIT_ACTIONS,
-  INCIDENT_STATUS,
-  INCIDENT_TYPES,
-  USER_ROLES,
-} from "@/lib/constants";
+import { INCIDENT_STATUS, AUDIT_ACTIONS, USER_ROLES } from "@/lib/constants";
 import { fluidPx, fluidRem } from "@/utils/fluidScale";
 
 // --- Design Tokens Object ---
@@ -77,8 +72,7 @@ const getFormDisabledState = ({
   isAdmin,
   isRequestor,
   isAssignedVendor,
-  isTelecomUser,
-  isEtlUser,
+  isTelecomUser, // <-- 1. ADDED MISSING PARAMETER
 }) => {
   // Rule for Admins
   if (
@@ -103,13 +97,6 @@ const getFormDisabledState = ({
   // Rule for Telecom Users (NEW)
   if (
     isTelecomUser &&
-    (incident.status === INCIDENT_STATUS.RESOLVED ||
-      incident.status === INCIDENT_STATUS.CLOSED)
-  ) {
-    return true;
-  }
-  if (
-    isEtlUser &&
     (incident.status === INCIDENT_STATUS.RESOLVED ||
       incident.status === INCIDENT_STATUS.CLOSED)
   ) {
@@ -187,14 +174,15 @@ const VendorActionForm = ({
 const AdminActionForm = ({
   incident,
   onUpdate,
-  onUnlockType,
   isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
   showResetButton,
   onOpenResetDialog,
+  showReferToTelecomButton,
   onOpenTelecomReferralDialog,
+  showReferToEtlButton,
   onOpenEtlReferralDialog,
   onOpenResolveDialog,
   incidentTypes,
@@ -204,31 +192,15 @@ const AdminActionForm = ({
   newPriority,
   setNewPriority,
   isDisabled,
+  onUnlockType,
 }) => {
+  const referredToTelecom =
+    incident?.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION;
+  const canReferToTelecom = showReferToTelecomButton && !referredToTelecom;
   const isNew = incident.status === INCIDENT_STATUS.NEW;
   const isPasswordReset = incident.auditTrail.some(
     (entry) => entry.action === "Password Reset"
   );
-
-  // --- FINAL, CORRECT LOGIC FOR ALL BUTTON STATES ---
-  const showTelecomButton =
-    newType.toLowerCase() === INCIDENT_TYPES.NETWORK.toLowerCase() &&
-    incident.status === INCIDENT_STATUS.PROCESSED;
-
-  const showEtlButton =
-    newType.toLowerCase() === INCIDENT_TYPES.PC_PERIPHERAL.toLowerCase() &&
-    incident.status === INCIDENT_STATUS.PROCESSED;
-
-  const isAlreadyReferred =
-    incident?.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
-    incident?.status === INCIDENT_STATUS.PENDING_ETL;
-
-  const displayReferralButton =
-    (showTelecomButton || showEtlButton) && !isAlreadyReferred;
-  
-  const hasUnsavedTypeChange =
-    newType.toLowerCase() !== incident.incidentType?.name.toLowerCase();
-  // --- END OF LOGIC ---
 
   return (
     <Stack
@@ -244,23 +216,24 @@ const AdminActionForm = ({
       }}
     >
       <Box>
-        {/* Dropdown and Lock Icon Section */}
         <Stack
           direction="row"
           spacing={2}
           sx={{ mb: TOK.dropdownsMb, pt: TOK.dropdownsPt }}
           alignItems="center"
         >
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ flex: 1 }}>
+          {/* --- FIX & REPLACEMENT FOR DROPDOWNS AND ICON --- */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.5}
+            sx={{ flex: 1 }}
+          >
             <FormControl
               fullWidth
               size="small"
               disabled={
-                isNew ||
-                isLoadingTypes ||
-                isPasswordReset || // This was the original bug, ensuring it's here.
-                incident.isTypeLocked ||
-                isDisabled
+                isNew || isLoadingTypes || incident.isTypeLocked || isDisabled // Master disable switch
               }
               sx={{
                 "& .MuiInputLabel-shrink": {
@@ -290,12 +263,13 @@ const AdminActionForm = ({
                   : "Type is unlocked"
               }
               arrow
+              // FIX II: Add styling to the tooltip
               componentsProps={{
                 tooltip: {
                   sx: {
-                    bgcolor: '#333',
-                    fontSize: '0.8rem',
-                    letterSpacing: '0.5px',
+                    bgcolor: "#333",
+                    fontSize: "0.8rem",
+                    letterSpacing: "0.5px",
                   },
                 },
               }}
@@ -303,10 +277,17 @@ const AdminActionForm = ({
               <span>
                 <IconButton
                   onClick={onUnlockType}
-                  disabled={!incident.isTypeLocked || isSubmitting || isDisabled}
+                  // FIX I: The button is ONLY clickable when the type is locked and the form is active
+                  disabled={
+                    !incident.isTypeLocked || isSubmitting || isDisabled
+                  }
                   size="small"
                 >
-                  {isNew || isLoadingTypes || isPasswordReset || incident.isTypeLocked || isDisabled ? (
+                  {/* FIX I: Icon is LOCKED if dropdown is disabled for ANY reason, UNLOCKED otherwise */}
+                  {isNew ||
+                  isLoadingTypes ||
+                  incident.isTypeLocked ||
+                  isDisabled ? (
                     <LockIcon fontSize="small" />
                   ) : (
                     <LockOpenIcon fontSize="small" />
@@ -316,12 +297,13 @@ const AdminActionForm = ({
             </Tooltip>
           </Stack>
 
+          {/* FIX III: Add flex: 1 to make its width equal to the block above */}
           <FormControl
             fullWidth
             size="small"
-            disabled={isNew || isPasswordReset || incident.isPriorityLocked || isDisabled}
+            disabled={isNew || incident.isPriorityLocked || isDisabled}
             sx={{
-              flex: 1,
+              flex: 1, // This line ensures equal width
               "& .MuiInputLabel-shrink": {
                 fontSize: TOK.dropdownLabelFS,
                 transform: `translate(${TOK.dropdownLabelX}, ${TOK.dropdownLabelY}) scale(0.75)`,
@@ -343,7 +325,8 @@ const AdminActionForm = ({
             </Select>
           </FormControl>
         </Stack>
-        
+        {/* --- END OF FIXES --- */}
+
         <TextField
           id="incident-comment"
           label="Provide a detailed update"
@@ -364,22 +347,37 @@ const AdminActionForm = ({
         />
       </Box>
       <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
-        {displayReferralButton && (
-          <Button
-            variant="outlined"
-            color={showEtlButton ? "primary" : "secondary"}
-            disabled={hasUnsavedTypeChange || isSubmitting}
-            onClick={
-              showEtlButton
-                ? onOpenEtlReferralDialog
-                : onOpenTelecomReferralDialog
-            }
-            sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS, letterSpacing: "0.8px" }}
-          >
-            {showEtlButton ? "Refer to ETL" : "Refer to Telecom"}
-          </Button>
-        )}
-        
+        {(() => {
+          // --- CORRECTED REFERRAL LOGIC ---
+          // These props from the parent tell us if a referral is possible based on the incident type.
+          // We add these local checks to ensure the incident has not ALREADY been referred to any team.
+          const isAlreadyReferred =
+            incident?.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
+            incident?.status === INCIDENT_STATUS.PENDING_ETL;
+
+          const displayTelecomButton =
+            showReferToTelecomButton && !isAlreadyReferred;
+          const displayEtlButton = showReferToEtlButton && !isAlreadyReferred;
+
+          if (displayTelecomButton || displayEtlButton) {
+            return (
+              <Button
+                variant="outlined"
+                color={displayEtlButton ? "primary" : "secondary"}
+                onClick={
+                  displayEtlButton
+                    ? onOpenEtlReferralDialog
+                    : onOpenTelecomReferralDialog
+                }
+                sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS }}
+              >
+                {displayEtlButton ? "Refer to ETL" : "Refer to Telecom"}
+              </Button>
+            );
+          }
+          return null;
+        })()}
+
         {showResetButton && (
           <Button
             variant="outlined"
@@ -388,7 +386,6 @@ const AdminActionForm = ({
               flex: 1,
               height: TOK.buttonH,
               fontSize: TOK.buttonFS,
-              letterSpacing: "0.8px",
               color: "#d32f2f",
               borderColor: "#d32f2f",
               "&:hover": {
@@ -404,7 +401,7 @@ const AdminActionForm = ({
           variant="outlined"
           color="success"
           onClick={onOpenResolveDialog}
-          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS, letterSpacing: "0.8px" }}
+          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS }}
           disabled={isNew}
         >
           Resolve Incident
@@ -419,7 +416,7 @@ const AdminActionForm = ({
                 newPriority === incident.priority ? null : newPriority,
             })
           }
-          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS, letterSpacing: "0.8px" }}
+          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS }}
           disabled={isSubmitting || !comment.trim()}
         >
           {isSubmitting ? "Submitting..." : "Submit Update"}
@@ -494,11 +491,7 @@ const StandardUserActionForm = ({
               onClick={() => onUpdate({ comment })}
               disabled={isDisabled || isSubmitting || !comment.trim()}
               fullWidth
-              sx={{
-                height: TOK.buttonH,
-                fontSize: TOK.buttonFS,
-                letterSpacing: "0.8px",
-              }}
+              sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
             >
               Submit Update
             </Button>
@@ -618,17 +611,12 @@ export default function IncidentActionForm({
   onUserConfirm,
   showReferToTelecomButton,
   onOpenTelecomReferralDialog,
-  onOpenEtlReferralDialog,
   isAdmin,
   isAssignedVendor,
   isTelecomUser,
   isAnimating,
   isEtlUser,
 }) {
-  console.log("TRACE 2: Props received by IncidentActionForm:", {
-    onOpenEtlReferralDialog,
-  }); // <-- ADD THIS LINE
-
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
   const [comment, setComment] = React.useState("");
   const [newType, setNewType] = React.useState("");
@@ -700,7 +688,6 @@ export default function IncidentActionForm({
     isRequestor,
     isAssignedVendor,
     isTelecomUser,
-    isEtlUser,
   });
 
   const renderForm = () => {
@@ -719,7 +706,6 @@ export default function IncidentActionForm({
             onOpenResetDialog,
             showReferToTelecomButton,
             onOpenTelecomReferralDialog,
-            onOpenEtlReferralDialog,
             onOpenResolveDialog,
             incidentTypes,
             isLoadingTypes,

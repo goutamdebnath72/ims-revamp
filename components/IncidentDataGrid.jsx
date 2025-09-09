@@ -53,7 +53,19 @@ const columns = [
           ? { color: "#fff" }
           : {};
       return (
-        <Tooltip title={status} arrow>
+        <Tooltip
+          title={status}
+          arrow
+          componentsProps={{
+            tooltip: {
+              sx: {
+                bgcolor: "#333",
+                fontSize: "0.8rem",
+                letterSpacing: "0.5px",
+              },
+            },
+          }}
+        >
           <Chip
             label={status}
             color={color}

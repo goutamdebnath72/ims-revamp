@@ -12,6 +12,7 @@ import ResolutionDialog from "@/components/ResolutionDialog";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
 import DescriptionModal from "@/components/DescriptionModal";
 import TelecomReferralModal from "@/components/TelecomReferralModal";
+import EtlReferralModal from "@/components/EtlReferralModal";
 import {
   Box,
   Stack,
@@ -87,30 +88,19 @@ export default function IncidentDetailsPage() {
   const [isDescriptionModalOpen, setDescriptionModalOpen] =
     React.useState(false);
   const [dialogContext, setDialogContext] = React.useState("");
-  const [isReferralModalOpen, setReferralModalOpen] = React.useState(false);
-  const [referralData, setReferralData] = React.useState(null);
+  const [isTelecomReferralModalOpen, setTelecomReferralModalOpen] =
+    React.useState(false);
   const auditTrailRef = React.useRef(null);
   const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
   const [isAnimating, setIsAnimating] = React.useState(false);
+  const [isEtlReferralModalOpen, setEtlReferralModalOpen] =
+    React.useState(false);
 
   React.useEffect(() => {
     setTimeout(() => {
       auditTrailRef.current?.scrollToBottom();
     }, 0);
   }, [incidentData?.auditTrail?.length]);
-
-  // --- ADD THIS NEW USEEFFECT HOOK HERE ---
-  React.useEffect(() => {
-    // This effect runs only when referralData changes
-    if (referralData) {
-      // It automatically calls handleUpdate with the referral data.
-      handleUpdate({ comment: referralData.comment || "" });
-
-      // It then closes the modal
-      setReferralModalOpen(false);
-    }
-  }, [referralData]); // Dependency: This hook runs only when referralData is updated
-  // --- END OF NEW HOOK ---
 
   if (isLoading) {
     return (
@@ -195,21 +185,6 @@ export default function IncidentDetailsPage() {
   const canUserConfirm =
     isRequestor && incident.status === INCIDENT_STATUS.RESOLVED && !isAdmin;
 
-  // --- START: DEBUGGING BLOCK ---
-  console.log("--- Debugging 'Refer to Telecom' Button ---");
-  console.log("1. isAdmin:", isAdmin);
-  console.log("2. Incident Type:", incident.incidentType?.name);
-  console.log("3. Expected Type:", INCIDENT_TYPES.NETWORK);
-  console.log("4. Incident Status:", incident.status);
-  console.log("5. Expected Status:", INCIDENT_STATUS.PROCESSED);
-  // --- END: DEBUGGING BLOCK ---
-
-  const canReferToTelecom =
-    isAdmin &&
-    incident.incidentType?.name?.toLowerCase() ===
-      INCIDENT_TYPES.NETWORK?.toLowerCase() &&
-    incident.status === INCIDENT_STATUS.PROCESSED;
-
   const handlePasswordResetSuccess = () => {
     setIsResetModalOpen(false);
     mutate();
@@ -226,36 +201,64 @@ export default function IncidentDetailsPage() {
     setDialogOpen(true);
   };
   const handleUpdate = async (updateData) => {
-    if (!updateData.comment && !referralData) return;
+    if (
+      !updateData.comment &&
+      !updateData.telecomTasks &&
+      !updateData.etlTasks &&
+      updateData.action !== "UNLOCK_TYPE" &&
+      !updateData.newType // Also allow updates if only the type is changing
+    ) {
+      return;
+    }
+
     const payload = { ...updateData };
-    if (incident?.status === INCIDENT_STATUS.NEW) {
+
+    if (incident?.status === INCIDENT_STATUS.NEW && !payload.status) {
       payload.status = INCIDENT_STATUS.PROCESSED;
     }
-    if (referralData) {
-      payload.assignedTeam = referralData.assignedTeam;
-      payload.telecomTasks = referralData.tasks;
-      payload.status = INCIDENT_STATUS.PENDING_TELECOM;
-      payload.action = AUDIT_ACTIONS.REFERRED_TO_TELECOM;
-      payload.comment = `Referred to Telecom with the following tasks:\n- ${referralData.tasks.join(
+
+    if (updateData.telecomTasks) {
+      payload.assignedTeam = TEAMS.TELECOM;
+      payload.status = INCIDENT_STATUS.PENDING_TELECOM_ACTION;
+      payload.comment = `Referred to Telecom with tasks:\n- ${updateData.telecomTasks.join(
         "\n- "
-      )}\n\n---\n${updateData.comment || referralData.comment}`;
-      setReferralData(null);
+      )}\n\n---\n${updateData.comment}`;
+    } else if (updateData.etlTasks) {
+      payload.assignedTeam = TEAMS.ETL;
+      payload.status = INCIDENT_STATUS.PENDING_ETL;
+      payload.comment = `Referred to ETL with tasks:\n- ${updateData.etlTasks.join(
+        "\n- "
+      )}\n\n---\n${updateData.comment}`;
     }
+
+    // --- THIS IS THE FIX ---
+    // Create optimistic data that includes the potential new incident type
+    const optimisticType = payload.newType
+      ? { ...incident.incidentType, name: payload.newType }
+      : incident.incidentType;
+
     const optimisticAuditEntry = {
       id: "optimistic-" + Math.random(),
       author: user.name,
       action: payload.action || AUDIT_ACTIONS.ACTION_TAKEN,
-      comment: payload.comment,
+      comment:
+        payload.comment || `Incident Type changed to "${payload.newType}".`,
       timestamp: new Date().toISOString(),
     };
+
     mutate(
       (currentData) => ({
         ...currentData,
+        // Apply optimistic updates
         status: payload.status || currentData.status,
+        incidentType: optimisticType, // Use the new optimistic type here
+        isTypeLocked: payload.newType ? true : currentData.isTypeLocked, // Also optimistically lock the type
         auditTrail: [...currentData.auditTrail, optimisticAuditEntry],
       }),
       false
     );
+    // --- END OF FIX ---
+
     setTimeout(() => auditTrailRef.current?.scrollToBottom(), 0);
     try {
       const updatedIncident = await updateIncidentAPI(params.id, payload);
@@ -272,8 +275,20 @@ export default function IncidentDetailsPage() {
       mutate();
     }
   };
-  const handleReferralSubmit = (dataFromModal) => {
-    setReferralData(dataFromModal);
+  const handleTelecomReferralSubmit = (dataFromModal) => {
+    handleUpdate({
+      telecomTasks: dataFromModal.tasks,
+      comment: dataFromModal.comment,
+    });
+    setTelecomReferralModalOpen(false);
+  };
+
+  const handleEtlReferralSubmit = (dataFromModal) => {
+    handleUpdate({
+      etlTasks: dataFromModal.tasks,
+      comment: dataFromModal.comment,
+    });
+    setEtlReferralModalOpen(false);
   };
 
   const handleConfirmResolve = async (resolutionData) => {
@@ -435,8 +450,15 @@ export default function IncidentDetailsPage() {
                     isRequestor &&
                     !isAdmin
                   }
-                  showReferToTelecomButton={canReferToTelecom}
-                  onOpenTelecomReferralDialog={() => setReferralModalOpen(true)}
+                  onOpenTelecomReferralDialog={() =>
+                    setTelecomReferralModalOpen(true)
+                  }
+                  onOpenEtlReferralDialog={() => {
+                    console.log(
+                      "✅ TRACE 1: Function call started from page.jsx"
+                    );
+                    setEtlReferralModalOpen(true);
+                  }}
                   isAdmin={isAdmin}
                   isAssignedVendor={isAssignedVendor}
                   isAnimating={isAnimating}
@@ -467,9 +489,14 @@ export default function IncidentDetailsPage() {
         description={incident?.description}
       />
       <TelecomReferralModal
-        open={isReferralModalOpen}
-        onClose={() => setReferralModalOpen(false)}
-        onSubmit={handleReferralSubmit}
+        open={isTelecomReferralModalOpen}
+        onClose={() => setTelecomReferralModalOpen(false)}
+        onSubmit={handleTelecomReferralSubmit}
+      />
+      <EtlReferralModal
+        open={isEtlReferralModalOpen}
+        onClose={() => setEtlReferralModalOpen(false)}
+        onSubmit={handleEtlReferralSubmit}
       />
     </>
   );

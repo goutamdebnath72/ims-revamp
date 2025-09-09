@@ -119,7 +119,19 @@ export default function RecentIncidentsCard({ incidents }) {
                   }).toFormat("dd MMM, h:mm a")}
                 </Typography>
                 <Box sx={{ width: "95px" }}>
-                  <Tooltip title={incident.status} arrow>
+                  <Tooltip
+                    title={incident.status}
+                    arrow
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          bgcolor: "#333",
+                          fontSize: "0.8rem",
+                          letterSpacing: "0.5px",
+                        },
+                      },
+                    }}
+                  >
                     <Chip
                       label={incident.status}
                       color={getStatusChipColor(incident.status)}
