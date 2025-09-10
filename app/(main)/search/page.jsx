@@ -2,7 +2,6 @@
 
 import React, { useContext } from "react";
 import { SearchContext } from "@/context/SearchContext";
-// --- Imports updated for the new spinner ---
 import { Box, Typography, Paper, Stack, IconButton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -36,18 +35,11 @@ export default function SearchPage() {
   const incidentTypes = incidentTypesData || [];
   const departments = departmentsData || [];
 
-  // --- This is the new block with the full, correct logic ---
-
-  // This function now handles the state update AND triggers the new search
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(newPageSize);
-
-    // Build new search params from the current URL, keeping existing filters
     const params = new URLSearchParams(window.location.search);
-    params.set("page", "1"); // Always reset to page 1
+    params.set("page", "1");
     params.set("limit", newPageSize.toString());
-
-    // Trigger the search instantly by pushing the new URL
     router.push(`/search?${params.toString()}`);
   };
 
@@ -63,7 +55,6 @@ export default function SearchPage() {
     }
   };
 
-  // --- Existing helper functions (PRESERVED) ---
   const getHeading = () => {
     if (
       user?.role === "sys_admin" &&
@@ -156,16 +147,17 @@ export default function SearchPage() {
                 autoHeight
               />
             </Box>
+            {/* --- THIS IS THE MODIFIED FOOTER BLOCK --- */}
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "flex-end",
+                justifyContent: "space-between", // Changed to space-between
                 alignItems: "center",
                 pt: 2,
               }}
             >
               {incidentData?.incidents && (
-                <Typography variant="body2" sx={{ mr: "auto" }}>
+                <Typography variant="body2">
                   Showing{" "}
                   <strong>
                     {(incidentData.currentPage - 1) * pageSize + 1}–
@@ -175,8 +167,9 @@ export default function SearchPage() {
                   of <strong>{incidentData.totalIncidents}</strong>
                 </Typography>
               )}
-              {/* --- This is the NEW Page Size Spinner --- */}
-              <Stack direction="row" alignItems="center" sx={{ mx: 2 }}>
+
+              {/* Page Size Spinner */}
+              <Stack direction="row" alignItems="center">
                 <IconButton
                   onClick={handleDecrementPageSize}
                   disabled={pageSize <= 10}
@@ -196,25 +189,28 @@ export default function SearchPage() {
                 </IconButton>
               </Stack>
 
-              <Typography variant="body2" sx={{ mr: 2 }}>
-                Page {incidentData?.currentPage || 0} of{" "}
-                {incidentData?.totalPages || 0}
-              </Typography>
-              <IconButton
-                onClick={() => handlePageChange(page - 1)}
-                disabled={!incidentData || incidentData.currentPage <= 1}
-              >
-                <ArrowBackIcon />
-              </IconButton>
-              <IconButton
-                onClick={() => handlePageChange(page + 1)}
-                disabled={
-                  !incidentData ||
-                  incidentData.currentPage >= incidentData.totalPages
-                }
-              >
-                <ArrowForwardIcon />
-              </IconButton>
+              {/* Pagination Controls */}
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Typography variant="body2">
+                  Page {incidentData?.currentPage || 0} of{" "}
+                  {incidentData?.totalPages || 0}
+                </Typography>
+                <IconButton
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={!incidentData || incidentData.currentPage <= 1}
+                >
+                  <ArrowBackIcon />
+                </IconButton>
+                <IconButton
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={
+                    !incidentData ||
+                    incidentData.currentPage >= incidentData.totalPages
+                  }
+                >
+                  <ArrowForwardIcon />
+                </IconButton>
+              </Stack>
             </Box>
           </>
         ) : (

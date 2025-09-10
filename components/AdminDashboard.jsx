@@ -42,6 +42,7 @@ export default function AdminDashboard() {
     display: "flex",
     flexDirection: "column",
   };
+
   const { data: session } = useSession();
   const user = session?.user;
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
 
   const [view, setView] = React.useState("general");
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const [isNavigating, setIsNavigating] = React.useState(false); // State for card navigation
+  const [isNavigating, setIsNavigating] = React.useState(false);
   const open = Boolean(anchorEl);
 
   const handleShiftChange = (event, newShift) => {
@@ -96,13 +97,24 @@ export default function AdminDashboard() {
     });
   }, [incidents, user, view]);
 
+  // UPDATED: Calculations now include pending statuses for the 'All Open' count
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
   ).length;
   const processedIncidents = incidentsToDisplay.filter(
-    (i) => i.status === "Processed"
+    (i) => i.status === INCIDENT_STATUS.PROCESSED
   ).length;
-  const allOpenIncidents = newIncidents + processedIncidents;
+  const pendingTelecomIncidents = incidentsToDisplay.filter(
+    (i) => i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
+  ).length;
+  const pendingEtlIncidents = incidentsToDisplay.filter(
+    (i) => i.status === INCIDENT_STATUS.PENDING_ETL
+  ).length;
+  const allOpenIncidents =
+    newIncidents +
+    processedIncidents +
+    pendingTelecomIncidents +
+    pendingEtlIncidents;
 
   const statCardsData = [
     {
@@ -125,13 +137,17 @@ export default function AdminDashboard() {
     },
     {
       title: "Resolved",
-      value: incidentsToDisplay.filter((i) => i.status === "Resolved").length,
+      value: incidentsToDisplay.filter(
+        (i) => i.status === INCIDENT_STATUS.RESOLVED
+      ).length,
       color: "success",
       filterStatus: "Resolved",
     },
     {
       title: "Closed",
-      value: incidentsToDisplay.filter((i) => i.status === "Closed").length,
+      value: incidentsToDisplay.filter(
+        (i) => i.status === INCIDENT_STATUS.CLOSED
+      ).length,
       color: "default",
       filterStatus: "Closed",
     },
@@ -151,18 +167,27 @@ export default function AdminDashboard() {
   const statusChartData = [
     { name: "New", count: newIncidents },
     { name: "Processed", count: processedIncidents },
+    { name: "Pending", count: pendingTelecomIncidents + pendingEtlIncidents },
     {
       name: "Resolved",
-      count: incidentsToDisplay.filter((i) => i.status === "Resolved").length,
+      value: incidentsToDisplay.filter(
+        (i) => i.status === INCIDENT_STATUS.RESOLVED
+      ).length,
     },
     {
       name: "Closed",
-      count: incidentsToDisplay.filter((i) => i.status === "Closed").length,
+      value: incidentsToDisplay.filter(
+        (i) => i.status === INCIDENT_STATUS.CLOSED
+      ).length,
     },
   ];
 
   const openIncidentsList = incidentsToDisplay.filter(
-    (i) => i.status === "New" || i.status === "Processed"
+    (i) =>
+      i.status === INCIDENT_STATUS.NEW ||
+      i.status === INCIDENT_STATUS.PROCESSED ||
+      i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
+      i.status === INCIDENT_STATUS.PENDING_ETL
   );
 
   const priorityChartData = [

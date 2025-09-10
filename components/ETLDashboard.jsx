@@ -27,13 +27,14 @@ import StatusChart from "@/components/StatusChart";
 import PriorityChart from "@/components/PriorityChart";
 import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 import {
+  TEAMS,
   INCIDENT_STATUS,
   INCIDENT_PRIORITY,
   INCIDENT_TYPES,
 } from "@/lib/constants";
 
-export default function NetworkVendorDashboard() {
-  const dashboardTitle = "Network Incidents Dashboard";
+export default function ETLDashboard() {
+  const dashboardTitle = "ETL Department Dashboard";
   const cardContainerStyles = {
     height: 380,
     display: "flex",
@@ -94,17 +95,19 @@ export default function NetworkVendorDashboard() {
 
   const filteredIncidents = React.useMemo(() => {
     if (!incidents) return [];
-    // UPDATED: Now filters by both Incident Type and the correct statuses.
+    // UPDATED: Now filters by Incident Type for perfect consistency with the search page.
     return incidents.filter(
       (incident) =>
-        incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
-        (incident.status === INCIDENT_STATUS.PROCESSED ||
-          incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
+        incident.incidentType?.name === INCIDENT_TYPES.PC_PERIPHERALS &&
+        (incident.status === INCIDENT_STATUS.PENDING_ETL ||
           incident.status === INCIDENT_STATUS.RESOLVED ||
           incident.status === INCIDENT_STATUS.CLOSED)
     );
   }, [incidents]);
 
+  const pendingIncidents = filteredIncidents.filter(
+    (i) => i.status === INCIDENT_STATUS.PENDING_ETL
+  ).length;
   const processedIncidents = filteredIncidents.filter(
     (i) => i.status === INCIDENT_STATUS.PROCESSED
   ).length;
@@ -116,6 +119,12 @@ export default function NetworkVendorDashboard() {
   ).length;
 
   const statCardsData = [
+    {
+      title: "Pending Action",
+      value: pendingIncidents,
+      color: "warning",
+      filterStatus: INCIDENT_STATUS.PENDING_ETL,
+    },
     {
       title: "Assigned (Processed)",
       value: processedIncidents,
@@ -139,7 +148,7 @@ export default function NetworkVendorDashboard() {
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("incidentType", INCIDENT_TYPES.NETWORK); // Always Network
+    params.append("assignedTeam", TEAMS.ETL); // Always ETL
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -147,6 +156,7 @@ export default function NetworkVendorDashboard() {
   };
 
   const statusChartData = [
+    { name: "Pending", count: pendingIncidents },
     { name: "Processed", count: processedIncidents },
     { name: "Resolved", count: resolvedIncidents },
     { name: "Closed", count: closedIncidents },
@@ -158,7 +168,8 @@ export default function NetworkVendorDashboard() {
       value: filteredIncidents.filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.HIGH &&
-          i.status === INCIDENT_STATUS.PROCESSED
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_ETL)
       ).length,
     },
     {
@@ -166,7 +177,8 @@ export default function NetworkVendorDashboard() {
       value: filteredIncidents.filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.MEDIUM &&
-          i.status === INCIDENT_STATUS.PROCESSED
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_ETL)
       ).length,
     },
     {
@@ -174,7 +186,8 @@ export default function NetworkVendorDashboard() {
       value: filteredIncidents.filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.LOW &&
-          i.status === INCIDENT_STATUS.PROCESSED
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_ETL)
       ).length,
     },
   ].filter((item) => item.value > 0);
@@ -327,7 +340,7 @@ export default function NetworkVendorDashboard() {
               data={priorityChartData}
               dateRange={dateRange}
               shift={shift}
-              incidentTypeFilter={INCIDENT_TYPES.NETWORK}
+              incidentTypeFilter={INCIDENT_TYPES.PC_PERIPHERALS}
             />
           </Box>
         </Stack>

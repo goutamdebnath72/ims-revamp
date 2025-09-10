@@ -4,8 +4,10 @@ import * as React from "react";
 import { useSession } from "next-auth/react";
 import AdminDashboard from "@/components/AdminDashboard";
 import StandardUserDashboard from "@/components/StandardUserDashboard";
-import NetworkVendorDashboard from "@/components/NetworkVendorDashboard"; // <-- 1. IMPORT THE NEW DASHBOARD
-import BiometricVendorDashboard from "@/components/BiometricVendorDashboard"; // <-- 1. IMPORT THE NEW DASHBOARD
+import NetworkVendorDashboard from "@/components/NetworkVendorDashboard";
+import BiometricVendorDashboard from "@/components/BiometricVendorDashboard";
+import TelecomDashboard from "@/components/TelecomDashboard"; // <-- 1. IMPORT TELECOM DASHBOARD
+import ETLDashboard from "@/components/ETLDashboard"; // <-- 2. IMPORT ETL DASHBOARD
 import { Box, CircularProgress } from "@mui/material";
 import { USER_ROLES } from "@/lib/constants";
 
@@ -39,16 +41,18 @@ export default function DashboardPage() {
 
   const role = session?.user?.role;
 
-  // --- 2. ADD LOGIC TO RENDER THE CORRECT DASHBOARD BASED ON ROLE ---
+  // --- 3. UPDATED LOGIC TO RENDER SEPARATE DASHBOARDS ---
   const renderDashboardByRole = () => {
     switch (role) {
       case USER_ROLES.ADMIN:
       case USER_ROLES.SYS_ADMIN:
         return <AdminDashboard />;
       case USER_ROLES.NETWORK_VENDOR:
+        return <NetworkVendorDashboard />; // Now separate
       case USER_ROLES.TELECOM_USER:
+        return <TelecomDashboard />; // Now separate
       case USER_ROLES.ETL:
-        return <NetworkVendorDashboard />;
+        return <ETLDashboard />; // Now separate
       case USER_ROLES.BIOMETRIC_VENDOR:
         return <BiometricVendorDashboard />;
       case USER_ROLES.STANDARD:

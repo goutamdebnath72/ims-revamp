@@ -16,32 +16,41 @@ import {
 } from "@mui/material";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import CountUp from "react-countup";
+import { INCIDENT_STATUS } from "@/lib/constants"; // Import constants
 
 export default function StandardUserDashboard() {
   const { data: session } = useSession();
   const { incidents } = React.useContext(DashboardFilterContext);
   const user = session?.user;
 
-  // Correctly filters incidents where the requestor's ID matches the logged-in user's ID
   const myIncidents = React.useMemo(() => {
     if (!user || !incidents) return [];
     return incidents.filter((i) => i.requestor?.ticketNo === user.ticketNo);
   }, [user, incidents]);
 
-  // Correctly calculates all the necessary counts from the filtered list
-  const myNewIncidents = myIncidents.filter((i) => i.status === "New").length;
-  const myProcessedIncidents = myIncidents.filter(
-    (i) => i.status === "Processed"
+  // UPDATED: Calculations now include pending statuses for the 'Open' count
+  const myNewIncidents = myIncidents.filter(
+    (i) => i.status === INCIDENT_STATUS.NEW
   ).length;
-  const myOpenIncidents = myNewIncidents + myProcessedIncidents;
+  const myProcessedIncidents = myIncidents.filter(
+    (i) => i.status === INCIDENT_STATUS.PROCESSED
+  ).length;
+  const myPendingTelecom = myIncidents.filter(
+    (i) => i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
+  ).length;
+  const myPendingEtl = myIncidents.filter(
+    (i) => i.status === INCIDENT_STATUS.PENDING_ETL
+  ).length;
+  const myOpenIncidents =
+    myNewIncidents + myProcessedIncidents + myPendingTelecom + myPendingEtl;
+
   const myResolvedIncidents = myIncidents.filter(
-    (i) => i.status === "Resolved"
+    (i) => i.status === INCIDENT_STATUS.RESOLVED
   ).length;
   const myClosedIncidents = myIncidents.filter(
-    (i) => i.status === "Closed"
+    (i) => i.status === INCIDENT_STATUS.CLOSED
   ).length;
 
-  // Defines the data for the three stat cards
   const statCardsData = [
     {
       title: "Your Open Incidents",
@@ -71,7 +80,6 @@ export default function StandardUserDashboard() {
   return (
     <Stack
       spacing={3}
-      // This is the final corrected style for the main container
       sx={{ display: "flex", flexDirection: "column", height: "91%" }}
     >
       {/* --- HEADER --- */}
@@ -94,7 +102,7 @@ export default function StandardUserDashboard() {
             <Card elevation={3} sx={{ height: "100%" }}>
               <CardActionArea
                 component={Link}
-                href={`/search?requestor=${user.id}&status=${card.filterStatus}`}
+                href={`/search?status=${card.filterStatus}`}
                 sx={{ height: "100%" }}
               >
                 <CardContent

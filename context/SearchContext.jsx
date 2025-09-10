@@ -11,14 +11,19 @@ import useSWR from "swr";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
-import { DEFAULT_PAGE_SIZE } from "@/lib/constants"; // <-- 1. Import the new constant
+import {
+  DEFAULT_PAGE_SIZE,
+  USER_ROLES,
+  INCIDENT_TYPES,
+  INCIDENT_STATUS,
+} from "@/lib/constants";
 
 export const SearchContext = createContext();
 
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
-const createDefaultCriteria = () => {
-  return {
+const createDefaultCriteria = (user) => {
+  const defaultCriteria = {
     incidentId: "",
     requestor: "",
     status: "Any",
@@ -29,6 +34,48 @@ const createDefaultCriteria = () => {
     department: "Any",
     dateRange: { start: null, end: null },
   };
+
+  if (user) {
+    switch (user.role) {
+      case USER_ROLES.TELECOM_USER:
+        defaultCriteria.incidentType = INCIDENT_TYPES.NETWORK;
+        defaultCriteria.status = [
+          INCIDENT_STATUS.PENDING_TELECOM_ACTION,
+          INCIDENT_STATUS.RESOLVED,
+          INCIDENT_STATUS.CLOSED,
+        ].join(",");
+        break;
+      case USER_ROLES.ETL:
+        defaultCriteria.incidentType = INCIDENT_TYPES.PC_PERIPHERALS;
+        defaultCriteria.status = [
+          INCIDENT_STATUS.PENDING_ETL,
+          INCIDENT_STATUS.RESOLVED,
+          INCIDENT_STATUS.CLOSED,
+        ].join(",");
+        break;
+      case USER_ROLES.NETWORK_VENDOR:
+        defaultCriteria.incidentType = INCIDENT_TYPES.NETWORK;
+        defaultCriteria.status = [
+          INCIDENT_STATUS.PROCESSED,
+          INCIDENT_STATUS.PENDING_TELECOM_ACTION,
+          INCIDENT_STATUS.RESOLVED,
+          INCIDENT_STATUS.CLOSED,
+        ].join(",");
+        break;
+      case USER_ROLES.BIOMETRIC_VENDOR:
+        defaultCriteria.incidentType = "Biometric";
+        defaultCriteria.status = [
+          INCIDENT_STATUS.PROCESSED,
+          INCIDENT_STATUS.RESOLVED,
+          INCIDENT_STATUS.CLOSED,
+        ].join(",");
+        break;
+      default:
+        break;
+    }
+  }
+
+  return defaultCriteria;
 };
 
 export function SearchProvider({ children }) {
@@ -38,11 +85,10 @@ export function SearchProvider({ children }) {
   const user = session?.user;
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); // <-- 2. Create state for page size
-  const [criteria, setCriteria] = useState(createDefaultCriteria());
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [criteria, setCriteria] = useState(createDefaultCriteria(user));
   const [hasSearched, setHasSearched] = useState(false);
 
-  // This new block ensures the API URL is always correct
   const apiParams = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("limit", params.get("limit") || pageSize.toString());
@@ -64,7 +110,7 @@ export function SearchProvider({ children }) {
   const handleSearch = (newCriteria) => {
     const params = new URLSearchParams();
     params.append("page", "1");
-    params.append("limit", pageSize.toString()); // <-- 3. Use the pageSize state here
+    params.append("limit", pageSize.toString());
     Object.entries(newCriteria).forEach(([key, value]) => {
       if (key === "dateRange") {
         if (value.start) params.append("startDate", value.start.toISO());
@@ -86,10 +132,10 @@ export function SearchProvider({ children }) {
   );
 
   const resetSearch = useCallback(() => {
-    setCriteria(createDefaultCriteria());
+    setCriteria(createDefaultCriteria(user));
     setHasSearched(false);
     setPage(1);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const urlParams = Object.fromEntries(searchParams.entries());
@@ -113,7 +159,7 @@ export function SearchProvider({ children }) {
       setPage(urlParams.page ? parseInt(urlParams.page, 10) : 1);
       setPageSize(
         urlParams.limit ? parseInt(urlParams.limit, 10) : DEFAULT_PAGE_SIZE
-      ); // <-- 4. Sync pageSize with URL
+      );
       setHasSearched(true);
     } else {
       resetSearch();
@@ -134,7 +180,7 @@ export function SearchProvider({ children }) {
       handlePageChange,
       resetSearch,
       pageSize,
-      setPageSize, // <-- 5. Expose pageSize to the UI
+      setPageSize,
     }),
     [
       criteria,
@@ -150,7 +196,6 @@ export function SearchProvider({ children }) {
       pageSize,
     ]
   );
-
   return (
     <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
   );

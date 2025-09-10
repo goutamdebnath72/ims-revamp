@@ -46,7 +46,6 @@ const TOK = {
   buttonH: fluidPx(28, 42),
   buttonFS: fluidRem(0.55, 0.9),
 };
-
 // --- TELECOM and ETL -SPECIFIC CONSTANTS ---
 const TELECOM_ETL_TOK = {
   cardPad: fluidPx(12, 24),
@@ -57,7 +56,6 @@ const TELECOM_ETL_TOK = {
   buttonH: fluidPx(28, 42),
   buttonFS: fluidRem(0.55, 0.9),
 };
-
 // --- VENDOR-SPECIFIC CONSTANTS ---
 const VENDOR_TOK = {
   formSpacing: fluidPx(10, 20),
@@ -66,11 +64,9 @@ const VENDOR_TOK = {
   buttonFS: fluidRem(0.6, 1.0),
   buttonLetterSpacing: fluidPx(0.5, 1.2),
 };
-
 const priorities = ["Low", "Medium", "High"];
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
-
 // --- CENTRALIZED SWITCHBOARD FOR DISABLING FORMS ---
 const getFormDisabledState = ({
   incident,
@@ -118,7 +114,6 @@ const getFormDisabledState = ({
   // Default case: The form is enabled.
   return false;
 };
-
 // --- VENDOR-SPECIFIC FORM COMPONENT ---
 const VendorActionForm = ({
   onUpdate,
@@ -182,7 +177,6 @@ const VendorActionForm = ({
     </Stack>
   );
 };
-
 // --- ADMIN-SPECIFIC FORM COMPONENT ---
 const AdminActionForm = ({
   incident,
@@ -209,23 +203,19 @@ const AdminActionForm = ({
   const isPasswordReset = incident.auditTrail.some(
     (entry) => entry.action === "Password Reset"
   );
-
   // --- FINAL, CORRECT LOGIC FOR ALL BUTTON STATES ---
   const showTelecomButton =
     newType.toLowerCase() === INCIDENT_TYPES.NETWORK.toLowerCase() &&
     incident.status === INCIDENT_STATUS.PROCESSED;
-
   const showEtlButton =
-    newType.toLowerCase() === INCIDENT_TYPES.PC_PERIPHERAL.toLowerCase() &&
+    newType.toLowerCase() === INCIDENT_TYPES.PC_PERIPHERALS.toLowerCase() &&
     incident.status === INCIDENT_STATUS.PROCESSED;
-
   const isAlreadyReferred =
     incident?.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
     incident?.status === INCIDENT_STATUS.PENDING_ETL;
-
   const displayReferralButton =
     (showTelecomButton || showEtlButton) && !isAlreadyReferred;
-  
+
   const hasUnsavedTypeChange =
     newType.toLowerCase() !== incident.incidentType?.name.toLowerCase();
   // --- END OF LOGIC ---
@@ -251,7 +241,12 @@ const AdminActionForm = ({
           sx={{ mb: TOK.dropdownsMb, pt: TOK.dropdownsPt }}
           alignItems="center"
         >
-          <Stack direction="row" alignItems="center" spacing={0.5} sx={{ flex: 1 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.5}
+            sx={{ flex: 1 }}
+          >
             <FormControl
               fullWidth
               size="small"
@@ -293,9 +288,9 @@ const AdminActionForm = ({
               componentsProps={{
                 tooltip: {
                   sx: {
-                    bgcolor: '#333',
-                    fontSize: '0.8rem',
-                    letterSpacing: '0.5px',
+                    bgcolor: "#333",
+                    fontSize: "0.8rem",
+                    letterSpacing: "0.5px",
                   },
                 },
               }}
@@ -303,10 +298,16 @@ const AdminActionForm = ({
               <span>
                 <IconButton
                   onClick={onUnlockType}
-                  disabled={!incident.isTypeLocked || isSubmitting || isDisabled}
+                  disabled={
+                    !incident.isTypeLocked || isSubmitting || isDisabled
+                  }
                   size="small"
                 >
-                  {isNew || isLoadingTypes || isPasswordReset || incident.isTypeLocked || isDisabled ? (
+                  {isNew ||
+                  isLoadingTypes ||
+                  isPasswordReset ||
+                  incident.isTypeLocked ||
+                  isDisabled ? (
                     <LockIcon fontSize="small" />
                   ) : (
                     <LockOpenIcon fontSize="small" />
@@ -319,7 +320,12 @@ const AdminActionForm = ({
           <FormControl
             fullWidth
             size="small"
-            disabled={isNew || isPasswordReset || incident.isPriorityLocked || isDisabled}
+            disabled={
+              isNew ||
+              isPasswordReset ||
+              incident.isPriorityLocked ||
+              isDisabled
+            }
             sx={{
               flex: 1,
               "& .MuiInputLabel-shrink": {
@@ -343,7 +349,7 @@ const AdminActionForm = ({
             </Select>
           </FormControl>
         </Stack>
-        
+
         <TextField
           id="incident-comment"
           label="Provide a detailed update"
@@ -374,12 +380,17 @@ const AdminActionForm = ({
                 ? onOpenEtlReferralDialog
                 : onOpenTelecomReferralDialog
             }
-            sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS, letterSpacing: "0.8px" }}
+            sx={{
+              flex: 1,
+              height: TOK.buttonH,
+              fontSize: TOK.buttonFS,
+              letterSpacing: "0.8px",
+            }}
           >
             {showEtlButton ? "Refer to ETL" : "Refer to Telecom"}
           </Button>
         )}
-        
+
         {showResetButton && (
           <Button
             variant="outlined"
@@ -404,7 +415,12 @@ const AdminActionForm = ({
           variant="outlined"
           color="success"
           onClick={onOpenResolveDialog}
-          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS, letterSpacing: "0.8px" }}
+          sx={{
+            flex: 1,
+            height: TOK.buttonH,
+            fontSize: TOK.buttonFS,
+            letterSpacing: "0.8px",
+          }}
           disabled={isNew}
         >
           Resolve Incident
@@ -419,7 +435,12 @@ const AdminActionForm = ({
                 newPriority === incident.priority ? null : newPriority,
             })
           }
-          sx={{ flex: 1, height: TOK.buttonH, fontSize: TOK.buttonFS, letterSpacing: "0.8px" }}
+          sx={{
+            flex: 1,
+            height: TOK.buttonH,
+            fontSize: TOK.buttonFS,
+            letterSpacing: "0.8px",
+          }}
           disabled={isSubmitting || !comment.trim()}
         >
           {isSubmitting ? "Submitting..." : "Submit Update"}
@@ -604,6 +625,80 @@ const TelecomActionForm = ({
   );
 };
 
+// --- ETL-SPECIFIC FORM COMPONENT (NEW - FIX FOR ISSUE 1) ---
+const EtlActionForm = ({
+  onUpdate,
+  isSubmitting,
+  comment,
+  setComment,
+  isSpellcheckEnabled,
+  onOpenResolveDialog,
+  hasUpdated,
+  isDisabled,
+}) => {
+  return (
+    <Stack
+      sx={{
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: TELECOM_ETL_TOK.formSpacing,
+        pt: 3,
+        ...(isDisabled && {
+          opacity: 0.6,
+          pointerEvents: "none",
+          filter: "grayscale(1)",
+        }),
+      }}
+    >
+      <TextField
+        id="incident-comment-etl"
+        label="Provide a detailed update"
+        multiline
+        InputLabelProps={{ shrink: true }}
+        placeholder="Start typing to enable the Update button..."
+        sx={{
+          "& .MuiInputBase-multiline": { minHeight: TELECOM_ETL_TOK.textAreaH },
+          "& .MuiInputBase-root": { alignItems: "flex-start" },
+        }}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        variant="outlined"
+        fullWidth
+        spellCheck={isSpellcheckEnabled}
+        required
+        disabled={isDisabled}
+      />
+      <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={onOpenResolveDialog}
+          disabled={isDisabled || !hasUpdated}
+          sx={{
+            flex: 1,
+            height: TELECOM_ETL_TOK.buttonH,
+            fontSize: TELECOM_ETL_TOK.buttonFS,
+          }}
+        >
+          Resolve Incident
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => onUpdate({ comment })}
+          disabled={isDisabled || isSubmitting || !comment.trim()}
+          sx={{
+            flex: 1,
+            height: TELECOM_ETL_TOK.buttonH,
+            fontSize: TELECOM_ETL_TOK.buttonFS,
+          }}
+        >
+          {isSubmitting ? "Updating..." : "Update Comment"}
+        </Button>
+      </Stack>
+    </Stack>
+  );
+};
+
 // --- MAIN FORM COMPONENT ---
 export default function IncidentActionForm({
   incident,
@@ -625,10 +720,6 @@ export default function IncidentActionForm({
   isAnimating,
   isEtlUser,
 }) {
-  console.log("TRACE 2: Props received by IncidentActionForm:", {
-    onOpenEtlReferralDialog,
-  }); // <-- ADD THIS LINE
-
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
   const [comment, setComment] = React.useState("");
   const [newType, setNewType] = React.useState("");
@@ -639,7 +730,6 @@ export default function IncidentActionForm({
     "/api/incident-types",
     fetcher
   );
-
   React.useEffect(() => {
     if (incident) {
       setNewType(incident.incidentType?.name || "");
@@ -653,36 +743,29 @@ export default function IncidentActionForm({
     }
   }, [incident]);
 
-  // --- ADD THIS NEW BLOCK ---
   React.useEffect(() => {
     // This automatically resets the submitting state whenever the incident data changes,
     // ensuring buttons are re-enabled after an update.
     setIsSubmitting(false);
   }, [incident]);
-  // --- END OF NEW BLOCK ---
 
   const { data: session } = useSession();
   const user = session?.user;
 
   const handleUpdateAndClear = async (data) => {
-    setIsSubmitting(true); // 1. Immediately disable the submit button
-    setComment(""); // 2. Immediately clear the text box
+    setIsSubmitting(true);
+    setComment("");
 
     try {
-      await onUpdate(data); // 3. Now, wait for the API call to finish
+      await onUpdate(data);
       setHasUpdated(true);
     } catch (error) {
       console.error("Update failed", error);
-      // If the update fails, you might want to restore the user's comment
-      // setComment(data.comment);
     } finally {
-      setIsSubmitting(false); // 4. Re-enable the button when done (success or fail)
+      setIsSubmitting(false);
     }
   };
-
   const handleUnlockType = async () => {
-    console.log("UNLOCK CLICKED! Preparing to send API request..."); // <-- ADD THIS LINE
-
     setIsSubmitting(true);
     try {
       // Send a specific action to the backend
@@ -693,7 +776,6 @@ export default function IncidentActionForm({
       setIsSubmitting(false);
     }
   };
-
   const isFormDeactivated = getFormDisabledState({
     incident,
     isAdmin,
@@ -702,7 +784,6 @@ export default function IncidentActionForm({
     isTelecomUser,
     isEtlUser,
   });
-
   const renderForm = () => {
     if (isAdmin) {
       return (
@@ -735,6 +816,23 @@ export default function IncidentActionForm({
     if (isTelecomUser) {
       return (
         <TelecomActionForm
+          {...{
+            onUpdate: handleUpdateAndClear,
+            isSubmitting,
+            comment,
+            setComment,
+            isSpellcheckEnabled,
+            onOpenResolveDialog,
+            hasUpdated,
+            isDisabled: isFormDeactivated,
+          }}
+        />
+      );
+    }
+    // --- FIX FOR ISSUE 1 ---
+    if (isEtlUser) {
+      return (
+        <EtlActionForm
           {...{
             onUpdate: handleUpdateAndClear,
             isSubmitting,
