@@ -93,26 +93,14 @@ export default function TelecomDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  const filteredIncidents = React.useMemo(() => {
-    if (!incidents) return [];
-    // UPDATED: Now filters by Incident Type, Assigned Team, and correct statuses.
-    return incidents.filter(
-      (incident) =>
-        incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
-        incident.assignedTeam === TEAMS.TELECOM &&
-        (incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
-          incident.status === INCIDENT_STATUS.RESOLVED ||
-          incident.status === INCIDENT_STATUS.CLOSED)
-    );
-  }, [incidents]);
-
-  const pendingIncidents = filteredIncidents.filter(
+  // The 'incidents' variable from context is now used directly, as it's pre-filtered.
+  const pendingIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
   ).length;
-  const resolvedIncidents = filteredIncidents.filter(
+  const resolvedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.RESOLVED
   ).length;
-  const closedIncidents = filteredIncidents.filter(
+  const closedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.CLOSED
   ).length;
 
@@ -140,7 +128,7 @@ export default function TelecomDashboard() {
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("assignedTeam", TEAMS.TELECOM); // Always Telecom
+    params.append("assignedTeam", TEAMS.TELECOM);
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -156,7 +144,7 @@ export default function TelecomDashboard() {
   const priorityChartData = [
     {
       name: "High",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.HIGH &&
           i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
@@ -164,7 +152,7 @@ export default function TelecomDashboard() {
     },
     {
       name: "Medium",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.MEDIUM &&
           i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
@@ -172,7 +160,7 @@ export default function TelecomDashboard() {
     },
     {
       name: "Low",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.LOW &&
           i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
@@ -333,7 +321,7 @@ export default function TelecomDashboard() {
           </Box>
         </Stack>
         <Box sx={cardContainerStyles}>
-          <RecentIncidentsCard incidents={filteredIncidents} />
+          <RecentIncidentsCard incidents={incidents} />
         </Box>
       </Stack>
     </Stack>

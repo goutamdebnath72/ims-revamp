@@ -10,6 +10,7 @@ import IncidentAuditTrail from "@/components/IncidentAuditTrail";
 import IncidentActionForm from "@/components/IncidentActionForm";
 import ResolutionDialog from "@/components/ResolutionDialog";
 import ResetPasswordModal from "@/components/ResetPasswordModal";
+import SapPasswordResetModal from "@/components/SapPasswordResetModal";
 import DescriptionModal from "@/components/DescriptionModal";
 import TelecomReferralModal from "@/components/TelecomReferralModal";
 import EtlReferralModal from "@/components/EtlReferralModal";
@@ -70,6 +71,7 @@ export default function IncidentDetailsPage() {
   const { showNotification } = React.useContext(NotificationContext);
   const { data: session } = useSession();
   const user = session?.user;
+
   const {
     data: incidentData,
     error,
@@ -83,6 +85,7 @@ export default function IncidentDetailsPage() {
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = React.useState(false);
+  const [isSapResetModalOpen, setIsSapResetModalOpen] = React.useState(false);
   const [isOptimisticallyResolved, setOptimisticallyResolved] =
     React.useState(false);
   const [isDescriptionModalOpen, setDescriptionModalOpen] =
@@ -145,8 +148,6 @@ export default function IncidentDetailsPage() {
   const isAssignedTelecomUser =
     user?.department === TEAMS.TELECOM &&
     incident?.assignedTeam === TEAMS.TELECOM;
-
-  // --- NEW VENDOR LOGIC ---
   const isNetworkVendor =
     user?.role === USER_ROLES.NETWORK_VENDOR &&
     incident.incidentType?.name?.toLowerCase() ===
@@ -157,7 +158,6 @@ export default function IncidentDetailsPage() {
   const isAssignedVendor =
     (isNetworkVendor || isBiometricVendor) &&
     incident.status?.toLowerCase() !== INCIDENT_STATUS.NEW?.toLowerCase();
-
   const showActionArea =
     isAdmin ||
     isRequestor ||
@@ -165,21 +165,32 @@ export default function IncidentDetailsPage() {
     isAssignedVendor ||
     isTelecomUser ||
     isEtlUser;
-
   const isResolved =
     incident.status === INCIDENT_STATUS.RESOLVED ||
     incident.status === INCIDENT_STATUS.CLOSED ||
     isOptimisticallyResolved;
-  const isPasswordReset = incident.auditTrail.some(
-    (entry) => entry.action === AUDIT_ACTIONS.PASSWORD_RESET
+
+  const hasBeenReset = incident.auditTrail.some(
+    (entry) =>
+      entry.action === AUDIT_ACTIONS.PASSWORD_RESET ||
+      entry.action === "SAP Password Reset"
   );
+
   const showResetButton =
     isAdmin &&
     !isResolved &&
     incident?.incidentType?.name.toLowerCase() ===
       INCIDENT_TYPES.ESS_PASSWORD.toLowerCase() &&
     incident?.status !== INCIDENT_STATUS.NEW &&
-    !isPasswordReset;
+    !hasBeenReset;
+
+  const showSapResetButton =
+    isAdmin &&
+    !isResolved &&
+    incident?.incidentType?.name.toLowerCase().includes("sap password") &&
+    incident?.status !== INCIDENT_STATUS.NEW &&
+    !hasBeenReset;
+
   const canUserClose =
     isRequestor && incident.status === INCIDENT_STATUS.PROCESSED;
   const canUserConfirm =
@@ -187,32 +198,34 @@ export default function IncidentDetailsPage() {
 
   const handlePasswordResetSuccess = () => {
     setIsResetModalOpen(false);
+    setIsSapResetModalOpen(false);
     mutate();
     showNotification(
       {
         title: "Success",
-        message: "ESS Password has been reset successfully.",
+        message: "Password has been reset successfully.",
       },
       "success"
     );
   };
+
   const handleOpenDialog = (context) => {
     setDialogContext(context);
     setDialogOpen(true);
   };
+
   const handleUpdate = async (updateData) => {
     if (
       !updateData.comment &&
       !updateData.telecomTasks &&
       !updateData.etlTasks &&
       updateData.action !== "UNLOCK_TYPE" &&
-      !updateData.newType // Also allow updates if only the type is changing
+      !updateData.newType
     ) {
       return;
     }
 
     const payload = { ...updateData };
-
     if (incident?.status === INCIDENT_STATUS.NEW && !payload.status) {
       payload.status = INCIDENT_STATUS.PROCESSED;
     }
@@ -231,12 +244,9 @@ export default function IncidentDetailsPage() {
       )}\n\n---\n${updateData.comment}`;
     }
 
-    // --- THIS IS THE FIX ---
-    // Create optimistic data that includes the potential new incident type
     const optimisticType = payload.newType
       ? { ...incident.incidentType, name: payload.newType }
       : incident.incidentType;
-
     const optimisticAuditEntry = {
       id: "optimistic-" + Math.random(),
       author: user.name,
@@ -245,19 +255,16 @@ export default function IncidentDetailsPage() {
         payload.comment || `Incident Type changed to "${payload.newType}".`,
       timestamp: new Date().toISOString(),
     };
-
     mutate(
       (currentData) => ({
         ...currentData,
-        // Apply optimistic updates
         status: payload.status || currentData.status,
-        incidentType: optimisticType, // Use the new optimistic type here
-        isTypeLocked: payload.newType ? true : currentData.isTypeLocked, // Also optimistically lock the type
+        incidentType: optimisticType,
+        isTypeLocked: payload.newType ? true : currentData.isTypeLocked,
         auditTrail: [...currentData.auditTrail, optimisticAuditEntry],
       }),
       false
     );
-    // --- END OF FIX ---
 
     setTimeout(() => auditTrailRef.current?.scrollToBottom(), 0);
     try {
@@ -339,21 +346,14 @@ export default function IncidentDetailsPage() {
       showNotification({ title: "Edit Failed", message: err.message }, "error");
     }
   };
-
-  // --- ADD THIS NEW FUNCTION HERE ---
   const handleToggleExpand = () => {
-    // Don't allow another animation if one is already in progress
     if (isAnimating) return;
-
     setIsAnimating(true);
     setIsAuditTrailExpanded((prev) => !prev);
-
-    // After the CSS transition is finished (300ms), turn off the animation state
     setTimeout(() => {
       setIsAnimating(false);
-    }, 300); // This duration must match your CSS transition duration
+    }, 300);
   };
-  // --- END OF NEW FUNCTION ---
 
   return (
     <>
@@ -436,6 +436,8 @@ export default function IncidentDetailsPage() {
                   }
                   showResetButton={showResetButton}
                   onOpenResetDialog={() => setIsResetModalOpen(true)}
+                  showSapResetButton={showSapResetButton}
+                  onOpenSapResetDialog={() => setIsSapResetModalOpen(true)}
                   isRequestor={isRequestor}
                   canUserClose={canUserClose}
                   onUserClose={() =>
@@ -454,15 +456,11 @@ export default function IncidentDetailsPage() {
                     setTelecomReferralModalOpen(true)
                   }
                   onOpenEtlReferralDialog={() => {
-                    console.log(
-                      "✅ TRACE 1: Function call started from page.jsx"
-                    );
                     setEtlReferralModalOpen(true);
                   }}
                   isAdmin={isAdmin}
                   isAssignedVendor={isAssignedVendor}
                   isAnimating={isAnimating}
-                  // --- Pass the Telecom/ETL roles down ---
                   isTelecomUser={isTelecomUser}
                   isEtlUser={isEtlUser}
                 />
@@ -480,6 +478,12 @@ export default function IncidentDetailsPage() {
       <ResetPasswordModal
         open={isResetModalOpen}
         onClose={() => setIsResetModalOpen(false)}
+        incident={incident}
+        onSuccess={handlePasswordResetSuccess}
+      />
+      <SapPasswordResetModal
+        open={isSapResetModalOpen}
+        onClose={() => setIsSapResetModalOpen(false)}
         incident={incident}
         onSuccess={handlePasswordResetSuccess}
       />

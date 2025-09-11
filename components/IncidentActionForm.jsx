@@ -29,7 +29,6 @@ import {
 } from "@/lib/constants";
 import { fluidPx, fluidRem } from "@/utils/fluidScale";
 
-// --- Design Tokens Object ---
 const TOK = {
   cardPad: fluidPx(12, 24),
   headerFS: fluidRem(1.0, 1.5),
@@ -45,18 +44,18 @@ const TOK = {
   textAreaH: fluidPx(80, 150),
   buttonH: fluidPx(28, 42),
   buttonFS: fluidRem(0.55, 0.9),
+  buttonLetterSpacing: fluidPx(0.3, 0.8),
 };
-// --- TELECOM and ETL -SPECIFIC CONSTANTS ---
 const TELECOM_ETL_TOK = {
   cardPad: fluidPx(12, 24),
   headerFS: fluidRem(1.0, 1.5),
   headerMb: fluidPx(8, 40),
-  formSpacing: fluidPx(5, 40),
-  textAreaH: fluidPx(80, 180),
+  formSpacing: fluidPx(14, 40),
+  textAreaH: fluidPx(90, 180),
   buttonH: fluidPx(28, 42),
   buttonFS: fluidRem(0.55, 0.9),
+  buttonLetterSpacing: fluidPx(0.5, 0.8),
 };
-// --- VENDOR-SPECIFIC CONSTANTS ---
 const VENDOR_TOK = {
   formSpacing: fluidPx(10, 20),
   textAreaH: fluidPx(120, 190),
@@ -67,7 +66,7 @@ const VENDOR_TOK = {
 const priorities = ["Low", "Medium", "High"];
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
-// --- CENTRALIZED SWITCHBOARD FOR DISABLING FORMS ---
+
 const getFormDisabledState = ({
   incident,
   isAdmin,
@@ -76,7 +75,6 @@ const getFormDisabledState = ({
   isTelecomUser,
   isEtlUser,
 }) => {
-  // Rule for Admins
   if (
     isAdmin &&
     (incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
@@ -85,18 +83,15 @@ const getFormDisabledState = ({
   ) {
     return true;
   }
-  // Rule for Standard Users
-  if (isRequestor && incident.status === INCIDENT_STATUS.NEW) {
+  if (isRequestor && !isAdmin && incident.status === INCIDENT_STATUS.NEW) {
     return true;
   }
-  // Rule for Vendors
   if (
     isAssignedVendor &&
     incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
   ) {
     return true;
   }
-  // Rule for Telecom Users (NEW)
   if (
     isTelecomUser &&
     (incident.status === INCIDENT_STATUS.RESOLVED ||
@@ -111,17 +106,16 @@ const getFormDisabledState = ({
   ) {
     return true;
   }
-  // Default case: The form is enabled.
   return false;
 };
-// --- VENDOR-SPECIFIC FORM COMPONENT ---
+
 const VendorActionForm = ({
   onUpdate,
   isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
-  isDisabled, // Receives the 'switch' from the parent
+  isDisabled,
 }) => {
   return (
     <Stack
@@ -130,7 +124,6 @@ const VendorActionForm = ({
         justifyContent: "space-between",
         gap: VENDOR_TOK.formSpacing,
         pt: 3,
-        // This block handles the visual "greyed out" style
         ...(isDisabled && {
           opacity: 0.6,
           pointerEvents: "none",
@@ -158,12 +151,11 @@ const VendorActionForm = ({
         fullWidth
         spellCheck={isSpellcheckEnabled}
         required
-        disabled={isDisabled} // <-- This is the crucial line for the text box
+        disabled={isDisabled}
       />
       <Button
         variant="contained"
         onClick={() => onUpdate({ comment })}
-        // This correctly combines the master switch with its own logic
         disabled={isDisabled || isSubmitting || !comment.trim()}
         fullWidth
         sx={{
@@ -177,7 +169,7 @@ const VendorActionForm = ({
     </Stack>
   );
 };
-// --- ADMIN-SPECIFIC FORM COMPONENT ---
+
 const AdminActionForm = ({
   incident,
   onUpdate,
@@ -188,6 +180,8 @@ const AdminActionForm = ({
   isSpellcheckEnabled,
   showResetButton,
   onOpenResetDialog,
+  showSapResetButton,
+  onOpenSapResetDialog,
   onOpenTelecomReferralDialog,
   onOpenEtlReferralDialog,
   onOpenResolveDialog,
@@ -200,10 +194,10 @@ const AdminActionForm = ({
   isDisabled,
 }) => {
   const isNew = incident.status === INCIDENT_STATUS.NEW;
-  const isPasswordReset = incident.auditTrail.some(
-    (entry) => entry.action === "Password Reset"
+  const isPermanentlyLocked = incident.auditTrail.some(
+    (entry) =>
+      entry.action === "Password Reset" || entry.action === "SAP Password Reset"
   );
-  // --- FINAL, CORRECT LOGIC FOR ALL BUTTON STATES ---
   const showTelecomButton =
     newType.toLowerCase() === INCIDENT_TYPES.NETWORK.toLowerCase() &&
     incident.status === INCIDENT_STATUS.PROCESSED;
@@ -218,7 +212,6 @@ const AdminActionForm = ({
 
   const hasUnsavedTypeChange =
     newType.toLowerCase() !== incident.incidentType?.name.toLowerCase();
-  // --- END OF LOGIC ---
 
   return (
     <Stack
@@ -234,7 +227,6 @@ const AdminActionForm = ({
       }}
     >
       <Box>
-        {/* Dropdown and Lock Icon Section */}
         <Stack
           direction="row"
           spacing={2}
@@ -253,7 +245,7 @@ const AdminActionForm = ({
               disabled={
                 isNew ||
                 isLoadingTypes ||
-                isPasswordReset || // This was the original bug, ensuring it's here.
+                isPermanentlyLocked ||
                 incident.isTypeLocked ||
                 isDisabled
               }
@@ -280,7 +272,9 @@ const AdminActionForm = ({
             </FormControl>
             <Tooltip
               title={
-                incident.isTypeLocked
+                isPermanentlyLocked
+                  ? "Type is permanently locked after a password reset."
+                  : incident.isTypeLocked
                   ? "Click to unlock type"
                   : "Type is unlocked"
               }
@@ -299,15 +293,14 @@ const AdminActionForm = ({
                 <IconButton
                   onClick={onUnlockType}
                   disabled={
-                    !incident.isTypeLocked || isSubmitting || isDisabled
+                    isPermanentlyLocked ||
+                    !incident.isTypeLocked ||
+                    isSubmitting ||
+                    isDisabled
                   }
                   size="small"
                 >
-                  {isNew ||
-                  isLoadingTypes ||
-                  isPasswordReset ||
-                  incident.isTypeLocked ||
-                  isDisabled ? (
+                  {isPermanentlyLocked || incident.isTypeLocked ? (
                     <LockIcon fontSize="small" />
                   ) : (
                     <LockOpenIcon fontSize="small" />
@@ -322,7 +315,7 @@ const AdminActionForm = ({
             size="small"
             disabled={
               isNew ||
-              isPasswordReset ||
+              isPermanentlyLocked || // <-- THIS IS THE FIX
               incident.isPriorityLocked ||
               isDisabled
             }
@@ -384,7 +377,7 @@ const AdminActionForm = ({
               flex: 1,
               height: TOK.buttonH,
               fontSize: TOK.buttonFS,
-              letterSpacing: "0.8px",
+              letterSpacing: TOK.buttonLetterSpacing,
             }}
           >
             {showEtlButton ? "Refer to ETL" : "Refer to Telecom"}
@@ -399,7 +392,7 @@ const AdminActionForm = ({
               flex: 1,
               height: TOK.buttonH,
               fontSize: TOK.buttonFS,
-              letterSpacing: "0.8px",
+              letterSpacing: TOK.buttonLetterSpacing,
               color: "#d32f2f",
               borderColor: "#d32f2f",
               "&:hover": {
@@ -411,6 +404,21 @@ const AdminActionForm = ({
             Reset ESS Password
           </Button>
         )}
+        {showSapResetButton && (
+          <Button
+            variant="outlined"
+            onClick={onOpenSapResetDialog}
+            color="error"
+            sx={{
+              flex: 1,
+              height: TOK.buttonH,
+              fontSize: TOK.buttonFS,
+              letterSpacing: TOK.buttonLetterSpacing,
+            }}
+          >
+            Reset SAP Password
+          </Button>
+        )}
         <Button
           variant="outlined"
           color="success"
@@ -419,7 +427,7 @@ const AdminActionForm = ({
             flex: 1,
             height: TOK.buttonH,
             fontSize: TOK.buttonFS,
-            letterSpacing: "0.8px",
+            letterSpacing: TOK.buttonLetterSpacing,
           }}
           disabled={isNew}
         >
@@ -439,7 +447,7 @@ const AdminActionForm = ({
             flex: 1,
             height: TOK.buttonH,
             fontSize: TOK.buttonFS,
-            letterSpacing: "0.8px",
+            letterSpacing: TOK.buttonLetterSpacing,
           }}
           disabled={isSubmitting || !comment.trim()}
         >
@@ -450,7 +458,8 @@ const AdminActionForm = ({
   );
 };
 
-// --- STANDARD USER-SPECIFIC FORM COMPONENT ---
+// ... (The rest of the file remains unchanged and is included for completeness)
+
 const StandardUserActionForm = ({
   incident,
   onUpdate,
@@ -472,7 +481,6 @@ const StandardUserActionForm = ({
         justifyContent: "space-between",
         gap: TOK.formSpacing,
         pt: 3,
-        // Add this block for the consistent deactivation style
         ...(isDisabled && {
           opacity: 0.6,
           pointerEvents: "none",
@@ -518,7 +526,7 @@ const StandardUserActionForm = ({
               sx={{
                 height: TOK.buttonH,
                 fontSize: TOK.buttonFS,
-                letterSpacing: "0.8px",
+                letterSpacing: TOK.buttonLetterSpacing,
               }}
             >
               Submit Update
@@ -528,7 +536,11 @@ const StandardUserActionForm = ({
               onClick={onUserClose}
               disabled={isDisabled || isSubmitting}
               fullWidth
-              sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
+              sx={{
+                height: TOK.buttonH,
+                fontSize: TOK.buttonFS,
+                letterSpacing: TOK.buttonLetterSpacing,
+              }}
             >
               Close Incident
             </Button>
@@ -541,7 +553,11 @@ const StandardUserActionForm = ({
             onClick={onUserConfirm}
             disabled={isDisabled || isSubmitting}
             fullWidth
-            sx={{ height: TOK.buttonH, fontSize: TOK.buttonFS }}
+            sx={{
+              height: TOK.buttonH,
+              fontSize: TOK.buttonFS,
+              letterSpacing: TOK.buttonLetterSpacing,
+            }}
           >
             Confirm Resolution
           </Button>
@@ -551,7 +567,6 @@ const StandardUserActionForm = ({
   );
 };
 
-// --- TELECOM-SPECIFIC FORM COMPONENT (NEW) ---
 const TelecomActionForm = ({
   onUpdate,
   isSubmitting,
@@ -592,18 +607,19 @@ const TelecomActionForm = ({
         fullWidth
         spellCheck={isSpellcheckEnabled}
         required
-        disabled={isDisabled} // <-- FIX 1: Added disabled prop
+        disabled={isDisabled}
       />
       <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
         <Button
           variant="contained"
           color="success"
           onClick={onOpenResolveDialog}
-          disabled={isDisabled || !hasUpdated} // <-- FIX 2: Added isDisabled check
+          disabled={isDisabled || !hasUpdated}
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
             fontSize: TELECOM_ETL_TOK.buttonFS,
+            letterSpacing: TELECOM_ETL_TOK.buttonLetterSpacing,
           }}
         >
           Resolve Incident
@@ -611,11 +627,12 @@ const TelecomActionForm = ({
         <Button
           variant="contained"
           onClick={() => onUpdate({ comment })}
-          disabled={isDisabled || isSubmitting || !comment.trim()} // <-- FIX 3: Added isDisabled check
+          disabled={isDisabled || isSubmitting || !comment.trim()}
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
             fontSize: TELECOM_ETL_TOK.buttonFS,
+            letterSpacing: TELECOM_ETL_TOK.buttonLetterSpacing,
           }}
         >
           {isSubmitting ? "Updating..." : "Update Comment"}
@@ -625,7 +642,6 @@ const TelecomActionForm = ({
   );
 };
 
-// --- ETL-SPECIFIC FORM COMPONENT (NEW - FIX FOR ISSUE 1) ---
 const EtlActionForm = ({
   onUpdate,
   isSubmitting,
@@ -678,6 +694,7 @@ const EtlActionForm = ({
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
             fontSize: TELECOM_ETL_TOK.buttonFS,
+            letterSpacing: TELECOM_ETL_TOK.buttonLetterSpacing,
           }}
         >
           Resolve Incident
@@ -690,6 +707,7 @@ const EtlActionForm = ({
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
             fontSize: TELECOM_ETL_TOK.buttonFS,
+            letterSpacing: TELECOM_ETL_TOK.buttonLetterSpacing,
           }}
         >
           {isSubmitting ? "Updating..." : "Update Comment"}
@@ -699,13 +717,14 @@ const EtlActionForm = ({
   );
 };
 
-// --- MAIN FORM COMPONENT ---
 export default function IncidentActionForm({
   incident,
   onUpdate,
   onOpenResolveDialog,
   showResetButton,
   onOpenResetDialog,
+  showSapResetButton,
+  onOpenSapResetDialog,
   isRequestor,
   canUserClose,
   onUserClose,
@@ -744,8 +763,6 @@ export default function IncidentActionForm({
   }, [incident]);
 
   React.useEffect(() => {
-    // This automatically resets the submitting state whenever the incident data changes,
-    // ensuring buttons are re-enabled after an update.
     setIsSubmitting(false);
   }, [incident]);
 
@@ -755,7 +772,6 @@ export default function IncidentActionForm({
   const handleUpdateAndClear = async (data) => {
     setIsSubmitting(true);
     setComment("");
-
     try {
       await onUpdate(data);
       setHasUpdated(true);
@@ -768,7 +784,6 @@ export default function IncidentActionForm({
   const handleUnlockType = async () => {
     setIsSubmitting(true);
     try {
-      // Send a specific action to the backend
       await onUpdate({ action: "UNLOCK_TYPE" });
     } catch (error) {
       console.error("Unlock failed", error);
@@ -798,6 +813,8 @@ export default function IncidentActionForm({
             isSpellcheckEnabled,
             showResetButton,
             onOpenResetDialog,
+            showSapResetButton,
+            onOpenSapResetDialog,
             showReferToTelecomButton,
             onOpenTelecomReferralDialog,
             onOpenEtlReferralDialog,
@@ -829,7 +846,6 @@ export default function IncidentActionForm({
         />
       );
     }
-    // --- FIX FOR ISSUE 1 ---
     if (isEtlUser) {
       return (
         <EtlActionForm
@@ -900,10 +916,8 @@ export default function IncidentActionForm({
       <Box
         sx={{
           flexGrow: 1,
-          overflowY: "auto",
+          overflowY: isAnimating ? "hidden" : "auto",
           pr: 1,
-          "&::-webkit-scrollbar": { display: isAnimating ? "none" : "initial" },
-          scrollbarWidth: isAnimating ? "none" : "auto",
         }}
       >
         {renderForm()}

@@ -19,6 +19,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   FormLabel,
+  Alert,
 } from "@mui/material";
 
 const priorities = ["Low", "Medium", "High"];
@@ -56,7 +57,7 @@ const descriptionTooltipText = (
 export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const { data: session } = useSession();
   const user = session?.user;
-  const isExecutive = user?.id?.startsWith("4");
+  const isExecutive = user?.ticketNo?.startsWith("4");
   const isAdmin = user?.role === "admin" || user?.role === "sys_admin";
 
   const [raiseFor, setRaiseFor] = React.useState("self");
@@ -64,10 +65,9 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const [foundUser, setFoundUser] = React.useState(null);
   const [lookupError, setLookupError] = React.useState("");
   const [isLookingUp, setIsLookingUp] = React.useState(false);
-
   const [formData, setFormData] = React.useState({
     incidentType: "",
-    affectedTicketNo: "", // For ESS Password
+    affectedTicketNo: "",
     priority: "Medium",
     department: "",
     location: "",
@@ -86,6 +86,16 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     fetcher
   );
 
+  const isSapIncidentType = formData.incidentType
+    ?.toLowerCase()
+    .includes("sap password");
+
+  React.useEffect(() => {
+    if (isAdmin && isSapIncidentType) {
+      setRaiseFor("self");
+    }
+  }, [isSapIncidentType, isAdmin]);
+
   React.useEffect(() => {
     const handler = setTimeout(() => {
       if (affectedTicketNoInput && affectedTicketNoInput.length === 6) {
@@ -100,7 +110,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             return res.json();
           })
           .then((data) => {
-            // --- THIS IS THE NEW LOGIC TO PREVENT SELF-SELECTION ---
             if (affectedTicketNoInput === user?.ticketNo) {
               setLookupError(
                 "Please use the 'For Myself' option to raise an incident for yourself."
@@ -109,7 +118,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             } else {
               setFoundUser(data);
             }
-            // --- END OF NEW LOGIC ---
           })
           .catch((err) => {
             setLookupError(err.message);
@@ -123,11 +131,10 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         setLookupError("");
       }
     }, 500);
-
     return () => {
       clearTimeout(handler);
     };
-  }, [affectedTicketNoInput, user?.ticketNo]); // Added user.ticketNo to dependency array
+  }, [affectedTicketNoInput, user?.ticketNo]);
 
   React.useEffect(() => {
     if (user?.departmentCode && departmentsData?.length > 0) {
@@ -176,12 +183,17 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
       case "jobTitle":
         if (!value) {
           error = "Required.";
-          // ===== ADD THIS CONDITION =====
         } else if (value.length > 25) {
           error = "Job Title cannot exceed 25 characters.";
         }
         break;
       case "incidentType":
+        if (value.toLowerCase().includes("sap password") && !user?.sailPNo) {
+          error = "You must have a SAIL P/No in your profile to raise this.";
+        } else if (!value) {
+          error = "Required.";
+        }
+        break;
       case "location":
       case "description":
       case "department":
@@ -233,7 +245,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         newErrors[key] = error;
       }
     });
-
     if (isAdmin && raiseFor === "other") {
       const affectedUserError = validateField(
         "affectedTicketNoInput",
@@ -275,7 +286,11 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               <ToggleButton value="self" aria-label="for myself">
                 For Myself
               </ToggleButton>
-              <ToggleButton value="other" aria-label="for another user">
+              <ToggleButton
+                value="other"
+                aria-label="for another user"
+                disabled={isSapIncidentType}
+              >
                 For Another User
               </ToggleButton>
             </ToggleButtonGroup>
@@ -382,6 +397,14 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             helperText={errors.location || " "}
           />
         </Stack>
+
+        {isSapIncidentType && (
+          <Alert severity="info">
+            For security, SAP password resets can only be processed for the
+            person raising the incident ({user?.name}).
+          </Alert>
+        )}
+
         {formData.incidentType?.toLowerCase() === "ess password" && (
           <Stack>
             <TextField
@@ -424,9 +447,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               onChange={handleChange}
               onBlur={handleBlur}
               error={!!errors.jobTitle}
-              // ===== ADD THIS LINE to enforce the limit =====
               inputProps={{ maxLength: 25 }}
-              // ===== CHANGE THIS LINE to show the counter =====
               helperText={errors.jobTitle || `${formData.jobTitle.length} / 25`}
             />
           </InfoTooltip>

@@ -93,43 +93,23 @@ export default function ETLDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  const filteredIncidents = React.useMemo(() => {
-    if (!incidents) return [];
-    // UPDATED: Now filters by Incident Type for perfect consistency with the search page.
-    return incidents.filter(
-      (incident) =>
-        incident.incidentType?.name === INCIDENT_TYPES.PC_PERIPHERALS &&
-        (incident.status === INCIDENT_STATUS.PENDING_ETL ||
-          incident.status === INCIDENT_STATUS.RESOLVED ||
-          incident.status === INCIDENT_STATUS.CLOSED)
-    );
-  }, [incidents]);
-
-  const pendingIncidents = filteredIncidents.filter(
+  const pendingIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.PENDING_ETL
   ).length;
-  const processedIncidents = filteredIncidents.filter(
-    (i) => i.status === INCIDENT_STATUS.PROCESSED
-  ).length;
-  const resolvedIncidents = filteredIncidents.filter(
+  const resolvedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.RESOLVED
   ).length;
-  const closedIncidents = filteredIncidents.filter(
+  const closedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.CLOSED
   ).length;
 
+  // Note: 'Processed' is intentionally not shown on the ETL dashboard as per the logic.
   const statCardsData = [
     {
       title: "Pending Action",
       value: pendingIncidents,
       color: "warning",
       filterStatus: INCIDENT_STATUS.PENDING_ETL,
-    },
-    {
-      title: "Assigned (Processed)",
-      value: processedIncidents,
-      color: "info",
-      filterStatus: INCIDENT_STATUS.PROCESSED,
     },
     {
       title: "Resolved Incidents",
@@ -148,7 +128,7 @@ export default function ETLDashboard() {
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("assignedTeam", TEAMS.ETL); // Always ETL
+    params.append("incidentType", INCIDENT_TYPES.PC_PERIPHERALS);
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -157,7 +137,6 @@ export default function ETLDashboard() {
 
   const statusChartData = [
     { name: "Pending", count: pendingIncidents },
-    { name: "Processed", count: processedIncidents },
     { name: "Resolved", count: resolvedIncidents },
     { name: "Closed", count: closedIncidents },
   ];
@@ -165,29 +144,26 @@ export default function ETLDashboard() {
   const priorityChartData = [
     {
       name: "High",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.HIGH &&
-          (i.status === INCIDENT_STATUS.PROCESSED ||
-            i.status === INCIDENT_STATUS.PENDING_ETL)
+          i.status === INCIDENT_STATUS.PENDING_ETL
       ).length,
     },
     {
       name: "Medium",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.MEDIUM &&
-          (i.status === INCIDENT_STATUS.PROCESSED ||
-            i.status === INCIDENT_STATUS.PENDING_ETL)
+          i.status === INCIDENT_STATUS.PENDING_ETL
       ).length,
     },
     {
       name: "Low",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.LOW &&
-          (i.status === INCIDENT_STATUS.PROCESSED ||
-            i.status === INCIDENT_STATUS.PENDING_ETL)
+          i.status === INCIDENT_STATUS.PENDING_ETL
       ).length,
     },
   ].filter((item) => item.value > 0);
@@ -345,7 +321,7 @@ export default function ETLDashboard() {
           </Box>
         </Stack>
         <Box sx={cardContainerStyles}>
-          <RecentIncidentsCard incidents={filteredIncidents} />
+          <RecentIncidentsCard incidents={incidents} />
         </Box>
       </Stack>
     </Stack>

@@ -97,7 +97,6 @@ export default function AdminDashboard() {
     });
   }, [incidents, user, view]);
 
-  // UPDATED: Calculations now include pending statuses for the 'All Open' count
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
   ).length;
@@ -110,13 +109,19 @@ export default function AdminDashboard() {
   const pendingEtlIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.PENDING_ETL
   ).length;
+  const resolvedIncidents = incidentsToDisplay.filter(
+    (i) => i.status === INCIDENT_STATUS.RESOLVED
+  ).length;
+  const closedIncidents = incidentsToDisplay.filter(
+    (i) => i.status === INCIDENT_STATUS.CLOSED
+  ).length;
   const allOpenIncidents =
     newIncidents +
     processedIncidents +
     pendingTelecomIncidents +
     pendingEtlIncidents;
 
-  const statCardsData = [
+  const primaryStatCards = [
     {
       title: "New Incidents",
       value: newIncidents,
@@ -127,8 +132,23 @@ export default function AdminDashboard() {
       title: "Processed",
       value: processedIncidents,
       color: "info",
-      filterStatus: "Processed",
+      filterStatus: INCIDENT_STATUS.PROCESSED,
     },
+    {
+      title: "Resolved",
+      value: resolvedIncidents,
+      color: "success",
+      filterStatus: INCIDENT_STATUS.RESOLVED,
+    },
+    {
+      title: "Closed",
+      value: closedIncidents,
+      color: "default",
+      filterStatus: INCIDENT_STATUS.CLOSED,
+    },
+  ];
+
+  const secondaryStatCards = [
     {
       title: "All Open",
       value: allOpenIncidents,
@@ -136,20 +156,16 @@ export default function AdminDashboard() {
       filterStatus: "open",
     },
     {
-      title: "Resolved",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.RESOLVED
-      ).length,
-      color: "success",
-      filterStatus: "Resolved",
+      title: "Pending Telecom",
+      value: pendingTelecomIncidents,
+      color: "primary",
+      filterStatus: INCIDENT_STATUS.PENDING_TELECOM_ACTION,
     },
     {
-      title: "Closed",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.CLOSED
-      ).length,
-      color: "default",
-      filterStatus: "Closed",
+      title: "Pending ETL",
+      value: pendingEtlIncidents,
+      color: "primary",
+      filterStatus: INCIDENT_STATUS.PENDING_ETL,
     },
   ];
 
@@ -168,18 +184,8 @@ export default function AdminDashboard() {
     { name: "New", count: newIncidents },
     { name: "Processed", count: processedIncidents },
     { name: "Pending", count: pendingTelecomIncidents + pendingEtlIncidents },
-    {
-      name: "Resolved",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.RESOLVED
-      ).length,
-    },
-    {
-      name: "Closed",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.CLOSED
-      ).length,
-    },
+    { name: "Resolved", count: resolvedIncidents },
+    { name: "Closed", count: closedIncidents },
   ];
 
   const openIncidentsList = incidentsToDisplay.filter(
@@ -337,49 +343,104 @@ export default function AdminDashboard() {
       </Menu>
 
       <Box sx={{ position: "relative" }}>
-        <Stack
-          direction="row"
-          spacing={3}
-          sx={{ opacity: isNavigating ? 0.5 : 1 }}
-        >
-          {statCardsData.map((card, index) => (
-            <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
-              <Card elevation={3} sx={{ height: "100%" }}>
-                <CardActionArea
-                  onClick={() =>
-                    handleCardClick(constructCardUrl(card.filterStatus))
-                  }
-                  sx={{ height: "100%" }}
-                  disabled={isNavigating}
-                >
-                  <CardContent
-                    sx={{
-                      textAlign: "center",
-                      minHeight: 120,
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                    }}
+        <Stack spacing={3}>
+          {/* --- NEW TWO-ROW LAYOUT FOR STAT CARDS --- */}
+          <Stack
+            direction="row"
+            spacing={3}
+            sx={{ opacity: isNavigating ? 0.5 : 1 }}
+          >
+            {primaryStatCards.map((card, index) => (
+              <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
+                <Card elevation={3} sx={{ height: "100%" }}>
+                  <CardActionArea
+                    onClick={() =>
+                      handleCardClick(constructCardUrl(card.filterStatus))
+                    }
+                    sx={{ height: "100%" }}
+                    disabled={isNavigating}
                   >
-                    <Typography
-                      sx={{ fontSize: 14 }}
-                      color="text.secondary"
-                      gutterBottom
+                    <CardContent
+                      sx={{
+                        textAlign: "center",
+                        minHeight: 120,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                      }}
                     >
-                      {card.title}
-                    </Typography>
-                    <Typography
-                      variant={getNumberVariant(card.value)}
-                      component="div"
-                      color={`${card.color}.main`}
+                      <Typography
+                        sx={{ fontSize: 14 }}
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        {card.title}
+                      </Typography>
+                      <Typography
+                        variant={getNumberVariant(card.value)}
+                        component="div"
+                        color={`${card.color}.main`}
+                      >
+                        <CountUp
+                          end={card.value}
+                          duration={1.5}
+                          separator=","
+                        />
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Box>
+            ))}
+          </Stack>
+          <Stack
+            direction="row"
+            spacing={3}
+            sx={{ opacity: isNavigating ? 0.5 : 1 }}
+          >
+            {secondaryStatCards.map((card, index) => (
+              <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
+                <Card elevation={3} sx={{ height: "100%" }}>
+                  <CardActionArea
+                    onClick={() =>
+                      handleCardClick(constructCardUrl(card.filterStatus))
+                    }
+                    sx={{ height: "100%" }}
+                    disabled={isNavigating}
+                  >
+                    <CardContent
+                      sx={{
+                        textAlign: "center",
+                        minHeight: 120,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                      }}
                     >
-                      <CountUp end={card.value} duration={1.5} separator="," />
-                    </Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Box>
-          ))}
+                      <Typography
+                        sx={{ fontSize: 14 }}
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        {card.title}
+                      </Typography>
+                      <Typography
+                        variant={getNumberVariant(card.value)}
+                        component="div"
+                        color={`${card.color}.main`}
+                      >
+                        <CountUp
+                          end={card.value}
+                          duration={1.5}
+                          separator=","
+                        />
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Box>
+            ))}
+          </Stack>
         </Stack>
         {isNavigating && (
           <Box

@@ -12,13 +12,13 @@ import {
   Box,
   Tooltip,
   ListItemButton,
-  CircularProgress, // Import CircularProgress
+  CircularProgress,
 } from "@mui/material";
 import { DateTime } from "luxon";
 
 export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = React.useState(false); // Add loading state
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const recentIncidents = [...(incidents || [])]
     .sort((a, b) => {
@@ -43,7 +43,7 @@ export default function RecentIncidentsCard({ incidents }) {
   };
 
   const handleItemClick = (id) => {
-    setIsLoading(true); // Set loading to true on click
+    setIsLoading(true);
     router.push(`/incidents/${id}`);
   };
 
@@ -55,11 +55,20 @@ export default function RecentIncidentsCard({ incidents }) {
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        position: "relative", // Make Paper a positioning context
+        position: "relative",
       }}
     >
-      <Typography variant="h6" gutterBottom>
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+      >
         Recent Activity
+        {recentIncidents.length > 0 && (
+          <Typography component="span" variant="body2" color="text.secondary">
+            (Latest {recentIncidents.length})
+          </Typography>
+        )}
       </Typography>
       <Divider sx={{ mb: 1 }} />
       <List
@@ -75,7 +84,7 @@ export default function RecentIncidentsCard({ incidents }) {
             key={incident.id}
             divider={index < recentIncidents.length - 1}
             onClick={() => handleItemClick(incident.id)}
-            disabled={isLoading} // Optionally disable button during load
+            disabled={isLoading}
             sx={{ py: 1.5 }}
           >
             <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
@@ -157,7 +166,6 @@ export default function RecentIncidentsCard({ incidents }) {
         )}
       </List>
 
-      {/* --- ADD THIS LOADING OVERLAY BLOCK --- */}
       {isLoading && (
         <Box
           sx={{
@@ -171,7 +179,7 @@ export default function RecentIncidentsCard({ incidents }) {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 10,
-            borderRadius: "4px", // Match Paper's default border-radius
+            borderRadius: "4px",
           }}
         >
           <CircularProgress />

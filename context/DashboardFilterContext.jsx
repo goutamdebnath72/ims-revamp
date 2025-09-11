@@ -15,14 +15,11 @@ import { DateTime } from "luxon";
 import useSound from "@/hooks/useSound";
 import { NotificationContext } from "@/context/NotificationContext";
 import { isSystemIncident } from "@/lib/incident-helpers";
+import { USER_ROLES } from "@/lib/constants"; // <-- IMPORT USER_ROLES
 
 export const DashboardFilterContext = createContext();
-
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
-// --- THIS IS THE CORRECTED LOGIC THAT WAS MISSING ---
-
-// Helper to get the current shift based on Indian Standard Time
 const getCurrentShift = () => {
   const hour = DateTime.local().setZone("Asia/Kolkata").hour;
   if (hour >= 6 && hour < 14) return "A";
@@ -30,9 +27,6 @@ const getCurrentShift = () => {
   return "C";
 };
 
-// This is the new, corrected function
-// This is the original, stable version
-// THIS IS THE STABLE VERSION THAT DOES NOT CRASH
 const createInitialState = (user) => {
   const now = DateTime.local().setZone("Asia/Kolkata");
   const today = { start: now.startOf("day"), end: now.endOf("day") };
@@ -43,19 +37,30 @@ const createInitialState = (user) => {
   if (user?.role === "sys_admin") {
     return { dateRange: today, shift: "All" };
   }
-
-  // The fallback for any other case
   return { dateRange: { start: null, end: null }, shift: "All" };
+};
+
+// --- NEW HELPER FUNCTION TO GET THE CORRECT API ENDPOINT ---
+const getApiEndpointForRole = (role) => {
+  switch (role) {
+    case USER_ROLES.TELECOM_USER:
+      return "/api/incidents/telecom-dept";
+    case USER_ROLES.ETL:
+      return "/api/incidents/etl-dept";
+    case USER_ROLES.NETWORK_VENDOR:
+      return "/api/incidents/network-vendor";
+    default:
+      // Admins, Standard Users, etc., will use the general endpoint
+      return "/api/incidents";
+  }
 };
 
 export function DashboardFilterProvider({ children }) {
   const { data: session, status: sessionStatus } = useSession();
   const user = session?.user;
 
-  // Initialize state using the role-aware function
   const [filters, setFilters] = useState(() => createInitialState(user));
 
-  // This effect resets the filters correctly when the user logs in or out
   useEffect(() => {
     if (
       sessionStatus === "authenticated" ||
@@ -67,8 +72,6 @@ export function DashboardFilterProvider({ children }) {
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
-    //params.append("limit", "0");
-
     if (filters.shift && filters.shift !== "All") {
       params.append("shift", filters.shift);
     }
@@ -81,27 +84,26 @@ export function DashboardFilterProvider({ children }) {
     return params.toString();
   }, [filters]);
 
+  // --- UPDATED SWR URL LOGIC ---
+  const baseEndpoint = getApiEndpointForRole(user?.role);
   const SWR_URL =
     sessionStatus === "authenticated"
-      ? `/api/incidents?${buildQueryString()}`
+      ? `${baseEndpoint}?${buildQueryString()}`
       : null;
 
-  // --- START: NEW NOTIFICATION LOGIC ---
   const previousIncidentsRef = useRef(null);
   const playNotificationSound = useSound("/notification.mp3");
   const { showNotification } = useContext(NotificationContext);
-
   const { data, error, isLoading, mutate } = useSWR(SWR_URL, fetcher, {
     refreshInterval:
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
     onSuccess: (data, key, config) => {
-      // key and config are available here
-      const currentIncidents = data?.incidents || [];
+      // The data from the new endpoints is an array directly, not an object
+      const currentIncidents = Array.isArray(data)
+        ? data
+        : data?.incidents || [];
 
-      // The key is the URL. If the URL changes (due to a filter change),
-      // we must reset our baseline and not send notifications.
-      // We also check if the ref has been initialized yet.
       if (previousIncidentsRef.current === null || config.key !== SWR_URL) {
         previousIncidentsRef.current = {
           key: SWR_URL,
@@ -115,7 +117,6 @@ export function DashboardFilterProvider({ children }) {
       const newIncidents = currentIncidents.filter(
         (i) => !previousIds.has(i.id)
       );
-
       if (newIncidents.length > 0) {
         newIncidents.forEach((incident) => {
           if (incident.status !== "New") return;
@@ -142,18 +143,16 @@ export function DashboardFilterProvider({ children }) {
         });
       }
 
-      // Finally, update the baseline with the latest data and key for the next check.
       previousIncidentsRef.current = {
         key: SWR_URL,
         incidents: currentIncidents,
       };
     },
   });
-  // --- END: NEW NOTIFICATION LOGIC ---
 
-  const incidents = data?.incidents || [];
+  // Handle both possible data structures (object for general, array for specific)
+  const incidents = Array.isArray(data) ? data : data?.incidents || [];
 
-  // This function will now work correctly because it uses the role-aware createInitialState
   const resetFilters = useCallback(() => {
     setFilters(createInitialState(user));
   }, [user]);

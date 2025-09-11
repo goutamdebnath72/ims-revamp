@@ -92,26 +92,16 @@ export default function NetworkVendorDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  const filteredIncidents = React.useMemo(() => {
-    if (!incidents) return [];
-    // UPDATED: Now filters by both Incident Type and the correct statuses.
-    return incidents.filter(
-      (incident) =>
-        incident.incidentType?.name === INCIDENT_TYPES.NETWORK &&
-        (incident.status === INCIDENT_STATUS.PROCESSED ||
-          incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
-          incident.status === INCIDENT_STATUS.RESOLVED ||
-          incident.status === INCIDENT_STATUS.CLOSED)
-    );
-  }, [incidents]);
-
-  const processedIncidents = filteredIncidents.filter(
+  const processedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.PROCESSED
   ).length;
-  const resolvedIncidents = filteredIncidents.filter(
+  const pendingIncidents = (incidents || []).filter(
+    (i) => i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
+  ).length;
+  const resolvedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.RESOLVED
   ).length;
-  const closedIncidents = filteredIncidents.filter(
+  const closedIncidents = (incidents || []).filter(
     (i) => i.status === INCIDENT_STATUS.CLOSED
   ).length;
 
@@ -121,6 +111,12 @@ export default function NetworkVendorDashboard() {
       value: processedIncidents,
       color: "info",
       filterStatus: INCIDENT_STATUS.PROCESSED,
+    },
+    {
+      title: "Pending Telecom Action",
+      value: pendingIncidents,
+      color: "warning",
+      filterStatus: INCIDENT_STATUS.PENDING_TELECOM_ACTION,
     },
     {
       title: "Resolved Incidents",
@@ -139,7 +135,7 @@ export default function NetworkVendorDashboard() {
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("incidentType", INCIDENT_TYPES.NETWORK); // Always Network
+    params.append("incidentType", INCIDENT_TYPES.NETWORK);
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -148,6 +144,7 @@ export default function NetworkVendorDashboard() {
 
   const statusChartData = [
     { name: "Processed", count: processedIncidents },
+    { name: "Pending", count: pendingIncidents },
     { name: "Resolved", count: resolvedIncidents },
     { name: "Closed", count: closedIncidents },
   ];
@@ -155,26 +152,29 @@ export default function NetworkVendorDashboard() {
   const priorityChartData = [
     {
       name: "High",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.HIGH &&
-          i.status === INCIDENT_STATUS.PROCESSED
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
       ).length,
     },
     {
       name: "Medium",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.MEDIUM &&
-          i.status === INCIDENT_STATUS.PROCESSED
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
       ).length,
     },
     {
       name: "Low",
-      value: filteredIncidents.filter(
+      value: (incidents || []).filter(
         (i) =>
           i.priority === INCIDENT_PRIORITY.LOW &&
-          i.status === INCIDENT_STATUS.PROCESSED
+          (i.status === INCIDENT_STATUS.PROCESSED ||
+            i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
       ).length,
     },
   ].filter((item) => item.value > 0);
@@ -332,7 +332,7 @@ export default function NetworkVendorDashboard() {
           </Box>
         </Stack>
         <Box sx={cardContainerStyles}>
-          <RecentIncidentsCard incidents={filteredIncidents} />
+          <RecentIncidentsCard incidents={incidents} />
         </Box>
       </Stack>
     </Stack>
