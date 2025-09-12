@@ -7,15 +7,19 @@ import {
   Button,
   Chip,
   Divider,
-  Paper,
   Stack,
   Tooltip,
   Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 function DetailItem({ label, value, component = "div" }) {
+  if (!value) return null; // Hide the item if there's no value
   return (
-    <Box>
+    <Box sx={{ flex: "1 1 0", minWidth: "160px" }}>
       <Typography
         variant="caption"
         color="text.secondary"
@@ -23,6 +27,7 @@ function DetailItem({ label, value, component = "div" }) {
           fontWeight: "bold",
           display: "block",
           textTransform: "uppercase",
+          mb: 0.5,
         }}
       >
         {label}
@@ -32,7 +37,7 @@ function DetailItem({ label, value, component = "div" }) {
         component={component}
         sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
       >
-        {value || "N/A"}
+        {value}
       </Typography>
     </Box>
   );
@@ -42,6 +47,12 @@ export default function IncidentDetailsCard({
   incident,
   onOpenDescriptionModal,
 }) {
+  const [expanded, setExpanded] = React.useState("panel1");
+
+  const handleChange = (panel) => (event, isExpanded) => {
+    setExpanded(isExpanded ? panel : false);
+  };
+
   if (!incident) {
     return null;
   }
@@ -49,9 +60,12 @@ export default function IncidentDetailsCard({
   const getStatusChipColor = (status) => {
     switch (status) {
       case "New":
-        return "warning";
-      case "Processed":
         return "info";
+      case "Processed":
+        return "primary";
+      case "Pending Telecom Action":
+      case "Pending ETL Action":
+        return "warning";
       case "Resolved":
         return "success";
       case "Closed":
@@ -74,65 +88,54 @@ export default function IncidentDetailsCard({
     }
   };
 
-  // Updated to use the nested requestor object
   const requestor = incident.requestor || {};
-
   const formattedReportedOn = DateTime.fromISO(incident.reportedOn, {
     zone: "Asia/Kolkata",
   }).toFormat("dd MMM yyyy, h:mm a");
 
   const descriptionPreview =
-    incident.description?.substring(0, 200) +
-    (incident.description?.length > 200 ? "..." : "");
+    incident.description?.substring(0, 300) +
+    (incident.description?.length > 300 ? "..." : "");
 
   return (
-    <Paper
-      elevation={3}
-      sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column" }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 1,
-        }}
+    <Box>
+      <Accordion
+        expanded={expanded === "panel1"}
+        onChange={handleChange("panel1")}
       >
-        <Typography variant="h5">Incident Details</Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ fontWeight: "medium", fontSize: "0.9em" }}
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="panel1-content"
+          id="panel1-header"
         >
-          {/* Display the newly formatted date */}
-          Reported On:{" "}
-          {incident.reportedOn ? formattedReportedOn : "Not available"}
-        </Typography>
-      </Box>
-      <Divider sx={{ mb: 3 }} />
-
-      <Box
-        sx={{
-          overflowY: "auto",
-          pr: 2,
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Stack spacing={2.5}>
-          {/* This top section remains the same */}
-          <Stack direction="row" spacing={2}>
-            <Box sx={{ flex: "2 1 0px", minWidth: 0 }}>
+          <Typography sx={{ width: "33%", flexShrink: 0, fontWeight: 500 }}>
+            Incident Classification
+          </Typography>
+          <Typography sx={{ color: "text.secondary" }}>
+            Status, Priority, Type, and Title
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={2} divider={<Divider />}>
+            <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
               <DetailItem label="Incident No." value={incident.id} />
-            </Box>
-            <Box sx={{ flex: "2 1 0px", minWidth: 0 }}>
               <DetailItem
                 label="Incident Type"
                 value={incident.incidentType?.name}
               />
-            </Box>
-            <Box sx={{ flex: "1 1 0px", minWidth: 0 }}>
+              <DetailItem label="Reported On" value={formattedReportedOn} />
+            </Stack>
+            <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+              <DetailItem
+                label="Status"
+                value={
+                  <Chip
+                    label={incident.status}
+                    color={getStatusChipColor(incident.status)}
+                    size="small"
+                  />
+                }
+              />
               <DetailItem
                 label="Priority"
                 value={
@@ -143,166 +146,102 @@ export default function IncidentDetailsCard({
                   />
                 }
               />
-            </Box>
-            <Box sx={{ flex: "1 1 0px", minWidth: 0 }}>
-              <DetailItem
-                label="Status"
-                value={
-                  <Tooltip
-                    title={incident.status}
-                    arrow
-                    componentsProps={{
-                      tooltip: {
-                        sx: {
-                          bgcolor: "#333",
-                          fontSize: "0.8rem",
-                          letterSpacing: "0.5px",
-                        },
-                      },
-                    }}
-                  >
-                    <Chip
-                      label={incident.status}
-                      color={getStatusChipColor(incident.status)}
-                      variant={
-                        incident.status === "New" ? "outlined" : "filled"
-                      }
-                      size="small"
-                    />
-                  </Tooltip>
-                }
-              />
-            </Box>
-          </Stack>
-          <Divider />
-          <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontWeight: "bold",
-                display: "block",
-                textTransform: "uppercase",
-              }}
-            >
-              Job Title
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-            >
-              {incident.jobTitle || "N/A"}
-            </Typography>
-          </Box>
-          <Divider />
-          <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontWeight: "bold",
-                display: "block",
-                textTransform: "uppercase",
-              }}
-            >
-              Description
-            </Typography>
-            <Typography
-              variant="body1"
-              component="div"
-              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mt: 0.5 }}
-            >
-              {descriptionPreview || "N/A"}
-            </Typography>
-            {incident.description && incident.description.length > 200 && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={onOpenDescriptionModal}
-                sx={{ mt: 1 }}
-              >
-                View Full Description...
-              </Button>
-            )}
-          </Box>
-
-          {/* --- CORRECTED REQUESTOR INFORMATION SECTION --- */}
-          <Box
-            sx={{
-              position: "relative",
-              mt: "32px !important",
-              p: 2,
-              pt: 3,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 1,
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: "bold",
-                position: "absolute",
-                top: 0,
-                left: 12,
-                transform: "translateY(-50%)",
-                bgcolor: "background.paper",
-                px: 1,
-              }}
-            >
-              Requestor Information
-            </Typography>
-            <Stack spacing={2.5}>
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="Requestor" value={requestor.name} />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="Ticket No." value={requestor.ticketNo} />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem
-                    label="Department"
-                    value={requestor.department?.name}
-                  />{" "}
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="Contact No." value={requestor.contactNo} />
-                </Box>
-              </Stack>
-              <Divider />
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="Email ID" value={requestor.emailId} />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem
-                    label="Email ID (NIC)"
-                    value={requestor.emailIdNic}
-                  />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="SAIL P/No" value={requestor.sailPNo} />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="Location" value={incident.location} />
-                </Box>
-              </Stack>
-              <Divider />
-              <Stack direction="row" spacing={2}>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="IP Address" value={incident.ipAddress} />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                  <DetailItem label="Job From" value={incident.jobFrom} />
-                </Box>
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }} />
-                <Box sx={{ flex: "1 1 0", minWidth: 0 }} />
-              </Stack>
             </Stack>
-          </Box>
-        </Stack>
-      </Box>
-    </Paper>
+            <DetailItem label="Job Title" value={incident.jobTitle} />
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion
+        expanded={expanded === "panel2"}
+        onChange={handleChange("panel2")}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="panel2-content"
+          id="panel2-header"
+        >
+          <Typography sx={{ width: "33%", flexShrink: 0, fontWeight: 500 }}>
+            Requestor Information
+          </Typography>
+          <Typography sx={{ color: "text.secondary" }}>
+            Contact and Department Details
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack spacing={2} divider={<Divider />}>
+            <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+              <DetailItem label="Requestor" value={requestor.name} />
+              <DetailItem label="Ticket No." value={requestor.ticketNo} />
+              <DetailItem
+                label="Department"
+                value={requestor.department?.name}
+              />
+              <DetailItem label="Contact No." value={requestor.contactNo} />
+            </Stack>
+            <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+              <DetailItem label="Email ID" value={requestor.emailId} />
+              <DetailItem label="Email ID (NIC)" value={requestor.emailIdNic} />
+              <DetailItem label="SAIL P/No" value={requestor.sailPNo} />
+            </Stack>
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion
+        expanded={expanded === "panel3"}
+        onChange={handleChange("panel3")}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="panel3-content"
+          id="panel3-header"
+        >
+          <Typography sx={{ width: "33%", flexShrink: 0, fontWeight: 500 }}>
+            System & Location Details
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+            <DetailItem label="Location" value={incident.location} />
+            <DetailItem label="IP Address" value={incident.ipAddress} />
+            <DetailItem label="Job From" value={incident.jobFrom} />
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
+
+      <Accordion
+        expanded={expanded === "panel4"}
+        onChange={handleChange("panel4")}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="panel4-content"
+          id="panel4-header"
+        >
+          <Typography sx={{ width: "33%", flexShrink: 0, fontWeight: 500 }}>
+            Full Description
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography
+            variant="body1"
+            component="div"
+            sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", mb: 1.5 }}
+          >
+            {descriptionPreview || "N/A"}
+          </Typography>
+          {incident.description && incident.description.length > 300 && (
+            <Button
+              variant="text"
+              size="small"
+              onClick={onOpenDescriptionModal}
+            >
+              View Full Description...
+            </Button>
+          )}
+        </AccordionDetails>
+      </Accordion>
+    </Box>
   );
 }

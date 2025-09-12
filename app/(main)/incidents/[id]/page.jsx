@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { NotificationContext } from "@/context/NotificationContext";
+import IncidentHeader from "@/components/IncidentHeader";
 import IncidentDetailsCard from "@/components/IncidentDetailsCard";
 import IncidentAuditTrail from "@/components/IncidentAuditTrail";
 import IncidentActionForm from "@/components/IncidentActionForm";
@@ -23,6 +24,8 @@ import {
   Paper,
   Divider,
   Button,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   INCIDENT_STATUS,
@@ -66,11 +69,29 @@ const editCommentAPI = async (id, entryId, newComment) => {
   return response.json();
 };
 
+// A custom component to render the content of a tab
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`incident-tabpanel-${index}`}
+      aria-labelledby={`incident-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box>{children}</Box>}
+    </div>
+  );
+}
+
 export default function IncidentDetailsPage() {
   const params = useParams();
   const { showNotification } = React.useContext(NotificationContext);
   const { data: session } = useSession();
   const user = session?.user;
+
+  const [activeTab, setActiveTab] = React.useState(0);
 
   const {
     data: incidentData,
@@ -94,8 +115,6 @@ export default function IncidentDetailsPage() {
   const [isTelecomReferralModalOpen, setTelecomReferralModalOpen] =
     React.useState(false);
   const auditTrailRef = React.useRef(null);
-  const [isAuditTrailExpanded, setIsAuditTrailExpanded] = React.useState(false);
-  const [isAnimating, setIsAnimating] = React.useState(false);
   const [isEtlReferralModalOpen, setEtlReferralModalOpen] =
     React.useState(false);
 
@@ -104,6 +123,10 @@ export default function IncidentDetailsPage() {
       auditTrailRef.current?.scrollToBottom();
     }, 0);
   }, [incidentData?.auditTrail?.length]);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
 
   if (isLoading) {
     return (
@@ -169,13 +192,11 @@ export default function IncidentDetailsPage() {
     incident.status === INCIDENT_STATUS.RESOLVED ||
     incident.status === INCIDENT_STATUS.CLOSED ||
     isOptimisticallyResolved;
-
   const hasBeenReset = incident.auditTrail.some(
     (entry) =>
       entry.action === AUDIT_ACTIONS.PASSWORD_RESET ||
       entry.action === "SAP Password Reset"
   );
-
   const showResetButton =
     isAdmin &&
     !isResolved &&
@@ -183,14 +204,12 @@ export default function IncidentDetailsPage() {
       INCIDENT_TYPES.ESS_PASSWORD.toLowerCase() &&
     incident?.status !== INCIDENT_STATUS.NEW &&
     !hasBeenReset;
-
   const showSapResetButton =
     isAdmin &&
     !isResolved &&
     incident?.incidentType?.name.toLowerCase().includes("sap password") &&
     incident?.status !== INCIDENT_STATUS.NEW &&
     !hasBeenReset;
-
   const canUserClose =
     isRequestor && incident.status === INCIDENT_STATUS.PROCESSED;
   const canUserConfirm =
@@ -265,7 +284,6 @@ export default function IncidentDetailsPage() {
       }),
       false
     );
-
     setTimeout(() => auditTrailRef.current?.scrollToBottom(), 0);
     try {
       const updatedIncident = await updateIncidentAPI(params.id, payload);
@@ -346,129 +364,118 @@ export default function IncidentDetailsPage() {
       showNotification({ title: "Edit Failed", message: err.message }, "error");
     }
   };
-  const handleToggleExpand = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setIsAuditTrailExpanded((prev) => !prev);
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 300);
-  };
 
   return (
     <>
-      <Box
-        sx={{
-          display: "flex",
-          gap: 3,
-          alignItems: "stretch",
-          height: "calc(100vh - 112px)",
-        }}
-      >
-        <Box sx={{ flex: 7, minWidth: 0 }}>
-          <IncidentDetailsCard
-            incident={incident}
-            onOpenDescriptionModal={() => setDescriptionModalOpen(true)}
-          />
-        </Box>
-        <Stack sx={{ flex: 5, minWidth: 0, height: "100%" }} spacing={1}>
-          <Box
-            sx={{
-              flex: isAuditTrailExpanded ? "1 1 100%" : "1 1 calc(50% - 4px)",
-              minHeight: 0,
-              display: "flex",
-              position: "relative",
-              transition: "flex 0.3s ease-in-out",
-            }}
-          >
-            <IncidentAuditTrail
-              ref={auditTrailRef}
-              auditTrail={incident.auditTrail || []}
-              incident={incident}
-              onCommentEdit={handleCommentEdit}
-              isExpanded={isAuditTrailExpanded}
-              onToggleExpand={
-                showActionArea && incident.status !== INCIDENT_STATUS.CLOSED
-                  ? handleToggleExpand
-                  : null
-              }
-            />
-          </Box>
-          {showActionArea && incident.status !== INCIDENT_STATUS.CLOSED && (
-            <Box
-              sx={{
-                display: isAuditTrailExpanded ? "none" : "block",
-                flex: isAuditTrailExpanded ? "1 1 0%" : "1 1 calc(50% - 4px)",
-                minHeight: 0,
-                transition: "flex 0.3s ease-in-out",
-                zIndex: 2,
-              }}
+      <Stack sx={{ height: "calc(100vh - 112px)" }}>
+        {/* NON-SCROLLABLE PART */}
+        <Box sx={{ flexShrink: 0, px: 3, pt: 2, bgcolor: "background.paper" }}>
+          <IncidentHeader incident={incident} />
+          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              aria-label="incident detail tabs"
             >
-              {canUserConfirm ? (
-                <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
-                  <Typography variant="h5" gutterBottom>
-                    Resolution Feedback
-                  </Typography>
-                  <Divider sx={{ mb: 2 }} />
-                  <Typography variant="body1" sx={{ mb: 2 }}>
-                    The support team has marked this incident as resolved.
-                    Please provide your feedback to close the ticket or let us
-                    know if the issue persists.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    onClick={() =>
-                      handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
-                    }
-                    fullWidth
-                    size="large"
-                  >
-                    Confirm Resolution
-                  </Button>
-                </Paper>
-              ) : (
-                <IncidentActionForm
+              <Tab label="Audit Trail & Actions" id="incident-tab-0" />
+              <Tab label="Full Details" id="incident-tab-1" />
+            </Tabs>
+          </Box>
+        </Box>
+
+        {/* SCROLLABLE PART */}
+        <Box sx={{ flexGrow: 1, overflowY: "auto", px: 3, py: 2 }}>
+          <TabPanel value={activeTab} index={0}>
+            <Stack spacing={3}>
+              <Box>
+                <IncidentAuditTrail
+                  ref={auditTrailRef}
+                  auditTrail={incident.auditTrail || []}
                   incident={incident}
-                  onUpdate={handleUpdate}
-                  onOpenResolveDialog={() =>
-                    handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
-                  }
-                  showResetButton={showResetButton}
-                  onOpenResetDialog={() => setIsResetModalOpen(true)}
-                  showSapResetButton={showSapResetButton}
-                  onOpenSapResetDialog={() => setIsSapResetModalOpen(true)}
-                  isRequestor={isRequestor}
-                  canUserClose={canUserClose}
-                  onUserClose={() =>
-                    handleOpenDialog(DIALOG_CONTEXTS.USER_CLOSE)
-                  }
-                  canUserConfirm={canUserConfirm}
-                  onUserConfirm={() =>
-                    handleOpenDialog(DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION)
-                  }
-                  isDisabled={
-                    incident.status === INCIDENT_STATUS.NEW &&
-                    isRequestor &&
-                    !isAdmin
-                  }
-                  onOpenTelecomReferralDialog={() =>
-                    setTelecomReferralModalOpen(true)
-                  }
-                  onOpenEtlReferralDialog={() => {
-                    setEtlReferralModalOpen(true);
-                  }}
-                  isAdmin={isAdmin}
-                  isAssignedVendor={isAssignedVendor}
-                  isAnimating={isAnimating}
-                  isTelecomUser={isTelecomUser}
-                  isEtlUser={isEtlUser}
+                  onCommentEdit={handleCommentEdit}
                 />
+              </Box>
+              {showActionArea && incident.status !== INCIDENT_STATUS.CLOSED && (
+                <Box>
+                  {canUserConfirm ? (
+                    <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
+                      <Typography variant="h5" gutterBottom>
+                        Resolution Feedback
+                      </Typography>
+                      <Divider sx={{ mb: 2 }} />
+                      <Typography variant="body1" sx={{ mb: 2 }}>
+                        The support team has marked this incident as resolved.
+                        Please provide your feedback to close the ticket or let
+                        us know if the issue persists.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() =>
+                          handleOpenDialog(
+                            DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION
+                          )
+                        }
+                        fullWidth
+                        size="large"
+                      >
+                        Confirm Resolution
+                      </Button>
+                    </Paper>
+                  ) : (
+                    <IncidentActionForm
+                      incident={incident}
+                      onUpdate={handleUpdate}
+                      onOpenResolveDialog={() =>
+                        handleOpenDialog(DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE)
+                      }
+                      showResetButton={showResetButton}
+                      onOpenResetDialog={() => setIsResetModalOpen(true)}
+                      showSapResetButton={showSapResetButton}
+                      onOpenSapResetDialog={() => setIsSapResetModalOpen(true)}
+                      isRequestor={isRequestor}
+                      canUserClose={canUserClose}
+                      onUserClose={() =>
+                        handleOpenDialog(DIALOG_CONTEXTS.USER_CLOSE)
+                      }
+                      canUserConfirm={canUserConfirm}
+                      onUserConfirm={() =>
+                        handleOpenDialog(
+                          DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION
+                        )
+                      }
+                      isDisabled={
+                        incident.status === INCIDENT_STATUS.NEW &&
+                        isRequestor &&
+                        !isAdmin
+                      }
+                      onOpenTelecomReferralDialog={() =>
+                        setTelecomReferralModalOpen(true)
+                      }
+                      onOpenEtlReferralDialog={() => {
+                        setEtlReferralModalOpen(true);
+                      }}
+                      isAdmin={isAdmin}
+                      isAssignedVendor={isAssignedVendor}
+                      isTelecomUser={isTelecomUser}
+                      isEtlUser={isEtlUser}
+                    />
+                  )}
+                </Box>
               )}
-            </Box>
-          )}
-        </Stack>
-      </Box>
+            </Stack>
+          </TabPanel>
+
+          <TabPanel value={activeTab} index={1}>
+            <IncidentDetailsCard
+              incident={incident}
+              onOpenDescriptionModal={() => setDescriptionModalOpen(true)}
+            />
+          </TabPanel>
+        </Box>
+      </Stack>
+
+      {/* MODALS AND DIALOGS (unchanged) */}
       <ResolutionDialog
         open={isDialogOpen}
         onClose={() => setDialogOpen(false)}
