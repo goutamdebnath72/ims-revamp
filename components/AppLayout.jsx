@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SettingsContext } from "@/context/SettingsContext";
-import { useLoading } from "@/context/LoadingContext"; // Import the new hook
+import { useLoading } from "@/context/LoadingContext";
 import { getCurrentShift } from "@/lib/date-helpers";
 import InfoTooltip from "./InfoTooltip";
 import {
@@ -26,7 +26,8 @@ import {
   Switch,
   Stack,
   Chip,
-  CircularProgress, // Import CircularProgress
+  Container,
+  CircularProgress,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import SearchIcon from "@mui/icons-material/Search";
@@ -321,21 +322,31 @@ export default function AppLayout({ children }) {
           ))}
         </List>
       </Drawer>
-      <Box
+       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          bgcolor: "background.default",
-          p: 3,
+          bgcolor: 'grey.100',
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           overflow: "auto",
-          position: "relative", // Add for positioning context
+          position: "relative",
         }}
       >
         <Toolbar />
-        {children}
+        <Container
+          sx={{
+            mt: 4,
+            mb: 4,
+            maxWidth: {
+              lg: "100%", // For laptops (screens from 1200px up to 1535px wide)
+              xl: "1350px", // For Full HD desktops (screens 1536px and wider)
+            },
+          }}
+        >
+          {children}
+        </Container>
 
-        {/* --- ADD THIS LOADING OVERLAY BLOCK --- */}
+        {/* --- LOADING OVERLAY REMAINS UNCHANGED --- */}
         {isNavigating && (
           <Box
             sx={{
