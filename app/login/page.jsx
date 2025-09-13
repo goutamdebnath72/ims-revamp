@@ -64,7 +64,7 @@ export default function LoginPage() {
     try {
       const result = await signIn("credentials", {
         redirect: false,
-        userId: userId,
+        ticketNo: userId,
         password: password,
       });
 

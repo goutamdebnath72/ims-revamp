@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "docker:run": "docker run --rm -p 3000:3000 -e DATABASE_URL=\"postgresql://postgres.gqjinckhihdfrpuuzoks:Taklamakan%40123@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=10&pool_timeout=60\" -e NEXTAUTH_SECRET=\"8p9fQpe3U5XibeVLmzAaLFckDqUmL7Ct\" -e NEXTAUTH_URL=\"http://localhost:3000\" -e NETWORK_VENDOR_PASSWORD=\"password\" -e BIOMETRIC_VENDOR_PASSWORD=\"password\" -e TELECOM_PASSWORD=\"password\" -e ETL_PASSWORD=\"password\" -e RESEND_API_KEY=\"re_8Mb3uSpN_CqzYrCMhoCPt1F2pbbY7oGHy\" -e SENDER_EMAIL=\"IMS Alert <rakesh.ojha@saildsp.co.in>\" -e SECURITY_CONTACT_NAME=\"Mr. Rakesh Ojha\" -e SECURITY_CONTACT_MOBILE=\"9434792593\" --name ims-container ims-app",
     "postinstall": "prisma generate",
     "db:validate": "dotenv -e .env.local -- prisma validate",
     "db:status": "dotenv -e .env.local -- prisma migrate status",

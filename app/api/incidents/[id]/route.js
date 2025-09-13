@@ -11,11 +11,21 @@ import { INCIDENT_STATUS, AUDIT_ACTIONS, TEAMS } from "@/lib/constants";
 // GET a single incident by ID
 export async function GET(_req, { params }) {
   const { id } = params;
+
+  // --- FIX 1: ID VALIDATION ---
+  // Add robust validation for the incoming ID.
+  if (!id || typeof id !== "string") {
+    return NextResponse.json(
+      { message: "Invalid or missing Incident ID." },
+      { status: 400 } // 400 Bad Request
+    );
+  }
+
   try {
     const incident = await getIncidentById(id);
     if (!incident) {
       return NextResponse.json(
-        { error: "Incident not found" },
+        { message: "Incident not found" },
         { status: 404 }
       );
     }
@@ -23,75 +33,71 @@ export async function GET(_req, { params }) {
   } catch (error) {
     console.error(`Failed to fetch incident ${id}:`, error);
     return NextResponse.json(
-      { error: "Failed to fetch incident" },
+      { message: "Failed to fetch incident" },
       { status: 500 }
     );
   }
 }
 
-// PATCH: update an incident (includes referral → Telecom)
+// PATCH: update an incident
 export async function PATCH(request, { params }) {
   const { id } = params;
+
+  // --- FIX 1: ID VALIDATION (Applied here as well) ---
+  if (!id || typeof id !== "string") {
+    return NextResponse.json(
+      { message: "Invalid or missing Incident ID." },
+      { status: 400 }
+    );
+  }
 
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const rawBody = await request.json();
-    console.log("DEBUG: 4. [API Route Received]", { body: rawBody });
-
-    // Inline audit edit (keep your existing behavior if you use this)
-    if (rawBody?.action === AUDIT_ACTIONS?.EDIT_COMMENT) {
-      const updatedEntry = await editAuditComment(
-        rawBody.entryId,
-        rawBody.newComment
-      );
-      return NextResponse.json(updatedEntry);
-    }
-
+    const body = await request.json();
     const user = session.user;
+
+    // --- FIX 2: CORRECTED LOGIC FOR EDITING A COMMENT ---
+    if (body.action === AUDIT_ACTIONS.EDIT_COMMENT) {
+      // First, perform the edit
+      await editAuditComment(body.entryId, body.newComment);
+      // Then, fetch the ENTIRE updated incident and return it
+      const updatedIncident = await getIncidentById(id);
+      return NextResponse.json(updatedIncident);
+    }
+
     const existing = await getIncidentById(id);
     if (!existing) {
       return NextResponse.json(
-        { error: "Incident not found" },
+        { message: "Incident not found" },
         { status: 404 }
       );
     }
 
-    // ---- Normalize payload ---------------------------------------------------
-    const body = { ...rawBody };
-
-    // IMPORTANT: never use a string fallback here; always use TEAMS.TELECOM
-    // so downstream filters that compare against TEAMS.TELECOM will match.
+    // Payload normalization logic remains the same
+    const normalizedBody = { ...body };
     const isTelecomReferral =
-      Array.isArray(body.telecomTasks) && body.telecomTasks.length > 0;
+      Array.isArray(normalizedBody.telecomTasks) &&
+      normalizedBody.telecomTasks.length > 0;
 
     if (isTelecomReferral) {
-      body.assignedTeam = TEAMS.TELECOM; // exact constant, no fallback/casing drift
-      body.status =
-        INCIDENT_STATUS?.PENDING_TELECOM_ACTION || "Pending Telecom Action";
-      if (!body.comment) body.comment = "Referred to Telecom.";
+      normalizedBody.assignedTeam = TEAMS.TELECOM;
+      normalizedBody.status = INCIDENT_STATUS.PENDING_TELECOM_ACTION;
+      if (!normalizedBody.comment)
+        normalizedBody.comment = "Referred to Telecom.";
     } else if (existing.status === INCIDENT_STATUS.NEW) {
-      // First touch without referral → move to Processed
-      body.status = INCIDENT_STATUS.PROCESSED;
+      normalizedBody.status = INCIDENT_STATUS.PROCESSED;
     }
 
-    console.log("DEBUG: 4b. [API Normalized Body]", body);
-
-    const updatedIncident = await updateIncident(id, body, user);
-    console.log("DEBUG: 7. [API Route Responding]", {
-      id,
-      assignedTeam: updatedIncident.assignedTeam,
-      status: updatedIncident.status,
-    });
-
+    const updatedIncident = await updateIncident(id, normalizedBody, user);
     return NextResponse.json(updatedIncident);
   } catch (error) {
-    console.error(`Failed to update incident ${params?.id}:`, error);
+    console.error(`Failed to update incident ${id}:`, error);
     return NextResponse.json(
-      { error: "Failed to update incident" },
+      { message: "Failed to update incident" },
       { status: 500 }
     );
   }
