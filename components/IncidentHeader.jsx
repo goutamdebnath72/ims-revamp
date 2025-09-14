@@ -64,9 +64,12 @@ export default function IncidentHeader({ incident }) {
 
   return (
     <Paper
-      elevation={2}
+      elevation={3}
       sx={{
-        p: 2,
+        mx: "auto",
+        width: "99%",
+        px: 4, // Changed: Increased horizontal padding
+        py: 2, // Changed: Explicitly set vertical padding
         mb: 2, // Margin bottom to space it from the tabs
         bgcolor: "background.default",
       }}
@@ -75,10 +78,15 @@ export default function IncidentHeader({ incident }) {
         direction={{ xs: "column", md: "row" }}
         justifyContent="space-between"
         alignItems={{ xs: "flex-start", md: "center" }}
-        spacing={1.5}
+        spacing={1.0}
       >
         <Box sx={{ minWidth: 0 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            sx={{ mb: 1.5 }}
+          >
             <Typography
               variant="h5"
               component="h1"

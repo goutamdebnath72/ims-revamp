@@ -14,10 +14,11 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 function DetailItem({ label, value, component = "div" }) {
-  if (!value) return null; // Hide the item if there's no value
+  if (!value) return null;
   return (
     <Box sx={{ flex: "1 1 0", minWidth: "160px" }}>
       <Typography
@@ -47,10 +48,42 @@ export default function IncidentDetailsCard({
   incident,
   onOpenDescriptionModal,
 }) {
-  const [expanded, setExpanded] = React.useState("panel1");
+  const [expanded, setExpanded] = React.useState([]);
 
   const handleChange = (panel) => (event, isExpanded) => {
-    setExpanded(isExpanded ? panel : false);
+    setExpanded((prevExpanded) => {
+      if (isExpanded) {
+        return [...prevExpanded, panel];
+      } else {
+        return prevExpanded.filter((p) => p !== panel);
+      }
+    });
+  };
+
+  const iconSx = {
+    /*fontSize: "1.6rem",
+    color: "grey.600",
+    transform: "scale(1.1)",*/
+  };
+
+  const allPanels = ["panel1", "panel2", "panel3", "panel4"];
+  const allOpen = expanded.length === allPanels.length;
+
+  const handleToggleAll = () => {
+    if (allOpen) {
+      setExpanded([]);
+    } else {
+      setExpanded(allPanels);
+    }
+  };
+
+  const accordionSx = {
+    // Add margin to the bottom of each card for spacing
+    mb: 2,
+    // This removes the default thin line MUI puts on top of accordions
+    "&:before": {
+      display: "none",
+    },
   };
 
   if (!incident) {
@@ -74,7 +107,6 @@ export default function IncidentDetailsCard({
         return "default";
     }
   };
-
   const getPriorityChipColor = (priority) => {
     switch (priority) {
       case "High":
@@ -92,19 +124,31 @@ export default function IncidentDetailsCard({
   const formattedReportedOn = DateTime.fromISO(incident.reportedOn, {
     zone: "Asia/Kolkata",
   }).toFormat("dd MMM yyyy, h:mm a");
-
   const descriptionPreview =
     incident.description?.substring(0, 300) +
     (incident.description?.length > 300 ? "..." : "");
 
   return (
-    <Box>
+    <Box sx={{ width: "99%", mx: "auto" }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", pb: 1 }}>
+        <Button onClick={handleToggleAll}>
+          {allOpen ? "Close All" : "Open All"}
+        </Button>
+      </Box>
       <Accordion
-        expanded={expanded === "panel1"}
+        elevation={2}
+        sx={accordionSx}
+        expanded={expanded.includes("panel1")}
         onChange={handleChange("panel1")}
       >
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
+          expandIcon={
+            expanded.includes("panel1") ? (
+              <RemoveIcon sx={iconSx} />
+            ) : (
+              <AddIcon sx={iconSx} />
+            )
+          }
           aria-controls="panel1-content"
           id="panel1-header"
         >
@@ -153,11 +197,19 @@ export default function IncidentDetailsCard({
       </Accordion>
 
       <Accordion
-        expanded={expanded === "panel2"}
+        elevation={2}
+        sx={accordionSx}
+        expanded={expanded.includes("panel2")}
         onChange={handleChange("panel2")}
       >
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
+          expandIcon={
+            expanded.includes("panel2") ? (
+              <RemoveIcon sx={iconSx} />
+            ) : (
+              <AddIcon sx={iconSx} />
+            )
+          }
           aria-controls="panel2-content"
           id="panel2-header"
         >
@@ -189,11 +241,19 @@ export default function IncidentDetailsCard({
       </Accordion>
 
       <Accordion
-        expanded={expanded === "panel3"}
+        elevation={2}
+        sx={accordionSx}
+        expanded={expanded.includes("panel3")}
         onChange={handleChange("panel3")}
       >
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
+          expandIcon={
+            expanded.includes("panel3") ? (
+              <RemoveIcon sx={iconSx} />
+            ) : (
+              <AddIcon sx={iconSx} />
+            )
+          }
           aria-controls="panel3-content"
           id="panel3-header"
         >
@@ -211,11 +271,19 @@ export default function IncidentDetailsCard({
       </Accordion>
 
       <Accordion
-        expanded={expanded === "panel4"}
+        elevation={2}
+        sx={accordionSx}
+        expanded={expanded.includes("panel4")}
         onChange={handleChange("panel4")}
       >
         <AccordionSummary
-          expandIcon={<ExpandMoreIcon />}
+          expandIcon={
+            expanded.includes("panel4") ? (
+              <RemoveIcon sx={iconSx} />
+            ) : (
+              <AddIcon sx={iconSx} />
+            )
+          }
           aria-controls="panel4-content"
           id="panel4-header"
         >

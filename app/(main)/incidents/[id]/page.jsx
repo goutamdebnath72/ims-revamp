@@ -367,11 +367,28 @@ export default function IncidentDetailsPage() {
 
   return (
     <>
-      <Stack sx={{ height: "calc(100vh - 112px)" }}>
-        {/* NON-SCROLLABLE PART */}
-        <Box sx={{ flexShrink: 0, px: 3, pt: 2, bgcolor: "background.paper" }}>
+      <Paper
+        sx={{
+          pt: 1.4,
+          px: 3,
+          pb: 1.4,
+          display: "flex",
+          flexDirection: "column",
+          // The component will now naturally fill the height of its container
+          // without needing a rigid calc() height.
+        }}
+      >
+        {/* NON-SCROLLABLE PART (flex item 1) */}
+        <Box sx={{ flexShrink: 0, bgcolor: "background.paper" }}>
           <IncidentHeader incident={incident} />
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Box
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              width: "99%",
+              mx: "auto",
+            }}
+          >
             <Tabs
               value={activeTab}
               onChange={handleTabChange}
@@ -383,8 +400,16 @@ export default function IncidentDetailsPage() {
           </Box>
         </Box>
 
-        {/* SCROLLABLE PART */}
-        <Box sx={{ flexGrow: 1, overflowY: "auto", px: 3, py: 2 }}>
+        {/* SCROLLABLE PART (flex item 2) */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflowY: "auto",
+            py: 2,
+            mx: "auto",
+            width: "99%",
+          }}
+        >
           <TabPanel value={activeTab} index={0}>
             <Stack spacing={3}>
               <Box>
@@ -473,7 +498,7 @@ export default function IncidentDetailsPage() {
             />
           </TabPanel>
         </Box>
-      </Stack>
+      </Paper>
 
       {/* MODALS AND DIALOGS (unchanged) */}
       <ResolutionDialog

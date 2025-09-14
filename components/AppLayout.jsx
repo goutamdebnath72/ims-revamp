@@ -126,6 +126,7 @@ export default function AppLayout({ children }) {
   const router = useRouter();
   const { resetSearch } = React.useContext(SearchContext);
   const pathname = usePathname();
+  const isIncidentDetailsPage = pathname.startsWith("/incidents/");
   const user = session?.user;
 
   // Consume the new loading context
@@ -322,21 +323,21 @@ export default function AppLayout({ children }) {
           ))}
         </List>
       </Drawer>
-       <Box
+      <Box
         component="main"
         sx={{
           flexGrow: 1,
-          bgcolor: 'grey.100',
+          bgcolor: "grey.100",
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          overflow: "auto",
+          overflow: "scroll",
           position: "relative",
         }}
       >
         <Toolbar />
         <Container
           sx={{
-            mt: 4,
-            mb: 4,
+            mt: isIncidentDetailsPage ? 2 : 4,
+            mb: isIncidentDetailsPage ? 1 : 4,
             maxWidth: {
               lg: "100%", // For laptops (screens from 1200px up to 1535px wide)
               xl: "1350px", // For Full HD desktops (screens 1536px and wider)

@@ -300,7 +300,9 @@ const AdminActionForm = ({
                   }
                   size="small"
                 >
-                  {isPermanentlyLocked || incident.isTypeLocked ? (
+                  {isPermanentlyLocked ||
+                  incident.isTypeLocked ||
+                  isDisabled ? (
                     <LockIcon fontSize="small" />
                   ) : (
                     <LockOpenIcon fontSize="small" />
@@ -902,6 +904,8 @@ export default function IncidentActionForm({
       elevation={3}
       sx={{
         p: TOK.cardPad,
+        mx: "auto",
+        width: "99%",
         height: "100%",
         display: "flex",
         flexDirection: "column",

@@ -93,7 +93,8 @@ const IncidentAuditTrail = React.forwardRef(function IncidentAuditTrail(
       elevation={3}
       sx={{
         p: 3,
-        width: "100%",
+        mx: "auto",
+        width: "99%",
         height: "100%",
         display: "flex",
         flexDirection: "column",
