@@ -4,6 +4,7 @@
 import AuthSessionProvider from "@/components/SessionProvider";
 import NotificationProvider from "@/context/NotificationContext";
 import SettingsProvider from "@/context/SettingsContext";
+import { LoadingProvider } from "@/context/LoadingContext"; // <-- 1. IMPORTED
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterLuxon } from "@mui/x-date-pickers/AdapterLuxon";
 import { DashboardFilterProvider } from "@/context/DashboardFilterContext";
@@ -14,13 +15,17 @@ export function AppProviders({ children }) {
     <AuthSessionProvider>
       <NotificationProvider>
         <SettingsProvider>
-          <DashboardFilterProvider>
-            <SearchProvider>
-              <LocalizationProvider dateAdapter={AdapterLuxon}>
-                {children}
-              </LocalizationProvider>
-            </SearchProvider>
-          </DashboardFilterProvider>
+          <LoadingProvider>
+            {" "}
+            {/* <-- 2. WRAPPED around the other providers */}
+            <DashboardFilterProvider>
+              <SearchProvider>
+                <LocalizationProvider dateAdapter={AdapterLuxon}>
+                  {children}
+                </LocalizationProvider>
+              </SearchProvider>
+            </DashboardFilterProvider>
+          </LoadingProvider>
         </SettingsProvider>
       </NotificationProvider>
     </AuthSessionProvider>

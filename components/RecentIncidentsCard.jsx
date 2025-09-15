@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useLoading } from "@/context/LoadingContext";
 import {
   Paper,
   Typography,
@@ -18,8 +19,7 @@ import { DateTime } from "luxon";
 
 export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = React.useState(false);
-
+const { isNavigating, setIsNavigating } = useLoading();
   const recentIncidents = [...(incidents || [])]
     .sort((a, b) => {
       const dateA = DateTime.fromISO(a.reportedOn, { zone: "Asia/Kolkata" });
@@ -43,7 +43,7 @@ export default function RecentIncidentsCard({ incidents }) {
   };
 
   const handleItemClick = (id) => {
-    setIsLoading(true);
+    setIsNavigating(true);
     router.push(`/incidents/${id}`);
   };
 
@@ -84,7 +84,7 @@ export default function RecentIncidentsCard({ incidents }) {
             key={incident.id}
             divider={index < recentIncidents.length - 1}
             onClick={() => handleItemClick(incident.id)}
-            disabled={isLoading}
+            disabled={isNavigating}
             sx={{ py: 1.5 }}
           >
             <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
@@ -164,27 +164,7 @@ export default function RecentIncidentsCard({ incidents }) {
             No recent activity to display.
           </Typography>
         )}
-      </List>
-
-      {isLoading && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10,
-            borderRadius: "4px",
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      )}
+      </List>      
     </Paper>
   );
 }

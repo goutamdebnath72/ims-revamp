@@ -49,8 +49,9 @@ export default function AdminDashboard() {
 
   const { filters, setFilters, resetFilters, incidents, isLoading, error } =
     React.useContext(DashboardFilterContext);
-  const { dateRange, shift, category } = filters;
+  const { dateRange, shift } = filters;
 
+  const [view, setView] = React.useState("general");
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [isNavigating, setIsNavigating] = React.useState(false);
   const open = Boolean(anchorEl);
@@ -85,7 +86,16 @@ export default function AdminDashboard() {
     router.push(url);
   };
 
-  const incidentsToDisplay = incidents || [];
+  const incidentsToDisplay = React.useMemo(() => {
+    const category = user?.role === "sys_admin" ? view : "general";
+    if (!incidents) return [];
+    return incidents.filter((incident) => {
+      const isSys = isSystemIncident(incident);
+      if (category === "system") return isSys;
+      if (category === "general") return !isSys;
+      return true;
+    });
+  }, [incidents, user, view]);
 
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
@@ -160,6 +170,7 @@ export default function AdminDashboard() {
   ];
 
   const constructCardUrl = (status) => {
+    const category = user?.role === "sys_admin" ? view : "general";
     const params = new URLSearchParams();
     params.append("status", status);
     params.append("category", category);
@@ -225,7 +236,7 @@ export default function AdminDashboard() {
 
   const showTeamAvailability =
     user?.role === "admin" ||
-    (user?.role === "sys_admin" && category === "general");
+    (user?.role === "sys_admin" && view === "general");
 
   return (
     <Stack spacing={3}>
@@ -237,16 +248,8 @@ export default function AdminDashboard() {
         </Box>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
           {user?.role === "sys_admin" && (
-    <ViewToggle
-        selectedView={category} // Use category from context
-        onChange={(event, newCategory) => {
-            // Update the context's filter, which will trigger a new data fetch
-            if (newCategory) {
-                setFilters((prev) => ({ ...prev, category: newCategory }));
-            }
-        }}
-    />
-)}
+            <ViewToggle selectedView={view} onChange={setView} />
+          )}
         </Box>
         <Box
           sx={{
@@ -492,7 +495,7 @@ export default function AdminDashboard() {
                   dateRange.end
                 )}`}
                 data={priorityChartData}
-                view={category}
+                view={view}
                 dateRange={dateRange}
                 userRole={user?.role}
                 shift={shift}
@@ -515,7 +518,7 @@ export default function AdminDashboard() {
                   dateRange.end
                 )}`}
                 data={priorityChartData}
-                view={category}
+                view={view}
                 dateRange={dateRange}
                 userRole={user?.role}
                 shift={shift}

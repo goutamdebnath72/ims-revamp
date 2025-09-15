@@ -13,9 +13,10 @@ import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import useSound from "@/hooks/useSound";
+import { useLoading } from "@/context/LoadingContext"; // <-- 1. IMPORT
 import { NotificationContext } from "@/context/NotificationContext";
 import { isSystemIncident } from "@/lib/incident-helpers";
-import { USER_ROLES } from "@/lib/constants"; // <-- IMPORT USER_ROLES
+import { USER_ROLES } from "@/lib/constants";
 
 export const DashboardFilterContext = createContext();
 const fetcher = (url) => fetch(url).then((res) => res.json());
@@ -32,17 +33,26 @@ const createInitialState = (user) => {
   const today = { start: now.startOf("day"), end: now.endOf("day") };
 
   if (user?.role === "admin") {
-    return { dateRange: today, shift: getCurrentShift() };
+    return {
+      dateRange: today,
+      shift: getCurrentShift(),
+    };
   }
   if (user?.role === "sys_admin") {
-    return { dateRange: today, shift: "All" };
+    return {
+      dateRange: today,
+      shift: "All",
+      category: "general",
+    };
   }
   return { dateRange: { start: null, end: null }, shift: "All" };
 };
 
-// --- NEW HELPER FUNCTION TO GET THE CORRECT API ENDPOINT ---
 const getApiEndpointForRole = (role) => {
   switch (role) {
+    case USER_ROLES.ADMIN: // <-- ADD THIS CASE
+    case USER_ROLES.SYS_ADMIN: // <-- ADD THIS CASE
+      return "/api/incidents/admin-dashboard"; // <-- POINT TO THE NEW ROUTE
     case USER_ROLES.TELECOM_USER:
       return "/api/incidents/telecom-dept";
     case USER_ROLES.ETL:
@@ -50,7 +60,8 @@ const getApiEndpointForRole = (role) => {
     case USER_ROLES.NETWORK_VENDOR:
       return "/api/incidents/network-vendor";
     default:
-      // Admins, Standard Users, etc., will use the general endpoint
+      // This default is for any other role that might have a basic dashboard view
+      // but it will be paginated. The primary roles now have dedicated endpoints.
       return "/api/incidents";
   }
 };
@@ -58,17 +69,21 @@ const getApiEndpointForRole = (role) => {
 export function DashboardFilterProvider({ children }) {
   const { data: session, status: sessionStatus } = useSession();
   const user = session?.user;
-
   const [filters, setFilters] = useState(() => createInitialState(user));
 
+  const lastUserId = useRef(user?.id);
+
+  // SIMPLIFIED: No longer has the complex applyFilters wrapper
+  const resetFilters = useCallback(() => {
+    setFilters(createInitialState(user));
+  }, [user]);
+
   useEffect(() => {
-    if (
-      sessionStatus === "authenticated" ||
-      sessionStatus === "unauthenticated"
-    ) {
+    if (user?.id !== lastUserId.current) {
       setFilters(createInitialState(user));
+      lastUserId.current = user?.id;
     }
-  }, [user?.id, sessionStatus]);
+  }, [user, sessionStatus]);
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams();
@@ -81,10 +96,12 @@ export function DashboardFilterProvider({ children }) {
     if (filters.dateRange?.end) {
       params.append("endDate", filters.dateRange.end.toISO());
     }
+    if (filters.category) {
+      params.append("category", filters.category);
+    }
     return params.toString();
   }, [filters]);
 
-  // --- UPDATED SWR URL LOGIC ---
   const baseEndpoint = getApiEndpointForRole(user?.role);
   const SWR_URL =
     sessionStatus === "authenticated"
@@ -94,68 +111,39 @@ export function DashboardFilterProvider({ children }) {
   const previousIncidentsRef = useRef(null);
   const playNotificationSound = useSound("/notification.mp3");
   const { showNotification } = useContext(NotificationContext);
+
+  // 'isLoading' from useSWR is the single source of truth
   const { data, error, isLoading, mutate } = useSWR(SWR_URL, fetcher, {
     refreshInterval:
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
     onSuccess: (data, key, config) => {
-      // The data from the new endpoints is an array directly, not an object
-      const currentIncidents = Array.isArray(data)
-        ? data
-        : data?.incidents || [];
-
+      const currentIncidents = Array.isArray(data) ? data : data?.incidents || [];
       if (previousIncidentsRef.current === null || config.key !== SWR_URL) {
-        previousIncidentsRef.current = {
-          key: SWR_URL,
-          incidents: currentIncidents,
-        };
+        previousIncidentsRef.current = { key: SWR_URL, incidents: currentIncidents };
         return;
       }
-
       const previousIncidents = previousIncidentsRef.current.incidents;
       const previousIds = new Set(previousIncidents.map((i) => i.id));
-      const newIncidents = currentIncidents.filter(
-        (i) => !previousIds.has(i.id)
-      );
+      const newIncidents = currentIncidents.filter((i) => !previousIds.has(i.id));
       if (newIncidents.length > 0) {
         newIncidents.forEach((incident) => {
           if (incident.status !== "New") return;
-
           let shouldNotify = false;
           const isSysIncident = isSystemIncident(incident);
-
-          if (user?.role === "admin" && !isSysIncident) {
-            shouldNotify = true;
-          } else if (user?.role === "sys_admin" && isSysIncident) {
-            shouldNotify = true;
-          }
-
+          if (user?.role === "admin" && !isSysIncident) shouldNotify = true;
+          else if (user?.role === "sys_admin" && isSysIncident) shouldNotify = true;
           if (shouldNotify) {
             playNotificationSound();
-            showNotification(
-              {
-                title: `New Incident Raised: ${incident.id}`,
-                message: `Type: ${incident.incidentType.name}`,
-              },
-              "info"
-            );
+            showNotification({ title: `New Incident Raised: ${incident.id}`, message: `Type: ${incident.incidentType.name}` }, "info");
           }
         });
       }
-
-      previousIncidentsRef.current = {
-        key: SWR_URL,
-        incidents: currentIncidents,
-      };
+      previousIncidentsRef.current = { key: SWR_URL, incidents: currentIncidents };
     },
   });
 
-  // Handle both possible data structures (object for general, array for specific)
   const incidents = Array.isArray(data) ? data : data?.incidents || [];
-
-  const resetFilters = useCallback(() => {
-    setFilters(createInitialState(user));
-  }, [user]);
 
   const refetchIncidents = useCallback(() => {
     mutate();
@@ -164,14 +152,14 @@ export function DashboardFilterProvider({ children }) {
   const value = useMemo(
     () => ({
       filters,
-      setFilters,
+      setFilters, // Provide the direct state setter
       resetFilters,
       incidents,
-      isLoading,
+      isLoading, // Provide the reliable isLoading state from useSWR
       error,
       refetchIncidents,
     }),
-    [filters, incidents, isLoading, error, resetFilters, refetchIncidents]
+    [filters, setFilters, resetFilters, incidents, isLoading, error, refetchIncidents]
   );
 
   return (

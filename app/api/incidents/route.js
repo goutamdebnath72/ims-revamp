@@ -17,8 +17,8 @@ export async function GET(request) {
     const filters = Object.fromEntries(searchParams.entries());
 
     // The filtering logic is now correctly handled inside getAllIncidents based on the user's role.
-    const result = await getAllIncidents(filters, user);
-    return NextResponse.json(result);
+    const data = await getAllIncidents(filters, session.user);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Failed in GET /api/incidents:", error);
     return NextResponse.json(
