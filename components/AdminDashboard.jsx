@@ -1,10 +1,8 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DashboardFilterContext } from "@/context/DashboardFilterContext";
-import { isSystemIncident } from "@/lib/incident-helpers";
 import {
   Stack,
   Button,
@@ -13,8 +11,6 @@ import {
   Divider,
   Box,
   CardActionArea,
-  ToggleButtonGroup,
-  ToggleButton,
   Typography,
   Card,
   CardContent,
@@ -22,6 +18,8 @@ import {
   Tooltip,
   IconButton,
   CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -42,17 +40,16 @@ export default function AdminDashboard() {
     display: "flex",
     flexDirection: "column",
   };
-
   const { data: session } = useSession();
   const user = session?.user;
   const router = useRouter();
 
   const { filters, setFilters, resetFilters, incidents, isLoading, error } =
     React.useContext(DashboardFilterContext);
+
   const { dateRange, shift, category } = filters;
 
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const [isNavigating, setIsNavigating] = React.useState(false);
   const open = Boolean(anchorEl);
 
   const handleShiftChange = (event, newShift) => {
@@ -78,11 +75,6 @@ export default function AdminDashboard() {
     }
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
-  };
-
-  const handleCardClick = (url) => {
-    setIsNavigating(true);
-    router.push(url);
   };
 
   const incidentsToDisplay = incidents || [];
@@ -162,7 +154,7 @@ export default function AdminDashboard() {
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
-    params.append("category", category);
+    if (category) params.append("category", category);
     if (shift !== "All") params.append("shift", shift);
     if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
@@ -237,16 +229,15 @@ export default function AdminDashboard() {
         </Box>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
           {user?.role === "sys_admin" && (
-    <ViewToggle
-        selectedView={category} // Use category from context
-        onChange={(event, newCategory) => {
-            // Update the context's filter, which will trigger a new data fetch
-            if (newCategory) {
-                setFilters((prev) => ({ ...prev, category: newCategory }));
-            }
-        }}
-    />
-)}
+            <ViewToggle
+              selectedView={category}
+              onChange={(newCategory) => {
+                if (newCategory) {
+                  setFilters((prev) => ({ ...prev, category: newCategory }));
+                }
+              }}
+            />
+          )}
         </Box>
         <Box
           sx={{
@@ -341,21 +332,20 @@ export default function AdminDashboard() {
 
       <Box sx={{ position: "relative" }}>
         <Stack spacing={3}>
-          {/* --- NEW TWO-ROW LAYOUT FOR STAT CARDS --- */}
           <Stack
             direction="row"
             spacing={3}
-            sx={{ opacity: isNavigating ? 0.5 : 1 }}
+            sx={{ opacity: isLoading ? 0.5 : 1 }}
           >
             {primaryStatCards.map((card, index) => (
               <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
                 <Card elevation={3} sx={{ height: "100%" }}>
                   <CardActionArea
                     onClick={() =>
-                      handleCardClick(constructCardUrl(card.filterStatus))
+                      router.push(constructCardUrl(card.filterStatus))
                     }
                     sx={{ height: "100%" }}
-                    disabled={isNavigating}
+                    disabled={isLoading}
                   >
                     <CardContent
                       sx={{
@@ -393,17 +383,17 @@ export default function AdminDashboard() {
           <Stack
             direction="row"
             spacing={3}
-            sx={{ opacity: isNavigating ? 0.5 : 1 }}
+            sx={{ opacity: isLoading ? 0.5 : 1 }}
           >
             {secondaryStatCards.map((card, index) => (
               <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
                 <Card elevation={3} sx={{ height: "100%" }}>
                   <CardActionArea
                     onClick={() =>
-                      handleCardClick(constructCardUrl(card.filterStatus))
+                      router.push(constructCardUrl(card.filterStatus))
                     }
                     sx={{ height: "100%" }}
-                    disabled={isNavigating}
+                    disabled={isLoading}
                   >
                     <CardContent
                       sx={{
@@ -439,7 +429,7 @@ export default function AdminDashboard() {
             ))}
           </Stack>
         </Stack>
-        {isNavigating && (
+        {isLoading && (
           <Box
             sx={{
               position: "absolute",
@@ -476,7 +466,6 @@ export default function AdminDashboard() {
               <RecentIncidentsCard incidents={incidentsToDisplay} />
             </Box>
           </Stack>
-
           <Stack sx={{ flex: 5 }} spacing={3}>
             <Card
               elevation={3}
