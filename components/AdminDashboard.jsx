@@ -20,6 +20,7 @@ import {
   CircularProgress,
   ToggleButtonGroup,
   ToggleButton,
+  Grid,
 } from "@mui/material";
 import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -35,11 +36,6 @@ import { DateTime } from "luxon";
 import { INCIDENT_STATUS } from "@/lib/constants";
 
 export default function AdminDashboard() {
-  const cardContainerStyles = {
-    height: 380,
-    display: "flex",
-    flexDirection: "column",
-  };
   const { data: session } = useSession();
   const user = session?.user;
   const router = useRouter();
@@ -129,7 +125,6 @@ export default function AdminDashboard() {
       filterStatus: INCIDENT_STATUS.CLOSED,
     },
   ];
-
   const secondaryStatCards = [
     {
       title: "All Open",
@@ -168,7 +163,6 @@ export default function AdminDashboard() {
     { name: "Resolved", count: resolvedIncidents },
     { name: "Closed", count: closedIncidents },
   ];
-
   const openIncidentsList = incidentsToDisplay.filter(
     (i) =>
       i.status === INCIDENT_STATUS.NEW ||
@@ -176,7 +170,6 @@ export default function AdminDashboard() {
       i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
       i.status === INCIDENT_STATUS.PENDING_ETL
   );
-
   const priorityChartData = [
     {
       name: "High",
@@ -191,10 +184,8 @@ export default function AdminDashboard() {
       value: openIncidentsList.filter((i) => i.priority === "Low").length,
     },
   ].filter((item) => item.value > 0);
-
   const getNumberVariant = (value) =>
     value.toString().length > 4 ? "h4" : "h3";
-
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
     if (!start || !end) return "All Time";
@@ -220,7 +211,7 @@ export default function AdminDashboard() {
     (user?.role === "sys_admin" && category === "general");
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={2}>
       <Stack direction="row" alignItems="center" spacing={2}>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
@@ -331,10 +322,10 @@ export default function AdminDashboard() {
       </Menu>
 
       <Box sx={{ position: "relative" }}>
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           <Stack
             direction="row"
-            spacing={3}
+            spacing={2}
             sx={{ opacity: isLoading ? 0.5 : 1 }}
           >
             {primaryStatCards.map((card, index) => (
@@ -382,7 +373,7 @@ export default function AdminDashboard() {
           </Stack>
           <Stack
             direction="row"
-            spacing={3}
+            spacing={2}
             sx={{ opacity: isLoading ? 0.5 : 1 }}
           >
             {secondaryStatCards.map((card, index) => (
@@ -449,56 +440,126 @@ export default function AdminDashboard() {
       </Box>
 
       {showTeamAvailability ? (
-        <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
-          <Stack sx={{ flex: 7 }} spacing={3}>
-            <Card
-              elevation={3}
-              sx={{
-                minHeight: 400,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <StatusChart data={statusChartData} />
-            </Card>
-            <Box sx={cardContainerStyles}>
-              <RecentIncidentsCard incidents={incidentsToDisplay} />
-            </Box>
-          </Stack>
-          <Stack sx={{ flex: 5 }} spacing={3}>
-            <Card
-              elevation={3}
-              sx={{
-                minHeight: 400,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <PriorityChart
-                key={`${shift}-${String(dateRange.start)}-${String(
-                  dateRange.end
-                )}`}
-                data={priorityChartData}
-                view={category}
-                dateRange={dateRange}
-                userRole={user?.role}
-                shift={shift}
-              />
-            </Card>
-            <Box sx={cardContainerStyles}>
-              <TeamAvailabilityCard />
-            </Box>
-          </Stack>
-        </Stack>
+        <Grid container>
+          <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
+            <Stack spacing={2}>
+              <Card
+                elevation={3}
+                sx={{
+                  aspectRatio: "16 / 10",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <StatusChart data={statusChartData} />
+              </Card>
+              <Card
+                elevation={3}
+                sx={{
+                  aspectRatio: "16 / 10",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <CardContent
+                  sx={{
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    p: 2,
+                    minHeight: 0,
+                  }}
+                >
+                  <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                    <RecentIncidentsCard incidents={incidentsToDisplay} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Grid>
+          <Grid
+            item
+            xs={12}
+            md={6}
+            sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
+          >
+            <Stack spacing={2}>
+              <Card
+                elevation={3}
+                sx={{
+                  aspectRatio: "16 / 10",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <PriorityChart
+                  key={`${shift}-${String(dateRange.start)}-${String(
+                    dateRange.end
+                  )}`}
+                  data={priorityChartData}
+                  view={category}
+                  dateRange={dateRange}
+                  userRole={user?.role}
+                  shift={shift}
+                />
+              </Card>
+              <Card
+                elevation={3}
+                sx={{
+                  aspectRatio: "16 / 10",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <CardContent
+                  sx={{
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    p: 2,
+                    minHeight: 0,
+                  }}
+                >
+                  <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                    <TeamAvailabilityCard />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Grid>
+        </Grid>
       ) : (
-        <Stack spacing={3}>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
-            <Box sx={{ flex: 7 }}>
+        <Grid container>
+          <Grid item xs={12} md={7} sx={{ pr: { md: 1 } }}>
+            <Card
+              elevation={3}
+              sx={{
+                aspectRatio: "16 / 10",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
               <StatusChart data={statusChartData} />
-            </Box>
-            <Box sx={{ flex: 5 }}>
+            </Card>
+          </Grid>
+          <Grid
+            item
+            xs={12}
+            md={5}
+            sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
+          >
+            <Card
+              elevation={3}
+              sx={{
+                aspectRatio: "16 / 10",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+              }}
+            >
               <PriorityChart
                 key={`${shift}-${String(dateRange.start)}-${String(
                   dateRange.end
@@ -509,10 +570,12 @@ export default function AdminDashboard() {
                 userRole={user?.role}
                 shift={shift}
               />
-            </Box>
-          </Stack>
-          <RecentIncidentsCard incidents={incidentsToDisplay} />
-        </Stack>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <RecentIncidentsCard incidents={incidentsToDisplay} />
+          </Grid>
+        </Grid>
       )}
     </Stack>
   );

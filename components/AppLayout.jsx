@@ -339,8 +339,7 @@ export default function AppLayout({ children }) {
             mt: isIncidentDetailsPage ? 2 : 4,
             mb: isIncidentDetailsPage ? 1 : 4,
             maxWidth: {
-              lg: "100%", // For laptops (screens from 1200px up to 1535px wide)
-              xl: "1350px", // For Full HD desktops (screens 1536px and wider)
+              g: "1315px",
             },
           }}
         >
