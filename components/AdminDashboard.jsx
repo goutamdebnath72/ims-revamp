@@ -42,12 +42,10 @@ export default function AdminDashboard() {
 
   const { filters, setFilters, resetFilters, incidents, isLoading, error } =
     React.useContext(DashboardFilterContext);
-
   const { dateRange, shift, category } = filters;
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-
   const handleShiftChange = (event, newShift) => {
     if (newShift !== null) {
       setFilters((prev) => ({ ...prev, shift: newShift }));
@@ -56,7 +54,6 @@ export default function AdminDashboard() {
 
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
-
   const setPresetRange = (rangeName) => {
     const now = DateTime.local().setZone("Asia/Kolkata");
     let newDateRange;
@@ -74,7 +71,6 @@ export default function AdminDashboard() {
   };
 
   const incidentsToDisplay = incidents || [];
-
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
   ).length;
@@ -98,7 +94,6 @@ export default function AdminDashboard() {
     processedIncidents +
     pendingTelecomIncidents +
     pendingEtlIncidents;
-
   const primaryStatCards = [
     {
       title: "New Incidents",
@@ -146,6 +141,39 @@ export default function AdminDashboard() {
     },
   ];
 
+  const systemStatCards = [
+    {
+      title: "New Incidents",
+      value: newIncidents,
+      color: "warning",
+      filterStatus: INCIDENT_STATUS.NEW,
+    },
+    {
+      title: "Processed",
+      value: processedIncidents,
+      color: "info",
+      filterStatus: INCIDENT_STATUS.PROCESSED,
+    },
+    {
+      title: "All Open",
+      value: allOpenIncidents,
+      color: "secondary",
+      filterStatus: "open",
+    },
+    {
+      title: "Resolved",
+      value: resolvedIncidents,
+      color: "success",
+      filterStatus: INCIDENT_STATUS.RESOLVED,
+    },
+    {
+      title: "Closed",
+      value: closedIncidents,
+      color: "default",
+      filterStatus: INCIDENT_STATUS.CLOSED,
+    },
+  ];
+
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
@@ -155,7 +183,6 @@ export default function AdminDashboard() {
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
     return `/search?${params.toString()}`;
   };
-
   const statusChartData = [
     { name: "New", count: newIncidents },
     { name: "Processed", count: processedIncidents },
@@ -209,7 +236,6 @@ export default function AdminDashboard() {
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && category === "general");
-
   return (
     <Stack spacing={2}>
       <Stack direction="row" alignItems="center" spacing={2}>
@@ -322,13 +348,112 @@ export default function AdminDashboard() {
       </Menu>
 
       <Box sx={{ position: "relative" }}>
-        <Stack spacing={2}>
+        {showTeamAvailability ? (
+          <Stack spacing={2}>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              {primaryStatCards.map((card, index) => (
+                <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
+                  <Card elevation={3} sx={{ height: "100%" }}>
+                    <CardActionArea
+                      onClick={() =>
+                        router.push(constructCardUrl(card.filterStatus))
+                      }
+                      sx={{ height: "100%" }}
+                      disabled={isLoading}
+                    >
+                      <CardContent
+                        sx={{
+                          textAlign: "center",
+                          minHeight: 120,
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Typography
+                          sx={{ fontSize: 14 }}
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          {card.title}
+                        </Typography>
+                        <Typography
+                          variant={getNumberVariant(card.value)}
+                          component="div"
+                          color={`${card.color}.main`}
+                        >
+                          <CountUp
+                            end={card.value}
+                            duration={1.5}
+                            separator=","
+                          />
+                        </Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Box>
+              ))}
+            </Stack>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ opacity: isLoading ? 0.5 : 1 }}
+            >
+              {secondaryStatCards.map((card, index) => (
+                <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
+                  <Card elevation={3} sx={{ height: "100%" }}>
+                    <CardActionArea
+                      onClick={() =>
+                        router.push(constructCardUrl(card.filterStatus))
+                      }
+                      sx={{ height: "100%" }}
+                      disabled={isLoading}
+                    >
+                      <CardContent
+                        sx={{
+                          textAlign: "center",
+                          minHeight: 120,
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Typography
+                          sx={{ fontSize: 14 }}
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          {card.title}
+                        </Typography>
+                        <Typography
+                          variant={getNumberVariant(card.value)}
+                          component="div"
+                          color={`${card.color}.main`}
+                        >
+                          <CountUp
+                            end={card.value}
+                            duration={1.5}
+                            separator=","
+                          />
+                        </Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Box>
+              ))}
+            </Stack>
+          </Stack>
+        ) : (
           <Stack
             direction="row"
             spacing={2}
             sx={{ opacity: isLoading ? 0.5 : 1 }}
           >
-            {primaryStatCards.map((card, index) => (
+            {systemStatCards.map((card, index) => (
               <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
                 <Card elevation={3} sx={{ height: "100%" }}>
                   <CardActionArea
@@ -371,55 +496,7 @@ export default function AdminDashboard() {
               </Box>
             ))}
           </Stack>
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ opacity: isLoading ? 0.5 : 1 }}
-          >
-            {secondaryStatCards.map((card, index) => (
-              <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
-                <Card elevation={3} sx={{ height: "100%" }}>
-                  <CardActionArea
-                    onClick={() =>
-                      router.push(constructCardUrl(card.filterStatus))
-                    }
-                    sx={{ height: "100%" }}
-                    disabled={isLoading}
-                  >
-                    <CardContent
-                      sx={{
-                        textAlign: "center",
-                        minHeight: 120,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Typography
-                        sx={{ fontSize: 14 }}
-                        color="text.secondary"
-                        gutterBottom
-                      >
-                        {card.title}
-                      </Typography>
-                      <Typography
-                        variant={getNumberVariant(card.value)}
-                        component="div"
-                        color={`${card.color}.main`}
-                      >
-                        <CountUp
-                          end={card.value}
-                          duration={1.5}
-                          separator=","
-                        />
-                      </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              </Box>
-            ))}
-          </Stack>
-        </Stack>
+        )}
         {isLoading && (
           <Box
             sx={{
@@ -532,7 +609,8 @@ export default function AdminDashboard() {
         </Grid>
       ) : (
         <Grid container>
-          <Grid item xs={12} md={7} sx={{ pr: { md: 1 } }}>
+          {/* Top Row: Charts */}
+          <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
             <Card
               elevation={3}
               sx={{
@@ -548,7 +626,7 @@ export default function AdminDashboard() {
           <Grid
             item
             xs={12}
-            md={5}
+            md={6}
             sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
           >
             <Card
@@ -572,8 +650,31 @@ export default function AdminDashboard() {
               />
             </Card>
           </Grid>
+
+          {/* Bottom Row: Recent Incidents */}
           <Grid item xs={12} sx={{ mt: 2 }}>
-            <RecentIncidentsCard incidents={incidentsToDisplay} />
+            <Card
+              elevation={3}
+              sx={{
+                aspectRatio: { xs: "16/10", md: "32.4 / 10" },
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <CardContent
+                sx={{
+                  flexGrow: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  p: 2,
+                  minHeight: 0,
+                }}
+              >
+                <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                  <RecentIncidentsCard incidents={incidentsToDisplay} />
+                </Box>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       )}
