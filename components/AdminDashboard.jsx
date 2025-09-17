@@ -35,15 +35,34 @@ import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import { INCIDENT_STATUS } from "@/lib/constants";
 
+// --- THE NEW FIX: A style object to control overflow and scrollbars on hover ---
+const scrollableOnHoverStyles = {
+  flexGrow: 1,
+  overflow: "hidden", // Hide overflow and scrollbars by default
+  "&:hover": {
+    overflow: "auto", // Show overflow and scrollbars on hover
+  },
+  // Aesthetically style the scrollbar when it appears
+  "&::-webkit-scrollbar": {
+    width: "8px",
+    height: "8px",
+  },
+  "&::-webkit-scrollbar-track": {
+    backgroundColor: "transparent",
+  },
+  "&::-webkit-scrollbar-thumb": {
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    borderRadius: "4px",
+  },
+};
+
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const user = session?.user;
   const router = useRouter();
-
   const { filters, setFilters, resetFilters, incidents, isLoading, error } =
     React.useContext(DashboardFilterContext);
   const { dateRange, shift, category } = filters;
-
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleShiftChange = (event, newShift) => {
@@ -51,7 +70,6 @@ export default function AdminDashboard() {
       setFilters((prev) => ({ ...prev, shift: newShift }));
     }
   };
-
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
   const setPresetRange = (rangeName) => {
@@ -69,7 +87,6 @@ export default function AdminDashboard() {
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
-
   const incidentsToDisplay = incidents || [];
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
@@ -140,7 +157,6 @@ export default function AdminDashboard() {
       filterStatus: INCIDENT_STATUS.PENDING_ETL,
     },
   ];
-
   const systemStatCards = [
     {
       title: "New Incidents",
@@ -173,7 +189,6 @@ export default function AdminDashboard() {
       filterStatus: INCIDENT_STATUS.CLOSED,
     },
   ];
-
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
@@ -232,10 +247,10 @@ export default function AdminDashboard() {
       return start.toFormat("d MMM, yy");
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
-
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && category === "general");
+
   return (
     <Stack spacing={2}>
       <Stack direction="row" alignItems="center" spacing={2}>
@@ -346,7 +361,6 @@ export default function AdminDashboard() {
           </ToggleButtonGroup>
         </Box>
       </Menu>
-
       <Box sx={{ position: "relative" }}>
         {showTeamAvailability ? (
           <Stack spacing={2}>
@@ -520,35 +534,28 @@ export default function AdminDashboard() {
         <Grid container>
           <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
             <Stack spacing={2}>
-              <Card
-                elevation={3}
-                sx={{
-                  aspectRatio: "16 / 10",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
+              <Card elevation={3} sx={{ height: "350px" }}>
                 <StatusChart data={statusChartData} />
               </Card>
-              <Card
-                elevation={3}
-                sx={{
-                  aspectRatio: "16 / 10",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+              <Card elevation={3} sx={{ height: "350px" }}>
                 <CardContent
                   sx={{
-                    flexGrow: 1,
+                    height: "100%",
                     display: "flex",
                     flexDirection: "column",
                     p: 2,
-                    minHeight: 0,
                   }}
                 >
-                  <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                  <Box
+                    sx={{
+                      ...scrollableOnHoverStyles,
+                      // Conditionally apply minWidth ONLY if there are incidents to show
+                      minWidth:
+                        incidentsToDisplay.slice(0, 5).length > 0
+                          ? "650px"
+                          : "auto",
+                    }}
+                  >
                     <RecentIncidentsCard incidents={incidentsToDisplay} />
                   </Box>
                 </CardContent>
@@ -562,15 +569,7 @@ export default function AdminDashboard() {
             sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
           >
             <Stack spacing={2}>
-              <Card
-                elevation={3}
-                sx={{
-                  aspectRatio: "16 / 10",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
+              <Card elevation={3} sx={{ height: "350px" }}>
                 <PriorityChart
                   key={`${shift}-${String(dateRange.start)}-${String(
                     dateRange.end
@@ -582,24 +581,16 @@ export default function AdminDashboard() {
                   shift={shift}
                 />
               </Card>
-              <Card
-                elevation={3}
-                sx={{
-                  aspectRatio: "16 / 10",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+              <Card elevation={3} sx={{ height: "350px" }}>
                 <CardContent
                   sx={{
-                    flexGrow: 1,
+                    height: "100%",
                     display: "flex",
                     flexDirection: "column",
                     p: 2,
-                    minHeight: 0,
                   }}
                 >
-                  <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                  <Box sx={scrollableOnHoverStyles}>
                     <TeamAvailabilityCard />
                   </Box>
                 </CardContent>
@@ -608,18 +599,10 @@ export default function AdminDashboard() {
           </Grid>
         </Grid>
       ) : (
+        // System View Layout
         <Grid container>
-          {/* Top Row: Charts */}
           <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
-            <Card
-              elevation={3}
-              sx={{
-                aspectRatio: "16 / 10",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
+            <Card elevation={3} sx={{ height: "350px" }}>
               <StatusChart data={statusChartData} />
             </Card>
           </Grid>
@@ -629,15 +612,7 @@ export default function AdminDashboard() {
             md={6}
             sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
           >
-            <Card
-              elevation={3}
-              sx={{
-                aspectRatio: "16 / 10",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
+            <Card elevation={3} sx={{ height: "350px" }}>
               <PriorityChart
                 key={`${shift}-${String(dateRange.start)}-${String(
                   dateRange.end
@@ -650,27 +625,18 @@ export default function AdminDashboard() {
               />
             </Card>
           </Grid>
-
-          {/* Bottom Row: Recent Incidents */}
           <Grid item xs={12} sx={{ mt: 2 }}>
-            <Card
-              elevation={3}
-              sx={{
-                aspectRatio: { xs: "16/10", md: "32.4 / 10" },
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
+            <Card elevation={3} sx={{ height: "350px" }}>
               <CardContent
                 sx={{
-                  flexGrow: 1,
+                  height: "100%",
                   display: "flex",
                   flexDirection: "column",
                   p: 2,
-                  minHeight: 0,
                 }}
               >
-                <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+                <Box sx={scrollableOnHoverStyles}>
+                  {/* The RI card in system view is full-width, so it doesn't need the minWidth wrapper */}
                   <RecentIncidentsCard incidents={incidentsToDisplay} />
                 </Box>
               </CardContent>

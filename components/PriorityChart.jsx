@@ -11,11 +11,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Paper, Typography, Box } from "@mui/material";
-import { DateTime } from "luxon";
 
 const COLORS = { High: "#f44336", Medium: "#ed6c02", Low: "#6c757d" };
 
-// UPDATED: Added 'shift' to the component's props
 export default function PriorityChart({
   data,
   view,
@@ -33,17 +31,13 @@ export default function PriorityChart({
       const params = new URLSearchParams();
       params.append("priority", data.name);
       params.append("category", category);
-      params.append("status", "open"); // Ensure we are searching for open incidents
-      // Add the incidentType to the URL if the prop is provided
+      params.append("status", "open");
       if (incidentTypeFilter) {
         params.append("incidentType", incidentTypeFilter);
       }
-
-      // UPDATED: Add the shift parameter to the URL if it is active
       if (shift && shift !== "All") {
         params.append("shift", shift);
       }
-
       if (dateRange.start) {
         params.append("startDate", dateRange.start.toISO());
       }
@@ -55,7 +49,7 @@ export default function PriorityChart({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, height: "400px" }}>
+    <Paper elevation={0} sx={{ p: 3, height: "350px" }}>
       <Typography variant="h6" gutterBottom>
         Open Incidents by Priority
       </Typography>
@@ -67,7 +61,7 @@ export default function PriorityChart({
               cx="50%"
               cy="50%"
               labelLine={false}
-              outerRadius={110}
+              outerRadius={100}
               fill="#8884d8"
               dataKey="value"
               nameKey="name"
@@ -79,14 +73,14 @@ export default function PriorityChart({
                   key={`cell-${index}`}
                   fill={COLORS[entry.name]}
                   stroke={"#FFFFFF"}
-                  strokeWidth={3}
+                  strokeWidth={2}
                   style={{ cursor: "pointer" }}
                   onMouseDown={(e) => e.preventDefault()}
                 />
               ))}
             </Pie>
             <Tooltip />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: "14px", paddingTop: "10px" }} />
           </PieChart>
         ) : (
           <Box

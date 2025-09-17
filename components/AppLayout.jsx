@@ -38,7 +38,6 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useSession, signOut } from "next-auth/react";
 import { SearchContext } from "@/context/SearchContext";
 
-// ... (spellCheckTooltipText and allMenuItems constants remain the same)
 const spellCheckTooltipText = (
   <Stack spacing={1.5}>
     <Box>
@@ -70,7 +69,6 @@ const spellCheckTooltipText = (
   </Stack>
 );
 const drawerWidth = 240;
-// This is the stable version using strings
 const allMenuItems = [
   {
     text: "Dashboard",
@@ -82,7 +80,7 @@ const allMenuItems = [
       "sys_admin",
       "network_vendor",
       "biometric_vendor",
-      "telecom_user", // <-- The fix is here
+      "telecom_user",
       "etl",
     ],
   },
@@ -96,7 +94,7 @@ const allMenuItems = [
       "sys_admin",
       "network_vendor",
       "biometric_vendor",
-      "telecom_user", // <-- The fix is here
+      "telecom_user",
       "etl",
     ],
   },
@@ -128,14 +126,10 @@ export default function AppLayout({ children }) {
   const pathname = usePathname();
   const isIncidentDetailsPage = pathname.startsWith("/incidents/");
   const user = session?.user;
-
-  // Consume the new loading context
   const { isNavigating, setIsNavigating } = useLoading();
-
   const logout = () => signOut({ callbackUrl: "/login" });
   const { isSpellcheckEnabled, toggleSpellcheck } =
     React.useContext(SettingsContext);
-
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleMenu = (event) => setAnchorEl(event.currentTarget);
@@ -145,8 +139,6 @@ export default function AppLayout({ children }) {
     handleClose();
     logout();
   };
-
-  // New unified click handler for all sidebar links
   const handleLinkClick = (href) => {
     if (pathname !== href) {
       setIsNavigating(true);
@@ -157,13 +149,11 @@ export default function AppLayout({ children }) {
       router.push(href);
     }
   };
-
   const visibleMenuItems = allMenuItems.filter((item) =>
     item.roles.includes(user?.role)
   );
 
   const [currentShift, setCurrentShift] = React.useState(getCurrentShift());
-
   React.useEffect(() => {
     const intervalId = setInterval(() => {
       const newShift = getCurrentShift();
@@ -174,7 +164,6 @@ export default function AppLayout({ children }) {
 
     return () => clearInterval(intervalId);
   }, [currentShift]);
-
   React.useEffect(() => {
     const logoutTimer = setInterval(() => {
       if (user?.role === "admin" && user?.loginShift) {
@@ -187,7 +176,6 @@ export default function AppLayout({ children }) {
 
     return () => clearInterval(logoutTimer);
   }, [user, logout]);
-
   if (status === "loading") {
     return null;
   }
@@ -329,7 +317,7 @@ export default function AppLayout({ children }) {
           flexGrow: 1,
           bgcolor: "grey.100",
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          overflow: "scroll",
+          overflow: "auto", // CHANGED from 'scroll' to 'auto' for better scrollbar behavior
           position: "relative",
         }}
       >
@@ -338,15 +326,13 @@ export default function AppLayout({ children }) {
           sx={{
             mt: isIncidentDetailsPage ? 2 : 4,
             mb: isIncidentDetailsPage ? 1 : 4,
-            maxWidth: {
-              g: "1315px",
-            },
+            width: "1315px", // THE FIX: Changed maxWidth to width
+            mx: "auto", // Center the container
           }}
         >
           {children}
         </Container>
 
-        {/* --- LOADING OVERLAY REMAINS UNCHANGED --- */}
         {isNavigating && (
           <Box
             sx={{
