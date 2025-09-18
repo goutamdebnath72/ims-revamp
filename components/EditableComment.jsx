@@ -18,10 +18,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-// --- HELPER FUNCTIONS to manage the comment string ---
 const separator = "\n---\n";
 
-// Gets the system-generated (non-editable) part of a comment
 const getSystemPart = (fullComment) => {
   if (!fullComment || !fullComment.includes(separator)) {
     return null;
@@ -29,15 +27,13 @@ const getSystemPart = (fullComment) => {
   return fullComment.split(separator)[0];
 };
 
-// Gets the user-written (editable) part of a comment
 const getUserPart = (fullComment) => {
   if (!fullComment) return "";
   if (!fullComment.includes(separator)) {
-    return fullComment; // If no separator, the whole comment is editable
+    return fullComment;
   }
   return fullComment.split(separator).slice(1).join(separator);
 };
-// --- END OF HELPER FUNCTIONS ---
 
 export default function EditableComment({
   action,
@@ -48,12 +44,11 @@ export default function EditableComment({
   incidentStatus,
 }) {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editText, setEditText] = React.useState(""); // Initial state is empty
+  const [editText, setEditText] = React.useState("");
   const { data: session } = useSession();
   const currentUser = session?.user;
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
-  // --- LOGIC FOR EDITING CONSTRAINTS ---
   const isAuthor = currentUser && currentUser.name === author;
   const hasBeenEdited = isEdited;
   const isStatusCorrect = incidentStatus === "Processed";
@@ -61,16 +56,13 @@ export default function EditableComment({
   const canEdit =
     isAuthor && !hasBeenEdited && isStatusCorrect && !isPasswordReset;
 
-  // --- UPDATED HANDLERS ---
   const handleEditClick = () => {
-    // When editing starts, only load the user's part of the comment
     setEditText(getUserPart(comment));
     setIsEditing(true);
   };
 
   const handleSave = () => {
     const systemPart = getSystemPart(comment);
-    // Rebuild the full comment string before saving
     const finalComment = systemPart
       ? `${systemPart}${separator}${editText}`
       : editText;
@@ -80,7 +72,6 @@ export default function EditableComment({
   };
 
   const handleCancel = () => {
-    // No need to reset editText, as it's set fresh on each edit click
     setIsEditing(false);
   };
 
@@ -120,6 +111,10 @@ export default function EditableComment({
   };
 
   if (isEditing) {
+    // This variable checks if the comment is unchanged or empty.
+    const isCommentUnchanged =
+      !editText.trim() || editText.trim() === getUserPart(comment).trim();
+
     return (
       <Box sx={{ my: 0.5, py: 1 }}>
         <TextField
@@ -140,7 +135,9 @@ export default function EditableComment({
             variant="contained"
             startIcon={<SaveIcon />}
             onClick={handleSave}
-            disabled={!editText.trim()}
+            // === THE FIX IS HERE ===
+            // The button is disabled if the comment is unchanged.
+            disabled={isCommentUnchanged}
           >
             Save
           </Button>
@@ -174,7 +171,7 @@ export default function EditableComment({
       <IconButton
         className="edit-button"
         size="small"
-        onClick={handleEditClick} // <-- Use the new handler
+        onClick={handleEditClick}
         disabled={!canEdit}
         sx={{ ml: 1, opacity: canEdit ? 0 : 0.2, transition: "opacity 0.2s" }}
         title={
@@ -182,8 +179,8 @@ export default function EditableComment({
             ? hasBeenEdited
               ? "Already edited once"
               : isStatusCorrect
-                ? "Edit comment"
-                : "Cannot edit unless status is Processed"
+              ? "Edit comment"
+              : "Cannot edit unless status is Processed"
             : "Can only edit your own comments"
         }
       >

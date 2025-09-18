@@ -300,7 +300,8 @@ const AdminActionForm = ({
                   }
                   size="small"
                 >
-                  {isPermanentlyLocked ||
+                  {isNew ||
+                  isPermanentlyLocked ||
                   incident.isTypeLocked ||
                   isDisabled ? (
                     <LockIcon fontSize="small" />
