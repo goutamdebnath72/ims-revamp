@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SettingsContext } from "@/context/SettingsContext";
-import { useLoading } from "@/context/LoadingContext";
+import { useLoading } from "@/context/LoadingContext"; // This hook now points to our new context
 import { getCurrentShift } from "@/lib/date-helpers";
 import InfoTooltip from "./InfoTooltip";
 import {
@@ -27,9 +27,10 @@ import {
   Stack,
   Chip,
   Container,
-  CircularProgress,
+  // CircularProgress is no longer needed here
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+// ... other imports remain the same
 import SearchIcon from "@mui/icons-material/Search";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -126,7 +127,9 @@ export default function AppLayout({ children }) {
   const pathname = usePathname();
   const isIncidentDetailsPage = pathname.startsWith("/incidents/");
   const user = session?.user;
-  const { isNavigating, setIsNavigating } = useLoading();
+  // We now get isLoading and setIsLoading from our upgraded context
+  const { isLoading, setIsLoading } = useLoading();
+
   const logout = () => signOut({ callbackUrl: "/login" });
   const { isSpellcheckEnabled, toggleSpellcheck } =
     React.useContext(SettingsContext);
@@ -139,9 +142,10 @@ export default function AppLayout({ children }) {
     handleClose();
     logout();
   };
+
   const handleLinkClick = (href) => {
     if (pathname !== href) {
-      setIsNavigating(true);
+      setIsLoading(true); // Use the new global loader
     }
     if (href === "/search" && pathname === "/search") {
       resetSearch();
@@ -301,7 +305,7 @@ export default function AppLayout({ children }) {
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => handleLinkClick(item.href)}
-                  disabled={isNavigating}
+                  disabled={isLoading}
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.text} />
@@ -317,7 +321,7 @@ export default function AppLayout({ children }) {
           flexGrow: 1,
           bgcolor: "grey.100",
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          overflow: "auto", // CHANGED from 'scroll' to 'auto' for better scrollbar behavior
+          overflow: "auto",
           position: "relative",
         }}
       >
@@ -326,52 +330,25 @@ export default function AppLayout({ children }) {
           sx={{
             mt: isIncidentDetailsPage ? 2 : 4,
             mb: isIncidentDetailsPage ? 1 : 4,
-            mx: "auto", // This ensures the container is always centered horizontally.
+            mx: "auto",
 
-            // --- Responsive Width Logic ---
-
-            // Default behavior for screens smaller than 1200px.
-            // The MUI Container will handle this with its default responsive widths.
-
-            // For screens 1200px and wider, up to 1499px:
             "@media (min-width: 1200px)": {
-              maxWidth: "1315px", // Set a fixed maximum width.
+              maxWidth: "1315px",
             },
 
-            // For screens 1500px and wider, this rule will override the one above:
             "@media (min-width: 1500px)": {
-              maxWidth: "none", // Unset the fixed max-width.
-              width: "80%", // Set the width to 80% of the viewport.
+              maxWidth: "none",
+              width: "80%",
             },
-
-            // For screens 1850px and wider, this rule will override the one above:
             "@media (min-width: 1850px)": {
-              maxWidth: "none", // Unset the fixed max-width.
-              width: "72%", // Set the width to 72% of the viewport for 24 inch monitor
+              maxWidth: "none",
+              width: "72%",
             },
           }}
         >
           {children}
         </Container>
-
-        {isNavigating && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              backgroundColor: "rgba(255, 255, 255, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: (theme) => theme.zIndex.drawer + 1,
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        )}
+        {/* The old, segmented overlay has been removed from here. */}
       </Box>
     </Box>
   );

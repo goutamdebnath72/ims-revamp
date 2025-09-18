@@ -6,7 +6,7 @@ import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
 import { Chip, Tooltip } from "@mui/material";
 import { DateTime } from "luxon";
-import { useLoading } from "@/context/LoadingContext"; // <-- 1. IMPORT GLOBAL CONTEXT
+import { useLoading } from "@/context/LoadingContext";
 
 const columns = [
   { field: "id", headerName: "Incident No.", flex: 1.5, minWidth: 200 },
@@ -87,13 +87,13 @@ const columns = [
   },
 ];
 
-function IncidentDataGrid({ rows, loading }) {
+// Note: The 'loading' prop has been removed from the function signature
+function IncidentDataGrid({ rows }) {
   const router = useRouter();
-  // 2. USE GLOBAL STATE, REMOVE LOCAL STATE
-  const { isNavigating, setIsNavigating } = useLoading();
+  const { isLoading, setIsLoading } = useLoading();
 
   const handleRowClick = (params) => {
-    setIsNavigating(true); // This now triggers the full-page overlay
+    setIsLoading(true); // This triggers the full-page global overlay
     const incidentId = params.row.id;
     router.push(`/incidents/${incidentId}`);
   };
@@ -103,7 +103,9 @@ function IncidentDataGrid({ rows, loading }) {
       <DataGrid
         rows={rows.filter((row) => row && row.id)}
         columns={columns}
-        loading={loading}
+        // === THE FIX IS HERE ===
+        // The 'loading' prop is removed to disable the local spinner.
+        // The opacity now correctly reads from the global isLoading state.
         onRowClick={handleRowClick}
         hideFooter={true}
         stickyHeader
@@ -112,8 +114,7 @@ function IncidentDataGrid({ rows, loading }) {
           "& .MuiDataGrid-row:hover": {
             cursor: "pointer",
           },
-          // This now correctly reads the global state
-          opacity: isNavigating ? 0.5 : 1,
+          opacity: isLoading ? 0.5 : 1,
         }}
         initialState={{
           pagination: {
@@ -127,7 +128,6 @@ function IncidentDataGrid({ rows, loading }) {
         checkboxSelection
         disableRowSelectionOnClick
       />
-      {/* 3. THE LOCAL OVERLAY JSX HAS BEEN DELETED */}
     </Box>
   );
 }

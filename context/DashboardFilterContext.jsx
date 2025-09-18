@@ -37,7 +37,11 @@ const createInitialState = (user) => {
   if (user?.role === "sys_admin") {
     return { dateRange: today, shift: "All", category: "general" };
   }
-  return { dateRange: { start: null, end: null }, shift: "All" };
+  return {
+    dateRange: { start: null, end: null },
+    shift: "All",
+    category: "general",
+  };
 };
 
 const getApiEndpointForRole = (role) => {

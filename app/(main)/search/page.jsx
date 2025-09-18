@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react"; // 1. Import useEffect
 import { SearchContext } from "@/context/SearchContext";
+import { useLoading } from "@/context/LoadingContext"; // 2. Import our global loading hook
 import { Box, Typography, Paper, Stack, IconButton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -21,7 +22,7 @@ export default function SearchPage() {
     hasSearched,
     page,
     incidentData,
-    isLoading,
+    isLoading, // This is the local loading state from SearchContext
     handleSearch,
     handlePageChange,
     setCriteria,
@@ -29,11 +30,18 @@ export default function SearchPage() {
     pageSize,
     setPageSize,
   } = useContext(SearchContext);
+
+  const { setIsLoading } = useLoading(); // 3. Get the global setIsLoading function
   const router = useRouter();
   const { data: incidentTypesData } = useSWR("/api/incident-types", fetcher);
   const { data: departmentsData } = useSWR("/api/departments", fetcher);
   const incidentTypes = incidentTypesData || [];
   const departments = departmentsData || [];
+
+  // 4. This effect syncs the local search loading state with our global overlay
+  useEffect(() => {
+    setIsLoading(isLoading);
+  }, [isLoading, setIsLoading]);
 
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(newPageSize);
@@ -142,16 +150,17 @@ export default function SearchPage() {
             <Box sx={{ flexGrow: 1, display: "flex" }}>
               <IncidentDataGrid
                 rows={incidentData?.incidents || []}
-                loading={isLoading}
+                // 5. We no longer pass the local loading prop here.
+                // The global overlay handles the loading state for the whole page.
+                loading={false}
                 hideFooter={true}
                 autoHeight
               />
             </Box>
-            {/* --- THIS IS THE MODIFIED FOOTER BLOCK --- */}
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "space-between", // Changed to space-between
+                justifyContent: "space-between",
                 alignItems: "center",
                 pt: 2,
               }}
@@ -168,7 +177,6 @@ export default function SearchPage() {
                 </Typography>
               )}
 
-              {/* Page Size Spinner */}
               <Stack direction="row" alignItems="center">
                 <IconButton
                   onClick={handleDecrementPageSize}
@@ -189,7 +197,6 @@ export default function SearchPage() {
                 </IconButton>
               </Stack>
 
-              {/* Pagination Controls */}
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Typography variant="body2">
                   Page {incidentData?.currentPage || 0} of{" "}
