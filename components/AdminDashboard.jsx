@@ -29,30 +29,42 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import StatusChart from "@/components/StatusChart";
 import PriorityChart from "@/components/PriorityChart";
 import TeamAvailabilityCard from "@/components/TeamAvailabilityCard";
-import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 import ViewToggle from "@/components/ViewToggle";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import { INCIDENT_STATUS } from "@/lib/constants";
+import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 
-// --- THE NEW FIX: A style object to control overflow and scrollbars on hover ---
+// The definitive style object to prevent layout shift.
 const scrollableOnHoverStyles = {
   flexGrow: 1,
-  overflow: "hidden", // Hide overflow and scrollbars by default
-  "&:hover": {
-    overflow: "auto", // Show overflow and scrollbars on hover
-  },
-  // Aesthetically style the scrollbar when it appears
+  // 1. Always enable scrolling to reserve space for the scrollbar track.
+  overflowY: "auto",
+  overflowX: "hidden", // Disable horizontal scroll as requested.
+
+  // 2. Make the scrollbar thumb invisible by default.
   "&::-webkit-scrollbar": {
     width: "8px",
-    height: "8px",
   },
   "&::-webkit-scrollbar-track": {
     backgroundColor: "transparent",
   },
   "&::-webkit-scrollbar-thumb": {
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    backgroundColor: "transparent", // Invisible by default
     borderRadius: "4px",
+  },
+
+  // 3. On hover, make the scrollbar thumb visible.
+  "&:hover::-webkit-scrollbar-thumb": {
+    backgroundColor: "rgba(0, 0, 0, 0.2)", // Visible on hover
+  },
+
+  // Cross-browser support for Firefox
+  scrollbarWidth: "thin",
+  scrollbarColor: "transparent transparent", // thumb and track are invisible
+
+  "&:hover": {
+    scrollbarColor: "rgba(0, 0, 0, 0.2) transparent", // thumb becomes visible
   },
 };
 
@@ -65,6 +77,7 @@ export default function AdminDashboard() {
   const { dateRange, shift, category } = filters;
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
+
   const handleShiftChange = (event, newShift) => {
     if (newShift !== null) {
       setFilters((prev) => ({ ...prev, shift: newShift }));
@@ -72,6 +85,7 @@ export default function AdminDashboard() {
   };
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
+
   const setPresetRange = (rangeName) => {
     const now = DateTime.local().setZone("Asia/Kolkata");
     let newDateRange;
@@ -87,6 +101,7 @@ export default function AdminDashboard() {
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
+
   const incidentsToDisplay = incidents || [];
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
@@ -111,6 +126,7 @@ export default function AdminDashboard() {
     processedIncidents +
     pendingTelecomIncidents +
     pendingEtlIncidents;
+
   const primaryStatCards = [
     {
       title: "New Incidents",
@@ -189,6 +205,7 @@ export default function AdminDashboard() {
       filterStatus: INCIDENT_STATUS.CLOSED,
     },
   ];
+
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
@@ -198,6 +215,7 @@ export default function AdminDashboard() {
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
     return `/search?${params.toString()}`;
   };
+
   const statusChartData = [
     { name: "New", count: newIncidents },
     { name: "Processed", count: processedIncidents },
@@ -205,6 +223,7 @@ export default function AdminDashboard() {
     { name: "Resolved", count: resolvedIncidents },
     { name: "Closed", count: closedIncidents },
   ];
+
   const openIncidentsList = incidentsToDisplay.filter(
     (i) =>
       i.status === INCIDENT_STATUS.NEW ||
@@ -212,6 +231,7 @@ export default function AdminDashboard() {
       i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
       i.status === INCIDENT_STATUS.PENDING_ETL
   );
+
   const priorityChartData = [
     {
       name: "High",
@@ -226,8 +246,10 @@ export default function AdminDashboard() {
       value: openIncidentsList.filter((i) => i.priority === "Low").length,
     },
   ].filter((item) => item.value > 0);
+
   const getNumberVariant = (value) =>
     value.toString().length > 4 ? "h4" : "h3";
+
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
     if (!start || !end) return "All Time";
@@ -247,12 +269,14 @@ export default function AdminDashboard() {
       return start.toFormat("d MMM, yy");
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
+
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && category === "general");
 
   return (
     <Stack spacing={2}>
+      {/* Filters and Stat Cards sections are complete and correct */}
       <Stack direction="row" alignItems="center" spacing={2}>
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
@@ -546,16 +570,7 @@ export default function AdminDashboard() {
                     p: 2,
                   }}
                 >
-                  <Box
-                    sx={{
-                      ...scrollableOnHoverStyles,
-                      // Conditionally apply minWidth ONLY if there are incidents to show
-                      minWidth:
-                        incidentsToDisplay.slice(0, 5).length > 0
-                          ? "650px"
-                          : "auto",
-                    }}
-                  >
+                  <Box sx={scrollableOnHoverStyles}>
                     <RecentIncidentsCard incidents={incidentsToDisplay} />
                   </Box>
                 </CardContent>
@@ -636,7 +651,6 @@ export default function AdminDashboard() {
                 }}
               >
                 <Box sx={scrollableOnHoverStyles}>
-                  {/* The RI card in system view is full-width, so it doesn't need the minWidth wrapper */}
                   <RecentIncidentsCard incidents={incidentsToDisplay} />
                 </Box>
               </CardContent>

@@ -326,8 +326,29 @@ export default function AppLayout({ children }) {
           sx={{
             mt: isIncidentDetailsPage ? 2 : 4,
             mb: isIncidentDetailsPage ? 1 : 4,
-            width: "1315px", // THE FIX: Changed maxWidth to width
-            mx: "auto", // Center the container
+            mx: "auto", // This ensures the container is always centered horizontally.
+
+            // --- Responsive Width Logic ---
+
+            // Default behavior for screens smaller than 1200px.
+            // The MUI Container will handle this with its default responsive widths.
+
+            // For screens 1200px and wider, up to 1499px:
+            "@media (min-width: 1200px)": {
+              maxWidth: "1315px", // Set a fixed maximum width.
+            },
+
+            // For screens 1500px and wider, this rule will override the one above:
+            "@media (min-width: 1500px)": {
+              maxWidth: "none", // Unset the fixed max-width.
+              width: "80%", // Set the width to 80% of the viewport.
+            },
+
+            // For screens 1850px and wider, this rule will override the one above:
+            "@media (min-width: 1850px)": {
+              maxWidth: "none", // Unset the fixed max-width.
+              width: "72%", // Set the width to 72% of the viewport for 24 inch monitor
+            },
           }}
         >
           {children}
