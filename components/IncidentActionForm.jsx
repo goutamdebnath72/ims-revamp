@@ -4,6 +4,7 @@ import * as React from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { SettingsContext } from "@/context/SettingsContext";
+import { useLoading } from "@/context/LoadingContext"; // Import the global loading hook
 import {
   Box,
   Button,
@@ -111,12 +112,12 @@ const getFormDisabledState = ({
 
 const VendorActionForm = ({
   onUpdate,
-  isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
   isDisabled,
 }) => {
+  const { isLoading } = useLoading();
   return (
     <Stack
       sx={{
@@ -156,7 +157,7 @@ const VendorActionForm = ({
       <Button
         variant="contained"
         onClick={() => onUpdate({ comment })}
-        disabled={isDisabled || isSubmitting || !comment.trim()}
+        disabled={isDisabled || isLoading || !comment.trim()}
         fullWidth
         sx={{
           height: VENDOR_TOK.buttonH,
@@ -164,7 +165,7 @@ const VendorActionForm = ({
           letterSpacing: VENDOR_TOK.buttonLetterSpacing,
         }}
       >
-        {isSubmitting ? "Submitting..." : "Submit Update"}
+        {isLoading ? "Submitting..." : "Submit Update"}
       </Button>
     </Stack>
   );
@@ -174,7 +175,6 @@ const AdminActionForm = ({
   incident,
   onUpdate,
   onUnlockType,
-  isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
@@ -193,6 +193,7 @@ const AdminActionForm = ({
   setNewPriority,
   isDisabled,
 }) => {
+  const { isLoading } = useLoading();
   const isNew = incident.status === INCIDENT_STATUS.NEW;
   const isPermanentlyLocked = incident.auditTrail.some(
     (entry) =>
@@ -295,7 +296,7 @@ const AdminActionForm = ({
                   disabled={
                     isPermanentlyLocked ||
                     !incident.isTypeLocked ||
-                    isSubmitting ||
+                    isLoading ||
                     isDisabled
                   }
                   size="small"
@@ -318,7 +319,7 @@ const AdminActionForm = ({
             size="small"
             disabled={
               isNew ||
-              isPermanentlyLocked || // <-- THIS IS THE FIX
+              isPermanentlyLocked ||
               incident.isPriorityLocked ||
               isDisabled
             }
@@ -370,7 +371,7 @@ const AdminActionForm = ({
           <Button
             variant="outlined"
             color={showEtlButton ? "primary" : "secondary"}
-            disabled={hasUnsavedTypeChange || isSubmitting}
+            disabled={hasUnsavedTypeChange || isLoading}
             onClick={
               showEtlButton
                 ? onOpenEtlReferralDialog
@@ -452,16 +453,14 @@ const AdminActionForm = ({
             fontSize: TOK.buttonFS,
             letterSpacing: TOK.buttonLetterSpacing,
           }}
-          disabled={isSubmitting || !comment.trim()}
+          disabled={isLoading || !comment.trim()}
         >
-          {isSubmitting ? "Submitting..." : "Submit Update"}
+          {isLoading ? "Submitting..." : "Submit Update"}
         </Button>
       </Stack>
     </Stack>
   );
 };
-
-// ... (The rest of the file remains unchanged and is included for completeness)
 
 const StandardUserActionForm = ({
   incident,
@@ -469,12 +468,12 @@ const StandardUserActionForm = ({
   onUserClose,
   onUserConfirm,
   canUserConfirm,
-  isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
   isDisabled,
 }) => {
+  const { isLoading } = useLoading();
   const placeholderText =
     "This form will be enabled once the support team processes your incident.";
   return (
@@ -524,7 +523,7 @@ const StandardUserActionForm = ({
             <Button
               variant="outlined"
               onClick={() => onUpdate({ comment })}
-              disabled={isDisabled || isSubmitting || !comment.trim()}
+              disabled={isDisabled || isLoading || !comment.trim()}
               fullWidth
               sx={{
                 height: TOK.buttonH,
@@ -537,7 +536,7 @@ const StandardUserActionForm = ({
             <Button
               variant="contained"
               onClick={onUserClose}
-              disabled={isDisabled || isSubmitting}
+              disabled={isDisabled || isLoading}
               fullWidth
               sx={{
                 height: TOK.buttonH,
@@ -554,7 +553,7 @@ const StandardUserActionForm = ({
             variant="contained"
             color="success"
             onClick={onUserConfirm}
-            disabled={isDisabled || isSubmitting}
+            disabled={isDisabled || isLoading}
             fullWidth
             sx={{
               height: TOK.buttonH,
@@ -572,7 +571,6 @@ const StandardUserActionForm = ({
 
 const TelecomActionForm = ({
   onUpdate,
-  isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
@@ -580,6 +578,7 @@ const TelecomActionForm = ({
   hasUpdated,
   isDisabled,
 }) => {
+  const { isLoading } = useLoading();
   return (
     <Stack
       sx={{
@@ -630,7 +629,7 @@ const TelecomActionForm = ({
         <Button
           variant="contained"
           onClick={() => onUpdate({ comment })}
-          disabled={isDisabled || isSubmitting || !comment.trim()}
+          disabled={isDisabled || isLoading || !comment.trim()}
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
@@ -638,7 +637,7 @@ const TelecomActionForm = ({
             letterSpacing: TELECOM_ETL_TOK.buttonLetterSpacing,
           }}
         >
-          {isSubmitting ? "Updating..." : "Update Comment"}
+          {isLoading ? "Updating..." : "Update Comment"}
         </Button>
       </Stack>
     </Stack>
@@ -647,7 +646,6 @@ const TelecomActionForm = ({
 
 const EtlActionForm = ({
   onUpdate,
-  isSubmitting,
   comment,
   setComment,
   isSpellcheckEnabled,
@@ -655,6 +653,7 @@ const EtlActionForm = ({
   hasUpdated,
   isDisabled,
 }) => {
+  const { isLoading } = useLoading();
   return (
     <Stack
       sx={{
@@ -705,7 +704,7 @@ const EtlActionForm = ({
         <Button
           variant="contained"
           onClick={() => onUpdate({ comment })}
-          disabled={isDisabled || isSubmitting || !comment.trim()}
+          disabled={isDisabled || isLoading || !comment.trim()}
           sx={{
             flex: 1,
             height: TELECOM_ETL_TOK.buttonH,
@@ -713,7 +712,7 @@ const EtlActionForm = ({
             letterSpacing: TELECOM_ETL_TOK.buttonLetterSpacing,
           }}
         >
-          {isSubmitting ? "Updating..." : "Update Comment"}
+          {isLoading ? "Updating..." : "Update Comment"}
         </Button>
       </Stack>
     </Stack>
@@ -733,7 +732,6 @@ export default function IncidentActionForm({
   onUserClose,
   canUserConfirm,
   onUserConfirm,
-  showReferToTelecomButton,
   onOpenTelecomReferralDialog,
   onOpenEtlReferralDialog,
   isAdmin,
@@ -747,7 +745,6 @@ export default function IncidentActionForm({
   const [newType, setNewType] = React.useState("");
   const [newPriority, setNewPriority] = React.useState("");
   const [hasUpdated, setHasUpdated] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { data: incidentTypes, isLoading: isLoadingTypes } = useSWR(
     "/api/incident-types",
     fetcher
@@ -765,35 +762,23 @@ export default function IncidentActionForm({
     }
   }, [incident]);
 
-  React.useEffect(() => {
-    setIsSubmitting(false);
-  }, [incident]);
-
-  const { data: session } = useSession();
-  const user = session?.user;
-
   const handleUpdateAndClear = async (data) => {
-    setIsSubmitting(true);
     setComment("");
     try {
       await onUpdate(data);
       setHasUpdated(true);
     } catch (error) {
       console.error("Update failed", error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
   const handleUnlockType = async () => {
-    setIsSubmitting(true);
     try {
       await onUpdate({ action: "UNLOCK_TYPE" });
     } catch (error) {
       console.error("Unlock failed", error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
+
   const isFormDeactivated = getFormDisabledState({
     incident,
     isAdmin,
@@ -802,6 +787,7 @@ export default function IncidentActionForm({
     isTelecomUser,
     isEtlUser,
   });
+
   const renderForm = () => {
     if (isAdmin) {
       return (
@@ -810,7 +796,6 @@ export default function IncidentActionForm({
             incident,
             onUpdate: handleUpdateAndClear,
             onUnlockType: handleUnlockType,
-            isSubmitting,
             comment,
             setComment,
             isSpellcheckEnabled,
@@ -818,7 +803,6 @@ export default function IncidentActionForm({
             onOpenResetDialog,
             showSapResetButton,
             onOpenSapResetDialog,
-            showReferToTelecomButton,
             onOpenTelecomReferralDialog,
             onOpenEtlReferralDialog,
             onOpenResolveDialog,
@@ -838,7 +822,6 @@ export default function IncidentActionForm({
         <TelecomActionForm
           {...{
             onUpdate: handleUpdateAndClear,
-            isSubmitting,
             comment,
             setComment,
             isSpellcheckEnabled,
@@ -854,7 +837,6 @@ export default function IncidentActionForm({
         <EtlActionForm
           {...{
             onUpdate: handleUpdateAndClear,
-            isSubmitting,
             comment,
             setComment,
             isSpellcheckEnabled,
@@ -870,7 +852,6 @@ export default function IncidentActionForm({
         <VendorActionForm
           {...{
             onUpdate: handleUpdateAndClear,
-            isSubmitting,
             comment,
             setComment,
             isSpellcheckEnabled,
@@ -888,7 +869,6 @@ export default function IncidentActionForm({
             onUserClose,
             onUserConfirm,
             canUserConfirm,
-            isSubmitting,
             comment,
             setComment,
             isSpellcheckEnabled,

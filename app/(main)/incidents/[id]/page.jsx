@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { NotificationContext } from "@/context/NotificationContext";
+import { useLoading } from "@/context/LoadingContext";
 import IncidentHeader from "@/components/IncidentHeader";
 import IncidentDetailsCard from "@/components/IncidentDetailsCard";
 import IncidentAuditTrail from "@/components/IncidentAuditTrail";
@@ -15,18 +16,7 @@ import SapPasswordResetModal from "@/components/SapPasswordResetModal";
 import DescriptionModal from "@/components/DescriptionModal";
 import TelecomReferralModal from "@/components/TelecomReferralModal";
 import EtlReferralModal from "@/components/EtlReferralModal";
-import {
-  Box,
-  Stack,
-  Typography,
-  CircularProgress,
-  Alert,
-  Paper,
-  Divider,
-  Button,
-  Tabs,
-  Tab,
-} from "@mui/material";
+import { Box, Stack, Typography, Alert, Paper, Tabs, Tab } from "@mui/material";
 import {
   INCIDENT_STATUS,
   USER_ROLES,
@@ -69,7 +59,6 @@ const editCommentAPI = async (id, entryId, newComment) => {
   return response.json();
 };
 
-// A custom component to render the content of a tab
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
   return (
@@ -88,21 +77,25 @@ function TabPanel(props) {
 export default function IncidentDetailsPage() {
   const params = useParams();
   const { showNotification } = React.useContext(NotificationContext);
+  const { setIsLoading } = useLoading();
   const { data: session } = useSession();
   const user = session?.user;
-
   const [activeTab, setActiveTab] = React.useState(0);
 
   const {
     data: incidentData,
     error,
-    isLoading,
+    isLoading: isSWR_Loading,
     mutate,
   } = useSWR(params.id ? `/api/incidents/${params.id}` : null, fetcher, {
     refreshInterval:
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
   });
+
+  React.useEffect(() => {
+    setIsLoading(isSWR_Loading);
+  }, [isSWR_Loading, setIsLoading]);
 
   const [isDialogOpen, setDialogOpen] = React.useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = React.useState(false);
@@ -128,20 +121,10 @@ export default function IncidentDetailsPage() {
     setActiveTab(newValue);
   };
 
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "calc(100vh - 200px)",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+  if (isSWR_Loading) {
+    return null;
   }
+
   if (error) {
     return (
       <Alert severity="error" sx={{ m: 4 }}>
@@ -244,11 +227,11 @@ export default function IncidentDetailsPage() {
       return;
     }
 
+    setIsLoading(true);
     const payload = { ...updateData };
     if (incident?.status === INCIDENT_STATUS.NEW && !payload.status) {
       payload.status = INCIDENT_STATUS.PROCESSED;
     }
-
     if (updateData.telecomTasks) {
       payload.assignedTeam = TEAMS.TELECOM;
       payload.status = INCIDENT_STATUS.PENDING_TELECOM_ACTION;
@@ -262,7 +245,6 @@ export default function IncidentDetailsPage() {
         "\n- "
       )}\n\n---\n${updateData.comment}`;
     }
-
     const optimisticType = payload.newType
       ? { ...incident.incidentType, name: payload.newType }
       : incident.incidentType;
@@ -285,6 +267,7 @@ export default function IncidentDetailsPage() {
       false
     );
     setTimeout(() => auditTrailRef.current?.scrollToBottom(), 0);
+
     try {
       const updatedIncident = await updateIncidentAPI(params.id, payload);
       showNotification(
@@ -298,6 +281,8 @@ export default function IncidentDetailsPage() {
         "error"
       );
       mutate();
+    } finally {
+      setIsLoading(false);
     }
   };
   const handleTelecomReferralSubmit = (dataFromModal) => {
@@ -307,7 +292,6 @@ export default function IncidentDetailsPage() {
     });
     setTelecomReferralModalOpen(false);
   };
-
   const handleEtlReferralSubmit = (dataFromModal) => {
     handleUpdate({
       etlTasks: dataFromModal.tasks,
@@ -317,6 +301,7 @@ export default function IncidentDetailsPage() {
   };
 
   const handleConfirmResolve = async (resolutionData) => {
+    setIsLoading(true);
     let payload = { ...resolutionData };
     switch (resolutionData.action) {
       case RESOLUTION_ACTIONS.ACCEPT_CLOSE:
@@ -333,11 +318,13 @@ export default function IncidentDetailsPage() {
         payload.status = INCIDENT_STATUS.RESOLVED;
         break;
       default:
+        setIsLoading(false);
         return;
     }
     if (resolutionData.action !== RESOLUTION_ACTIONS.RE_OPEN) {
       setOptimisticallyResolved(true);
     }
+
     try {
       const updatedIncident = await updateIncidentAPI(params.id, payload);
       showNotification(
@@ -353,15 +340,19 @@ export default function IncidentDetailsPage() {
       mutate();
     } finally {
       setOptimisticallyResolved(false);
+      setIsLoading(false);
     }
   };
   const handleCommentEdit = async (entryId, newComment) => {
     if (!incident) return;
+    setIsLoading(true);
     try {
       await editCommentAPI(incident.id, entryId, newComment);
       mutate();
     } catch (err) {
       showNotification({ title: "Edit Failed", message: err.message }, "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -374,11 +365,8 @@ export default function IncidentDetailsPage() {
           pb: 1.4,
           display: "flex",
           flexDirection: "column",
-          // The component will now naturally fill the height of its container
-          // without needing a rigid calc() height.
         }}
       >
-        {/* NON-SCROLLABLE PART (flex item 1) */}
         <Box sx={{ flexShrink: 0, bgcolor: "background.paper" }}>
           <IncidentHeader incident={incident} />
           <Box
@@ -399,8 +387,6 @@ export default function IncidentDetailsPage() {
             </Tabs>
           </Box>
         </Box>
-
-        {/* SCROLLABLE PART (flex item 2) */}
         <Box
           sx={{
             flexGrow: 1,
@@ -427,25 +413,6 @@ export default function IncidentDetailsPage() {
                       <Typography variant="h5" gutterBottom>
                         Resolution Feedback
                       </Typography>
-                      <Divider sx={{ mb: 2 }} />
-                      <Typography variant="body1" sx={{ mb: 2 }}>
-                        The support team has marked this incident as resolved.
-                        Please provide your feedback to close the ticket or let
-                        us know if the issue persists.
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        onClick={() =>
-                          handleOpenDialog(
-                            DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION
-                          )
-                        }
-                        fullWidth
-                        size="large"
-                      >
-                        Confirm Resolution
-                      </Button>
                     </Paper>
                   ) : (
                     <IncidentActionForm
@@ -490,7 +457,6 @@ export default function IncidentDetailsPage() {
               )}
             </Stack>
           </TabPanel>
-
           <TabPanel value={activeTab} index={1}>
             <IncidentDetailsCard
               incident={incident}
@@ -499,8 +465,6 @@ export default function IncidentDetailsPage() {
           </TabPanel>
         </Box>
       </Paper>
-
-      {/* MODALS AND DIALOGS (unchanged) */}
       <ResolutionDialog
         open={isDialogOpen}
         onClose={() => setDialogOpen(false)}

@@ -14,12 +14,14 @@ import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import useSound from "@/hooks/useSound";
 import { NotificationContext } from "@/context/NotificationContext";
+import { useLoading } from "@/context/LoadingContext"; // 1. Import the global loading hook
 import { isSystemIncident } from "@/lib/incident-helpers";
 import { USER_ROLES } from "@/lib/constants";
 
 export const DashboardFilterContext = createContext();
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
+// ... (getCurrentShift, createInitialState, getApiEndpointForRole functions are unchanged) ...
 const getCurrentShift = () => {
   const hour = DateTime.local().setZone("Asia/Kolkata").hour;
   if (hour >= 6 && hour < 14) return "A";
@@ -64,6 +66,7 @@ export function DashboardFilterProvider({ children }) {
   const { data: session, status: sessionStatus } = useSession();
   const user = session?.user;
   const [filters, setFilters] = useState(() => createInitialState(user));
+  const { setIsLoading } = useLoading(); // 2. Get the global setIsLoading function
 
   const lastUserId = useRef(user?.id);
 
@@ -79,6 +82,7 @@ export function DashboardFilterProvider({ children }) {
   }, [user, sessionStatus]);
 
   const buildQueryString = useCallback(() => {
+    // ... (this function is unchanged)
     const params = new URLSearchParams();
     if (filters.shift && filters.shift !== "All") {
       params.append("shift", filters.shift);
@@ -106,6 +110,7 @@ export function DashboardFilterProvider({ children }) {
   const { showNotification } = useContext(NotificationContext);
 
   const { data, error, isLoading, mutate } = useSWR(SWR_URL, fetcher, {
+    // ... (SWR options including onSuccess are unchanged) ...
     refreshInterval:
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
@@ -152,6 +157,11 @@ export function DashboardFilterProvider({ children }) {
     },
   });
 
+  // 3. This effect syncs the local SWR loading state with our global overlay
+  useEffect(() => {
+    setIsLoading(isLoading);
+  }, [isLoading, setIsLoading]);
+
   const incidents = Array.isArray(data) ? data : data?.incidents || [];
 
   const refetchIncidents = useCallback(() => {
@@ -164,19 +174,12 @@ export function DashboardFilterProvider({ children }) {
       setFilters,
       resetFilters,
       incidents,
-      isLoading,
+      // We no longer need to pass SWR's isLoading state to consumers
+      isLoading: false,
       error,
       refetchIncidents,
     }),
-    [
-      filters,
-      setFilters,
-      resetFilters,
-      incidents,
-      isLoading,
-      error,
-      refetchIncidents,
-    ]
+    [filters, setFilters, resetFilters, incidents, error, refetchIncidents]
   );
 
   return (
