@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { DashboardFilterContext } from "@/context/DashboardFilterContext";
 import { DateTime } from "luxon";
 import {
@@ -11,31 +10,19 @@ import {
   MenuItem,
   Divider,
   Box,
-  CardActionArea,
   ToggleButtonGroup,
   ToggleButton,
   Typography,
-  Card,
-  CardContent,
   Chip,
 } from "@mui/material";
-import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import EventIcon from "@mui/icons-material/Event";
 import ReplayIcon from "@mui/icons-material/Replay";
-import StatusChart from "@/components/StatusChart";
-import PriorityChart from "@/components/PriorityChart";
-import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 
-// This is a specialized dashboard for the Biometric Vendor role.
+// Import the reusable GenericDashboard component
+import GenericDashboard from "@/components/GenericDashboard";
+
 export default function BiometricVendorDashboard() {
-  const cardContainerStyles = {
-    height: 380, // Can adjust this "sweet spot" value
-    display: "flex",
-    flexDirection: "column",
-  };
-
-  // Get ALL necessary state and functions from the context
   const { filters, setFilters, resetFilters, incidents } = React.useContext(
     DashboardFilterContext
   );
@@ -43,10 +30,8 @@ export default function BiometricVendorDashboard() {
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
-
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
-
   const handleShiftChange = (event, newShift) => {
     if (newShift !== null) {
       setFilters((prev) => ({ ...prev, shift: newShift }));
@@ -71,35 +56,25 @@ export default function BiometricVendorDashboard() {
 
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
-    if (!start || !end) return "All Time"; // Handle "All Time"
-
+    if (!start || !end) return "All Time";
     const now = DateTime.local().setZone("Asia/Kolkata");
-
-    // Check for "Today"
     if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
-
-    // Check for "This Week"
     if (
       start.hasSame(now.startOf("week"), "day") &&
       end.hasSame(now.endOf("day"), "day")
     )
       return "This Week";
-
-    // Check for "This Month"
     if (
       start.hasSame(now.startOf("month"), "day") &&
       end.hasSame(now.endOf("day"), "day")
     )
       return "This Month";
-
-    // Fallback for custom ranges
     if (start.toISODate() === end.toISODate())
       return start.toFormat("d MMM, yy");
-
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  // Filter incidents from the context data for BIOMETRIC type
+  // Filter incidents for BIOMETRIC type
   const biometricIncidents = React.useMemo(() => {
     if (!incidents) return [];
     return incidents.filter(
@@ -107,79 +82,110 @@ export default function BiometricVendorDashboard() {
     );
   }, [incidents]);
 
-  const processedIncidents = biometricIncidents.filter(
-    (i) => i.status === "Processed"
-  ).length;
-  const resolvedIncidents = biometricIncidents.filter(
-    (i) => i.status === "Resolved"
-  ).length;
-  const closedIncidents = biometricIncidents.filter(
-    (i) => i.status === "Closed"
-  ).length;
-
-  const statCardsData = [
+  // --- START: PREPARE PROPS FOR GENERIC DASHBOARD ---
+  const statCards = [
     {
       title: "Assigned (Processed)",
-      value: processedIncidents,
+      value: biometricIncidents.filter((i) => i.status === "Processed").length,
       color: "info",
       filterStatus: "Processed",
     },
     {
       title: "Resolved Incidents",
-      value: resolvedIncidents,
+      value: biometricIncidents.filter((i) => i.status === "Resolved").length,
       color: "success",
       filterStatus: "Resolved",
     },
     {
       title: "Closed",
-      value: closedIncidents,
+      value: biometricIncidents.filter((i) => i.status === "Closed").length,
       color: "default",
       filterStatus: "Closed",
     },
   ];
 
-  const constructCardUrl = (status) => {
-    const params = new URLSearchParams();
-    params.append("status", status);
-    params.append("incidentType", "BIOMETRIC"); // Always filter for BIOMETRIC
-    if (shift !== "All") params.append("shift", shift);
-    if (dateRange?.start) params.append("startDate", dateRange.start.toISO());
-    if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
-    return `/search?${params.toString()}`;
+  const chartLayoutConfig = {
+    layout: "2_over_1",
+    barChartData: [
+      {
+        name: "Processed",
+        count:
+          statCards.find((c) => c.title === "Assigned (Processed)")?.value || 0,
+      },
+      {
+        name: "Resolved",
+        count:
+          statCards.find((c) => c.title === "Resolved Incidents")?.value || 0,
+      },
+      {
+        name: "Closed",
+        count: statCards.find((c) => c.title === "Closed")?.value || 0,
+      },
+    ],
+    pieChartData: [
+      {
+        name: "High",
+        value: biometricIncidents.filter(
+          (i) => i.priority === "High" && i.status === "Processed"
+        ).length,
+      },
+      {
+        name: "Medium",
+        value: biometricIncidents.filter(
+          (i) => i.priority === "Medium" && i.status === "Processed"
+        ).length,
+      },
+      {
+        name: "Low",
+        value: biometricIncidents.filter(
+          (i) => i.priority === "Low" && i.status === "Processed"
+        ).length,
+      },
+    ].filter((item) => item.value > 0),
+    recentIncidents: biometricIncidents,
   };
-
-  const statusChartData = [
-    { name: "Processed", count: processedIncidents },
-    { name: "Resolved", count: resolvedIncidents },
-    { name: "Closed", count: closedIncidents },
-  ];
-
-  const priorityChartData = [
-    {
-      name: "High",
-      value: biometricIncidents.filter(
-        (i) => i.priority === "High" && i.status === "Processed"
-      ).length,
-    },
-    {
-      name: "Medium",
-      value: biometricIncidents.filter(
-        (i) => i.priority === "Medium" && i.status === "Processed"
-      ).length,
-    },
-    {
-      name: "Low",
-      value: biometricIncidents.filter(
-        (i) => i.priority === "Low" && i.status === "Processed"
-      ).length,
-    },
-  ].filter((item) => item.value > 0);
-
-  const getNumberVariant = (value) =>
-    value.toString().length > 4 ? "h4" : "h3";
+  // --- END: PREPARE PROPS ---
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={2}>
+      {/* Filter Bar and Menu are preserved */}
+      <Stack direction="row" alignItems="center" spacing={2}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
+            Biometric Incidents Dashboard
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <ReplayIcon
+            onClick={resetFilters}
+            sx={{ cursor: "pointer", color: "action.active" }}
+          />
+          {shift !== "All" && (
+            <Chip
+              label={`Shift: ${shift}`}
+              color="secondary"
+              size="small"
+              variant="outlined"
+            />
+          )}
+          <Button
+            id="date-range-button"
+            variant="outlined"
+            onClick={handleClick}
+            startIcon={<EventIcon />}
+          >
+            {formatDateRange(dateRange)}
+          </Button>
+        </Box>
+      </Stack>
       <Menu
         id="date-range-menu"
         anchorEl={anchorEl}
@@ -237,103 +243,12 @@ export default function BiometricVendorDashboard() {
           </ToggleButtonGroup>
         </Box>
       </Menu>
-      <Stack direction="row" alignItems="center" spacing={2}>
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
-          <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
-            Biometric Incidents Dashboard
-          </Typography>
-        </Box>
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-          {/* Placeholder for any potential center items */}
-        </Box>
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          {/* --- FIX: REORDERED THE ITEMS BELOW --- */}
-          <ReplayIcon
-            onClick={resetFilters}
-            sx={{ cursor: "pointer", color: "action.active" }}
-          />
-          {shift !== "All" && (
-            <Chip
-              label={`Shift: ${shift}`}
-              color="secondary"
-              size="small"
-              variant="outlined"
-            />
-          )}
-          <Button
-            id="date-range-button"
-            variant="outlined"
-            onClick={handleClick}
-            startIcon={<EventIcon />}
-          >
-            {formatDateRange(dateRange)}
-          </Button>
-        </Box>
-      </Stack>
-      <Stack direction="row" spacing={3}>
-        {statCardsData.map((card, index) => (
-          <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
-            <Card elevation={3} sx={{ height: "100%" }}>
-              <CardActionArea
-                component={Link}
-                href={constructCardUrl(card.filterStatus)}
-                sx={{ height: "100%" }}
-              >
-                <CardContent
-                  sx={{
-                    textAlign: "center",
-                    minHeight: 120,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Typography
-                    sx={{ fontSize: 14 }}
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    {card.title}
-                  </Typography>
-                  <Typography
-                    variant={getNumberVariant(card.value)}
-                    component="div"
-                    color={`${card.color}.main`}
-                  >
-                    <CountUp end={card.value} duration={1.5} separator="," />
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </Box>
-        ))}
-      </Stack>
-      <Stack spacing={3}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
-          <Box sx={{ flex: 7 }}>
-            <StatusChart data={statusChartData} />
-          </Box>
-          <Box sx={{ flex: 5 }}>
-            <PriorityChart
-              data={priorityChartData}
-              dateRange={dateRange}
-              shift={shift}
-              incidentTypeFilter="BIOMETRIC"
-            />
-          </Box>
-        </Stack>
-        <Box sx={cardContainerStyles}>
-          <RecentIncidentsCard incidents={biometricIncidents} />
-        </Box>{" "}
-      </Stack>
+
+      {/* The old layout is replaced with a single call to the new component */}
+      <GenericDashboard
+        statCards={statCards}
+        chartLayoutConfig={chartLayoutConfig}
+      />
     </Stack>
   );
 }

@@ -18,6 +18,7 @@ import {
 import RaiseIncidentForm from "@/components/RaiseIncidentForm";
 import useSound from "@/hooks/useSound";
 import { isSystemIncident } from "@/lib/incident-helpers";
+import { useLoading } from "@/context/LoadingContext";
 
 export default function RaiseIncidentPage() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function RaiseIncidentPage() {
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);
-  const [isNavigating, setIsNavigating] = React.useState(false);
+  const { setIsLoading } = useLoading();
 
   // --- ADD THIS HOOK TO PREPARE THE SOUND ---
   const playNotificationSound = useSound("/notification.mp3");
@@ -98,17 +99,12 @@ export default function RaiseIncidentPage() {
   };
 
   const handleViewDetails = () => {
-    setIsNavigating(true);
+    setIsLoading(true);
     router.push(`/incidents/${submittedIncidentId}`);
   };
 
   const handleRaiseAnother = () => {
-    setIsNavigating(true);
-    // We use a small timeout to allow the spinner to appear for a smooth transition
-    setTimeout(() => {
-      setSubmittedIncidentId(null);
-      setIsNavigating(false); // Reset for next submission
-    }, 300);
+    setSubmittedIncidentId(null);
   };
 
   return (
@@ -136,26 +132,6 @@ export default function RaiseIncidentPage() {
             onSubmit={handleFormSubmit}
             isSubmitting={isSubmitting}
           />
-        )}
-
-        {isNavigating && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              backgroundColor: "rgba(255, 255, 255, 0.8)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "inherit", // Match the Paper's border radius
-              zIndex: 10,
-            }}
-          >
-            <CircularProgress />
-          </Box>
         )}
       </Paper>
     </Stack>

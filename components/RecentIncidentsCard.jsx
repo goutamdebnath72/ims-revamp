@@ -16,9 +16,9 @@ import {
 } from "@mui/material";
 import { DateTime } from "luxon";
 
-export default function NewRecentIncidentsCard({ incidents }) {
+export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
-  const { isNavigating, setIsNavigating } = useLoading();
+  const { isLoading, setIsLoading } = useLoading();
 
   const recentIncidents = [...(incidents || [])]
     .sort((a, b) => {
@@ -45,7 +45,7 @@ export default function NewRecentIncidentsCard({ incidents }) {
   };
 
   const handleItemClick = (id) => {
-    setIsNavigating(true);
+    setIsLoading(true);
     router.push(`/incidents/${id}`);
   };
 
@@ -66,7 +66,7 @@ export default function NewRecentIncidentsCard({ incidents }) {
               key={incident.id}
               divider={index < recentIncidents.length - 1}
               onClick={() => handleItemClick(incident.id)}
-              disabled={isNavigating}
+              disabled={isLoading}
               sx={{ py: 1.5, px: 0 }}
             >
               <Box

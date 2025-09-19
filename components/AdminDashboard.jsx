@@ -37,10 +37,12 @@ import { INCIDENT_STATUS } from "@/lib/constants";
 import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 
 const scrollableOnHoverStyles = {
-  // ... (this style object is correct and unchanged)
   flexGrow: 1,
+  // 1. Always enable scrolling to reserve space for the scrollbar track.
   overflowY: "auto",
-  scrollbarGutter: "stable",
+  overflowX: "hidden", // Disable horizontal scroll as requested.
+
+  // 2. Make the scrollbar thumb invisible by default (for Chrome/Safari).
   "&::-webkit-scrollbar": {
     width: "8px",
   },
@@ -48,8 +50,22 @@ const scrollableOnHoverStyles = {
     backgroundColor: "transparent",
   },
   "&::-webkit-scrollbar-thumb": {
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    backgroundColor: "transparent", // Invisible by default
     borderRadius: "4px",
+  },
+
+  // 3. On hover, make the scrollbar thumb visible (for Chrome/Safari).
+  "&:hover::-webkit-scrollbar-thumb": {
+    backgroundColor: "rgba(0, 0, 0, 0.2)", // Visible on hover
+  },
+
+  // 4. Cross-browser support for Firefox
+  scrollbarWidth: "thin",
+  scrollbarColor: "transparent transparent", // thumb and track are invisible
+
+  "&:hover": {
+    // 5. On hover, the thumb becomes visible in Firefox.
+    scrollbarColor: "rgba(0, 0, 0, 0.2) transparent",
   },
 };
 

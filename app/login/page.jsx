@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-// Import useState for state and signIn for authentication
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import {
@@ -16,51 +15,18 @@ import {
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import LoginInfoPanel from "@/components/LoginInfoPanel";
-
-/* ===========================
-   Fluid scaling math (desktop)
-   =========================== */
-const VW_MIN = 1200;
-const VW_MAX = 1920;
-
-function fluidPx(minPx, maxPx) {
-  const m = ((maxPx - minPx) / (VW_MAX - VW_MIN)) * 100;
-  const b = minPx - (m * VW_MIN) / 100;
-  return `clamp(${minPx}px, calc(${b}px + ${m}vw), ${maxPx}px)`;
-}
-function fluidRem(minRem, maxRem) {
-  const minPx = minRem * 16,
-    maxPx = maxRem * 16;
-  const m = ((maxPx - minPx) / (VW_MAX - VW_MIN)) * 100;
-  const b = minPx - (m * VW_MIN) / 100;
-  return `clamp(${minRem}rem, calc(${(b / 16).toFixed(
-    4
-  )}rem + ${m}vw), ${maxRem}rem)`;
-}
-function fluidEm(minEm, maxEm) {
-  const minPx = minEm * 16,
-    maxPx = maxEm * 16;
-  const m = ((maxPx - minPx) / (VW_MAX - VW_MIN)) * 100;
-  const b = minPx - (m * VW_MIN) / 100;
-  return `clamp(${minEm}em, calc(${(b / 16).toFixed(
-    4
-  )}em + ${m}vw), ${maxEm}em)`;
-}
+import { useLoading } from "@/context/LoadingContext";
+import { fluidPx, fluidRem, fluidEm } from "@/utils/fluidScale";
 
 export default function LoginPage() {
   const [showPw, setShowPw] = React.useState(false);
-
-  // State variables to hold user input and loading status
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { isLoading, setIsLoading } = useLoading();
 
-  // The function that runs when the form is submitted
   const handleLogin = async (event) => {
-    event.preventDefault(); // Prevents the browser from reloading the page
-    setLoading(true);
-    console.log("Attempting to sign in with:", { userId, password });
-
+    event.preventDefault();
+    setIsLoading(true);
     try {
       const result = await signIn("credentials", {
         redirect: false,
@@ -68,42 +34,38 @@ export default function LoginPage() {
         password: password,
       });
 
-      console.log("NextAuth signIn result:", result);
-
       if (result.error) {
         console.error("Login failed:", result.error);
         alert("Login failed! Please check your User ID and Password.");
-        setLoading(false);
       } else if (result.ok) {
-        console.log("Login successful, redirecting...");
         window.location.href = "/";
       }
     } catch (error) {
-      console.error("An unexpected error occurred:", error);
+      console.error("An unexpected error occurred during login:", error);
       alert("An unexpected error occurred during login.");
-      setLoading(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  /* Card shell quick controls */
-  const LOGIN_CARD_H = "70vh";
-  const LOGIN_CARD_AR = 0.8;
+  const LOGIN_CARD_H = "65vh";
+  const LOGIN_CARD_AR = 0.78;
   const LOGIN_CARD_MAX_W = "clamp(320px, 26vw, 650px)";
 
   const TOK = {
     pad: fluidPx(12, 28),
-    gapRows: fluidPx(0, 15),
+    gapRows: fluidPx(0, 0),
     logoMb: fluidPx(0, 15),
     titleFS: fluidRem(1.3, 2.7),
     titleLS: fluidEm(0.04, 0.03),
     titleMt: fluidPx(12, 14),
     subFS: fluidRem(0.9, 1.33),
     subMt: fluidPx(8, 12),
-    fieldsMt: fluidPx(22, 28),
+    fieldsMt: fluidPx(24, 40),
     fieldsGap: fluidPx(18, 29),
     inputH: fluidPx(42, 56),
     inputFS: fluidRem(0.95, 1.05),
-    btnMt: fluidPx(10, 16),
+    btnMt: fluidPx(24, 40),
     btnH: fluidPx(44, 56),
     btnPx: fluidPx(16, 24),
     btnFS: fluidRem(1.0, 1.14),
@@ -163,16 +125,19 @@ export default function LoginPage() {
               sx={{
                 width: "100%",
                 display: "grid",
-                gridTemplateRows: "auto auto auto 1fr auto",
+                gridTemplateRows: "auto auto auto auto auto",
                 rowGap: TOK.gapRows,
                 borderRadius: 2,
                 p: TOK.pad,
                 boxSizing: "border-box",
               }}
             >
-              {/* Logo */}
+              {/* Logo Container: Space is pre-allocated here */}
               <Box
                 sx={{
+                  // By setting a width and a specific aspect ratio, we force the browser
+                  // to reserve the exact vertical space for the logo before it loads.
+                  // This prevents the page content from "jumping" down when the image appears.
                   width: `min(100%, ${TOK_logoW})`,
                   aspectRatio: SAIL_LOGO_AR,
                   mx: "auto",
@@ -180,6 +145,10 @@ export default function LoginPage() {
                   display: "grid",
                   placeItems: "center",
                   flexShrink: 0,
+                  "@media (min-width: 1500px) and (max-width: 1600px)": {
+                    width: "120px",
+                    mb: "10px",
+                  },
                 }}
               >
                 <Box
@@ -200,6 +169,10 @@ export default function LoginPage() {
                   mt: TOK.titleMt,
                   textAlign: "center",
                   fontWeight: 700,
+                  "@media (min-width: 1500px) and (max-width: 1600px)": {
+                    fontSize: "2.1rem",
+                    mt: "10px",
+                  },
                 }}
               >
                 IMS Login
@@ -213,6 +186,10 @@ export default function LoginPage() {
                   mt: TOK.subMt,
                   lineHeight: 1.35,
                   textAlign: "center",
+                  "@media (min-width: 1500px) and (max-width: 1600px)": {
+                    fontSize: "1.1rem",
+                    mt: "10px",
+                  },
                 }}
               >
                 Incident Management System - DSP
@@ -224,9 +201,12 @@ export default function LoginPage() {
                   display: "flex",
                   flexDirection: "column",
                   gap: TOK.fieldsGap,
-                  overflow: "auto",
                   minHeight: 0,
                   pt: TOK.fieldsMt,
+                  "@media (min-width: 1500px) and (max-width: 1600px)": {
+                    gap: "22px",
+                    pt: "30px",
+                  },
                 }}
               >
                 <TextField
@@ -239,6 +219,11 @@ export default function LoginPage() {
                     "& .MuiInputBase-input": {
                       fontSize: TOK.inputFS,
                       padding: `${fluidPx(9, 15)} 14px`,
+                    },
+                    "@media (min-width: 1500px) and (max-width: 1600px)": {
+                      "& .MuiInputBase-input": {
+                        fontSize: "1rem",
+                      },
                     },
                   }}
                 />
@@ -253,6 +238,11 @@ export default function LoginPage() {
                     "& .MuiInputBase-input": {
                       fontSize: TOK.inputFS,
                       padding: `${fluidPx(9, 15)} 14px`,
+                    },
+                    "@media (min-width: 1500px) and (max-width: 1600px)": {
+                      "& .MuiInputBase-input": {
+                        fontSize: "1rem",
+                      },
                     },
                   }}
                   InputProps={{
@@ -278,7 +268,7 @@ export default function LoginPage() {
                 variant="contained"
                 size="large"
                 type="submit"
-                disabled={loading || !userId || !password}
+                disabled={isLoading || !userId || !password}
                 sx={{
                   mt: TOK.btnMt,
                   height: TOK.btnH,
@@ -290,10 +280,14 @@ export default function LoginPage() {
                   letterSpacing: TOK.btnLS,
                   fontWeight: 700,
                   alignSelf: "stretch",
+                  "@media (min-width: 1500px) and (max-width: 1600px)": {
+                    mt: "30px",
+                    height: "50px",
+                    fontSize: "1.05rem",
+                  },
                 }}
               >
-                {/* Show loading text */}
-                {loading ? "SIGNING IN..." : "SIGN IN"}
+                {isLoading ? "SIGNING IN..." : "SIGN IN"}
               </Button>
             </Paper>
           </Box>
