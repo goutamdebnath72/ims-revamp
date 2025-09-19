@@ -126,19 +126,21 @@ export default function GenericDashboard({
 
   return (
     <Stack spacing={2}>
-      {/* Section 1: Stat Cards - CORRECTED */}
-      <Stack direction="row" spacing={2}>
-        {statCards.map((card) => (
-          <Box key={card.title} sx={{ flex: 1 }}>
-            <StatCard
-              title={card.title}
-              value={card.value}
-              color={card.color || "primary"}
-              onClick={() => router.push(constructCardUrl(card.filterStatus))}
-            />
-          </Box>
-        ))}
-      </Stack>
+      {/* --- FIX: Conditionally render the stat card section --- */}
+      {statCards && statCards.length > 0 && (
+        <Stack direction="row" spacing={2}>
+          {statCards.map((card) => (
+            <Box key={card.title} sx={{ flex: 1 }}>
+              <StatCard
+                title={card.title}
+                value={card.value}
+                color={card.color || "primary"}
+                onClick={() => router.push(constructCardUrl(card.filterStatus))}
+              />
+            </Box>
+          ))}
+        </Stack>
+      )}
 
       {/* Section 2: Chart Layouts */}
       <Grid container>

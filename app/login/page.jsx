@@ -37,21 +37,23 @@ export default function LoginPage() {
       if (result.error) {
         console.error("Login failed:", result.error);
         alert("Login failed! Please check your User ID and Password.");
+        setIsLoading(false); // Deactivate loading state only on failure
       } else if (result.ok) {
+        // On success, navigate without deactivating loading state.
+        // The overlay will remain until the new page loads.
         window.location.href = "/";
       }
     } catch (error) {
       console.error("An unexpected error occurred during login:", error);
       alert("An unexpected error occurred during login.");
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Also deactivate on unexpected errors
     }
+    // The 'finally' block has been removed to prevent premature deactivation.
   };
 
   const LOGIN_CARD_H = "65vh";
   const LOGIN_CARD_AR = 0.78;
   const LOGIN_CARD_MAX_W = "clamp(320px, 26vw, 650px)";
-
   const TOK = {
     pad: fluidPx(12, 28),
     gapRows: fluidPx(0, 0),
@@ -73,7 +75,6 @@ export default function LoginPage() {
   };
   const SAIL_LOGO_AR = 0.9527;
   const TOK_logoW = fluidPx(80, 150);
-
   return (
     <Box
       sx={{
@@ -132,12 +133,9 @@ export default function LoginPage() {
                 boxSizing: "border-box",
               }}
             >
-              {/* Logo Container: Space is pre-allocated here */}
+              {/* Logo Container */}
               <Box
                 sx={{
-                  // By setting a width and a specific aspect ratio, we force the browser
-                  // to reserve the exact vertical space for the logo before it loads.
-                  // This prevents the page content from "jumping" down when the image appears.
                   width: `min(100%, ${TOK_logoW})`,
                   aspectRatio: SAIL_LOGO_AR,
                   mx: "auto",

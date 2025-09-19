@@ -17,69 +17,35 @@ import {
   Chip,
   Tooltip,
   IconButton,
-  // CircularProgress is no longer needed here
   ToggleButtonGroup,
   ToggleButton,
-  Grid,
 } from "@mui/material";
 import CountUp from "react-countup";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import EventIcon from "@mui/icons-material/Event";
 import ReplayIcon from "@mui/icons-material/Replay";
-import StatusChart from "@/components/StatusChart";
-import PriorityChart from "@/components/PriorityChart";
-import TeamAvailabilityCard from "@/components/TeamAvailabilityCard";
 import ViewToggle from "@/components/ViewToggle";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import { INCIDENT_STATUS } from "@/lib/constants";
-// We are still using the old RecentIncidentsCard here from your file
-import RecentIncidentsCard from "@/components/RecentIncidentsCard";
 
-const scrollableOnHoverStyles = {
-  flexGrow: 1,
-  // 1. Always enable scrolling to reserve space for the scrollbar track.
-  overflowY: "auto",
-  overflowX: "hidden", // Disable horizontal scroll as requested.
-
-  // 2. Make the scrollbar thumb invisible by default (for Chrome/Safari).
-  "&::-webkit-scrollbar": {
-    width: "8px",
-  },
-  "&::-webkit-scrollbar-track": {
-    backgroundColor: "transparent",
-  },
-  "&::-webkit-scrollbar-thumb": {
-    backgroundColor: "transparent", // Invisible by default
-    borderRadius: "4px",
-  },
-
-  // 3. On hover, make the scrollbar thumb visible (for Chrome/Safari).
-  "&:hover::-webkit-scrollbar-thumb": {
-    backgroundColor: "rgba(0, 0, 0, 0.2)", // Visible on hover
-  },
-
-  // 4. Cross-browser support for Firefox
-  scrollbarWidth: "thin",
-  scrollbarColor: "transparent transparent", // thumb and track are invisible
-
-  "&:hover": {
-    // 5. On hover, the thumb becomes visible in Firefox.
-    scrollbarColor: "rgba(0, 0, 0, 0.2) transparent",
-  },
-};
+// --- START: MODIFICATION ---
+// Import the GenericDashboard to handle layout rendering
+import GenericDashboard from "@/components/GenericDashboard";
+// --- END: MODIFICATION ---
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const user = session?.user;
   const router = useRouter();
-  // The 'isLoading' from the context is no longer needed here
-  const { filters, setFilters, resetFilters, incidents, error } =
-    React.useContext(DashboardFilterContext);
-  // ... (all other constants and handlers are correct and unchanged) ...
+  const { filters, setFilters, resetFilters, incidents } = React.useContext(
+    DashboardFilterContext
+  );
   const { dateRange, shift, category } = filters;
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
+
+  // All filter handlers and data formatters are preserved
   const handleShiftChange = (event, newShift) => {
     if (newShift !== null) {
       setFilters((prev) => ({ ...prev, shift: newShift }));
@@ -102,6 +68,27 @@ export default function AdminDashboard() {
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
+  const formatDateRange = (currentDateRange) => {
+    const { start, end } = currentDateRange;
+    if (!start || !end) return "All Time";
+    const now = DateTime.local().setZone("Asia/Kolkata");
+    if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
+    if (
+      start.hasSame(now.startOf("week"), "day") &&
+      end.hasSame(now.endOf("day"), "day")
+    )
+      return "This Week";
+    if (
+      start.hasSame(now.startOf("month"), "day") &&
+      end.hasSame(now.endOf("day"), "day")
+    )
+      return "This Month";
+    if (start.toISODate() === end.toISODate())
+      return start.toFormat("d MMM, yy");
+    return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
+  };
+
+  // All data calculation logic is preserved
   const incidentsToDisplay = incidents || [];
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
@@ -126,53 +113,11 @@ export default function AdminDashboard() {
     processedIncidents +
     pendingTelecomIncidents +
     pendingEtlIncidents;
-  const primaryStatCards = [
-    {
-      title: "New Incidents",
-      value: newIncidents,
-      color: "warning",
-      filterStatus: INCIDENT_STATUS.NEW,
-    },
-    {
-      title: "Processed",
-      value: processedIncidents,
-      color: "info",
-      filterStatus: INCIDENT_STATUS.PROCESSED,
-    },
-    {
-      title: "Resolved",
-      value: resolvedIncidents,
-      color: "success",
-      filterStatus: INCIDENT_STATUS.RESOLVED,
-    },
-    {
-      title: "Closed",
-      value: closedIncidents,
-      color: "default",
-      filterStatus: INCIDENT_STATUS.CLOSED,
-    },
-  ];
-  const secondaryStatCards = [
-    {
-      title: "All Open",
-      value: allOpenIncidents,
-      color: "secondary",
-      filterStatus: "open",
-    },
-    {
-      title: "Pending Telecom",
-      value: pendingTelecomIncidents,
-      color: "primary",
-      filterStatus: INCIDENT_STATUS.PENDING_TELECOM_ACTION,
-    },
-    {
-      title: "Pending ETL",
-      value: pendingEtlIncidents,
-      color: "primary",
-      filterStatus: INCIDENT_STATUS.PENDING_ETL,
-    },
-  ];
-  const systemStatCards = [
+
+  // --- START: PREPARE PROPS FOR GENERIC DASHBOARD ---
+
+  // Props for the System View
+  const systemViewStatCards = [
     {
       title: "New Incidents",
       value: newIncidents,
@@ -204,6 +149,61 @@ export default function AdminDashboard() {
       filterStatus: INCIDENT_STATUS.CLOSED,
     },
   ];
+
+  const systemViewChartConfig = {
+    layout: "2_over_1",
+    barChartData: [
+      { name: "New", count: newIncidents },
+      { name: "Processed", count: processedIncidents },
+      { name: "Pending", count: pendingTelecomIncidents + pendingEtlIncidents },
+      { name: "Resolved", count: resolvedIncidents },
+      { name: "Closed", count: closedIncidents },
+    ],
+    pieChartData: [
+      {
+        name: "High",
+        value: incidentsToDisplay.filter(
+          (i) =>
+            i.priority === "High" &&
+            i.status !== INCIDENT_STATUS.CLOSED &&
+            i.status !== INCIDENT_STATUS.RESOLVED
+        ).length,
+      },
+      {
+        name: "Medium",
+        value: incidentsToDisplay.filter(
+          (i) =>
+            i.priority === "Medium" &&
+            i.status !== INCIDENT_STATUS.CLOSED &&
+            i.status !== INCIDENT_STATUS.RESOLVED
+        ).length,
+      },
+      {
+        name: "Low",
+        value: incidentsToDisplay.filter(
+          (i) =>
+            i.priority === "Low" &&
+            i.status !== INCIDENT_STATUS.CLOSED &&
+            i.status !== INCIDENT_STATUS.RESOLVED
+        ).length,
+      },
+    ].filter((item) => item.value > 0),
+    recentIncidents: incidentsToDisplay,
+  };
+
+  // Props for the General View (note: only charts are generic)
+  const generalViewChartConfig = {
+    layout: "2x2",
+    barChartData: systemViewChartConfig.barChartData, // Same data
+    pieChartData: systemViewChartConfig.pieChartData, // Same data
+    recentIncidents: incidentsToDisplay,
+    // TeamAvailability is handled by a special case in GenericDashboard
+  };
+  // --- END: PREPARE PROPS ---
+
+  // Helper functions for rendering are preserved as they are used by the non-generic part
+  const getNumberVariant = (value) =>
+    value.toString().length > 4 ? "h4" : "h3";
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
@@ -213,64 +213,17 @@ export default function AdminDashboard() {
     if (dateRange?.end) params.append("endDate", dateRange.end.toISO());
     return `/search?${params.toString()}`;
   };
-  const statusChartData = [
-    { name: "New", count: newIncidents },
-    { name: "Processed", count: processedIncidents },
-    { name: "Pending", count: pendingTelecomIncidents + pendingEtlIncidents },
-    { name: "Resolved", count: resolvedIncidents },
-    { name: "Closed", count: closedIncidents },
-  ];
-  const openIncidentsList = incidentsToDisplay.filter(
-    (i) =>
-      i.status === INCIDENT_STATUS.NEW ||
-      i.status === INCIDENT_STATUS.PROCESSED ||
-      i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
-      i.status === INCIDENT_STATUS.PENDING_ETL
-  );
-  const priorityChartData = [
-    {
-      name: "High",
-      value: openIncidentsList.filter((i) => i.priority === "High").length,
-    },
-    {
-      name: "Medium",
-      value: openIncidentsList.filter((i) => i.priority === "Medium").length,
-    },
-    {
-      name: "Low",
-      value: openIncidentsList.filter((i) => i.priority === "Low").length,
-    },
-  ].filter((item) => item.value > 0);
-  const getNumberVariant = (value) =>
-    value.toString().length > 4 ? "h4" : "h3";
-  const formatDateRange = (currentDateRange) => {
-    const { start, end } = currentDateRange;
-    if (!start || !end) return "All Time";
-    const now = DateTime.local().setZone("Asia/Kolkata");
-    if (start.hasSame(now, "day") && end.hasSame(now, "day")) return "Today";
-    if (
-      start.hasSame(now.startOf("week"), "day") &&
-      end.hasSame(now.endOf("day"), "day")
-    )
-      return "This Week";
-    if (
-      start.hasSame(now.startOf("month"), "day") &&
-      end.hasSame(now.endOf("day"), "day")
-    )
-      return "This Month";
-    if (start.toISODate() === end.toISODate())
-      return start.toFormat("d MMM, yy");
-    return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
-  };
+
+  // Logic to switch between views is preserved
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && category === "general");
 
   return (
     <Stack spacing={2}>
-      {/* Filters and Menu components are unchanged */}
+      {/* --- Filter Bar and Menu are entirely preserved --- */}
       <Stack direction="row" alignItems="center" spacing={2}>
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start" }}>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
             Dashboard
           </Typography>
@@ -378,102 +331,39 @@ export default function AdminDashboard() {
         </Box>
       </Menu>
 
-      {/* The position: "relative" is still needed for the stat cards section */}
-      <Box sx={{ position: "relative" }}>
-        {/* The opacity is no longer needed on the stat card stacks */}
-        {showTeamAvailability ? (
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={2}>
-              {primaryStatCards.map((card, index) => (
-                <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
-                  <Card elevation={3} sx={{ height: "100%" }}>
-                    <CardActionArea
-                      onClick={() =>
-                        router.push(constructCardUrl(card.filterStatus))
-                      }
-                      sx={{ height: "100%" }}
-                    >
-                      <CardContent
-                        sx={{
-                          textAlign: "center",
-                          minHeight: 120,
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography
-                          sx={{ fontSize: 14 }}
-                          color="text.secondary"
-                          gutterBottom
-                        >
-                          {card.title}
-                        </Typography>
-                        <Typography
-                          variant={getNumberVariant(card.value)}
-                          component="div"
-                          color={`${card.color}.main`}
-                        >
-                          <CountUp
-                            end={card.value}
-                            duration={1.5}
-                            separator=","
-                          />
-                        </Typography>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-              ))}
-            </Stack>
-            <Stack direction="row" spacing={2}>
-              {secondaryStatCards.map((card, index) => (
-                <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
-                  <Card elevation={3} sx={{ height: "100%" }}>
-                    <CardActionArea
-                      onClick={() =>
-                        router.push(constructCardUrl(card.filterStatus))
-                      }
-                      sx={{ height: "100%" }}
-                    >
-                      <CardContent
-                        sx={{
-                          textAlign: "center",
-                          minHeight: 120,
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography
-                          sx={{ fontSize: 14 }}
-                          color="text.secondary"
-                          gutterBottom
-                        >
-                          {card.title}
-                        </Typography>
-                        <Typography
-                          variant={getNumberVariant(card.value)}
-                          component="div"
-                          color={`${card.color}.main`}
-                        >
-                          <CountUp
-                            end={card.value}
-                            duration={1.5}
-                            separator=","
-                          />
-                        </Typography>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-              ))}
-            </Stack>
-          </Stack>
-        ) : (
+      {/* --- START: DASHBOARD CONTENT RENOVATION --- */}
+      {showTeamAvailability ? (
+        // --- GENERAL VIEW ---
+        <Stack spacing={2}>
+          {/* 1. The custom two-row stat card layout is PRESERVED */}
           <Stack direction="row" spacing={2}>
-            {systemStatCards.map((card, index) => (
-              <Box key={index} sx={{ flex: 1, textDecoration: "none" }}>
+            {[
+              {
+                title: "New Incidents",
+                value: newIncidents,
+                color: "warning",
+                filterStatus: INCIDENT_STATUS.NEW,
+              },
+              {
+                title: "Processed",
+                value: processedIncidents,
+                color: "info",
+                filterStatus: INCIDENT_STATUS.PROCESSED,
+              },
+              {
+                title: "Resolved",
+                value: resolvedIncidents,
+                color: "success",
+                filterStatus: INCIDENT_STATUS.RESOLVED,
+              },
+              {
+                title: "Closed",
+                value: closedIncidents,
+                color: "default",
+                filterStatus: INCIDENT_STATUS.CLOSED,
+              },
+            ].map((card, index) => (
+              <Box key={index} sx={{ flex: 1 }}>
                 <Card elevation={3} sx={{ height: "100%" }}>
                   <CardActionArea
                     onClick={() =>
@@ -514,117 +404,81 @@ export default function AdminDashboard() {
               </Box>
             ))}
           </Stack>
-        )}
+          <Stack direction="row" spacing={2}>
+            {[
+              {
+                title: "All Open",
+                value: allOpenIncidents,
+                color: "secondary",
+                filterStatus: "open",
+              },
+              {
+                title: "Pending Telecom",
+                value: pendingTelecomIncidents,
+                color: "primary",
+                filterStatus: INCIDENT_STATUS.PENDING_TELECOM_ACTION,
+              },
+              {
+                title: "Pending ETL",
+                value: pendingEtlIncidents,
+                color: "primary",
+                filterStatus: INCIDENT_STATUS.PENDING_ETL,
+              },
+            ].map((card, index) => (
+              <Box key={index} sx={{ flex: 1 }}>
+                <Card elevation={3} sx={{ height: "100%" }}>
+                  <CardActionArea
+                    onClick={() =>
+                      router.push(constructCardUrl(card.filterStatus))
+                    }
+                    sx={{ height: "100%" }}
+                  >
+                    <CardContent
+                      sx={{
+                        textAlign: "center",
+                        minHeight: 120,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Typography
+                        sx={{ fontSize: 14 }}
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        {card.title}
+                      </Typography>
+                      <Typography
+                        variant={getNumberVariant(card.value)}
+                        component="div"
+                        color={`${card.color}.main`}
+                      >
+                        <CountUp
+                          end={card.value}
+                          duration={1.5}
+                          separator=","
+                        />
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Box>
+            ))}
+          </Stack>
 
-        {/* === THE LOCAL OVERLAY IS REMOVED FROM HERE === */}
-        {/* The global overlay in LoadingContext now handles this. */}
-      </Box>
-
-      {/* The rest of the dashboard layout (Grids, Charts, etc.) is correct and unchanged */}
-      {showTeamAvailability ? (
-        <Grid container>
-          <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
-            <Stack spacing={2}>
-              <Card elevation={3} sx={{ height: "350px" }}>
-                <StatusChart data={statusChartData} />
-              </Card>
-              <Card elevation={3} sx={{ height: "350px" }}>
-                <CardContent
-                  sx={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    p: 2,
-                  }}
-                >
-                  <Box sx={scrollableOnHoverStyles}>
-                    <RecentIncidentsCard incidents={incidentsToDisplay} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Stack>
-          </Grid>
-          <Grid
-            item
-            xs={12}
-            md={6}
-            sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
-          >
-            <Stack spacing={2}>
-              <Card elevation={3} sx={{ height: "350px" }}>
-                <PriorityChart
-                  key={`${shift}-${String(dateRange.start)}-${String(
-                    dateRange.end
-                  )}`}
-                  data={priorityChartData}
-                  view={category}
-                  dateRange={dateRange}
-                  userRole={user?.role}
-                  shift={shift}
-                />
-              </Card>
-              <Card elevation={3} sx={{ height: "350px" }}>
-                <CardContent
-                  sx={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    p: 2,
-                  }}
-                >
-                  <Box sx={scrollableOnHoverStyles}>
-                    <TeamAvailabilityCard />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Stack>
-          </Grid>
-        </Grid>
+          {/* 2. The chart grid is REPLACED by GenericDashboard */}
+          <GenericDashboard chartLayoutConfig={generalViewChartConfig} />
+        </Stack>
       ) : (
-        // System View Layout
-        <Grid container>
-          <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
-            <Card elevation={3} sx={{ height: "350px" }}>
-              <StatusChart data={statusChartData} />
-            </Card>
-          </Grid>
-          <Grid
-            item
-            xs={12}
-            md={6}
-            sx={{ pl: { md: 1 }, mt: { xs: 2, md: 0 } }}
-          >
-            <Card elevation={3} sx={{ height: "350px" }}>
-              <PriorityChart
-                key={`${shift}-${String(dateRange.start)}-${String(
-                  dateRange.end
-                )}`}
-                data={priorityChartData}
-                view={category}
-                dateRange={dateRange}
-                userRole={user?.role}
-                shift={shift}
-              />
-            </Card>
-          </Grid>
-          <Grid item xs={12} sx={{ mt: 2 }}>
-            <Card elevation={3} sx={{ height: "350px" }}>
-              <CardContent
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  p: 2,
-                }}
-              >
-                <Box sx={scrollableOnHoverStyles}>
-                  <RecentIncidentsCard incidents={incidentsToDisplay} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        // --- SYSTEM VIEW ---
+        // The entire layout is REPLACED by GenericDashboard
+        <GenericDashboard
+          statCards={systemViewStatCards}
+          chartLayoutConfig={systemViewChartConfig}
+        />
       )}
+      {/* --- END: DASHBOARD CONTENT RENOVATION --- */}
     </Stack>
   );
 }
