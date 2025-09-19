@@ -4,7 +4,7 @@ import * as React from "react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { SettingsContext } from "@/context/SettingsContext";
-import { useLoading } from "@/context/LoadingContext"; // Import the global loading hook
+import { useLoading } from "@/context/LoadingContext";
 import {
   Box,
   Button,
@@ -27,6 +27,7 @@ import {
   INCIDENT_STATUS,
   INCIDENT_TYPES,
   USER_ROLES,
+  RESOLUTION_ACTIONS, // <-- Import RESOLUTION_ACTIONS
 } from "@/lib/constants";
 import { fluidPx, fluidRem } from "@/utils/fluidScale";
 
@@ -68,6 +69,8 @@ const priorities = ["Low", "Medium", "High"];
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
+// --- START: FIX ---
+// The deactivation logic is updated here to be self-contained and correct.
 const getFormDisabledState = ({
   incident,
   isAdmin,
@@ -84,8 +87,17 @@ const getFormDisabledState = ({
   ) {
     return true;
   }
-  if (isRequestor && !isAdmin && incident.status === INCIDENT_STATUS.NEW) {
-    return true;
+  // This is the core of the fix.
+  if (isRequestor && !isAdmin) {
+    const wasReopened = incident.auditTrail.some(
+      (entry) => entry.action === RESOLUTION_ACTIONS.RE_OPEN
+    );
+    if (
+      incident.status === INCIDENT_STATUS.NEW ||
+      (incident.status === INCIDENT_STATUS.PROCESSED && wasReopened)
+    ) {
+      return true;
+    }
   }
   if (
     isAssignedVendor &&
@@ -109,6 +121,7 @@ const getFormDisabledState = ({
   }
   return false;
 };
+// --- END: FIX ---
 
 const VendorActionForm = ({
   onUpdate,
@@ -170,7 +183,6 @@ const VendorActionForm = ({
     </Stack>
   );
 };
-
 const AdminActionForm = ({
   incident,
   onUpdate,
@@ -213,7 +225,6 @@ const AdminActionForm = ({
 
   const hasUnsavedTypeChange =
     newType.toLowerCase() !== incident.incidentType?.name.toLowerCase();
-
   return (
     <Stack
       sx={{
@@ -504,7 +515,7 @@ const StandardUserActionForm = ({
             alignItems: "flex-start",
           },
           "& .Mui-disabled::placeholder": {
-            opacity: 1,
+            opacity: 1,            
           },
         }}
         value={comment}
@@ -514,7 +525,7 @@ const StandardUserActionForm = ({
         spellCheck={isSpellcheckEnabled}
         required
         disabled={isDisabled}
-        placeholder={placeholderText}
+        placeholder={isDisabled ? placeholderText : ""}
       />
       <Stack direction="row" spacing={1} sx={{ width: "100%" }}>
         {(incident.status === INCIDENT_STATUS.NEW ||
@@ -771,6 +782,7 @@ export default function IncidentActionForm({
       console.error("Update failed", error);
     }
   };
+
   const handleUnlockType = async () => {
     try {
       await onUpdate({ action: "UNLOCK_TYPE" });

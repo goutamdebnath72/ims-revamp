@@ -1,5 +1,4 @@
 // File: components/ResolutionDialog.jsx
-// UPDATED: The final confirmation button now has dynamic text.
 "use client";
 
 import * as React from "react";
@@ -21,7 +20,6 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-
 import { SettingsContext } from "@/context/SettingsContext";
 import { DIALOG_CONTEXTS, RESOLUTION_ACTIONS } from "@/lib/constants";
 
@@ -32,7 +30,6 @@ const adminClosingReasons = [
   "Duplicate Incident",
   "Resolved by User",
 ];
-
 const userClosingReasons = [
   "Problem solved on its own",
   "I was able to fix the issue myself",
@@ -46,6 +43,7 @@ export default function ResolutionDialog({
   onClose,
   onConfirm,
   context,
+  inline = false,
 }) {
   const [comment, setComment] = React.useState("");
   const [rating, setRating] = React.useState(3);
@@ -53,10 +51,8 @@ export default function ResolutionDialog({
   const [closingReason, setClosingReason] = React.useState("");
   const { isSpellcheckEnabled } = React.useContext(SettingsContext);
 
-  // This effect resets the state and sets the correct action
-  // whenever the dialog is opened in a new context.
   React.useEffect(() => {
-    if (open) {
+    if (open || inline) {
       setComment("");
       setRating(3);
       setClosingReason("");
@@ -67,18 +63,17 @@ export default function ResolutionDialog({
         setAction(RESOLUTION_ACTIONS.RESOLVE);
       }
     }
-  }, [open, context]);
+  }, [open, inline, context]);
 
   const handleConfirm = (payload) => {
     onConfirm(payload);
-    onClose();
+    if (onClose) onClose();
   };
 
   const handleCancel = () => {
-    onClose();
+    if (onClose) onClose();
   };
 
-  // --- START: NEW DYNAMIC JSX ---
   const renderTitle = () => {
     switch (context) {
       case DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION:
@@ -91,13 +86,17 @@ export default function ResolutionDialog({
   };
 
   const isSubmitDisabled =
-    !comment.trim() || (context === "user_close" && !closingReason);
+    !comment.trim() ||
+    (action === RESOLUTION_ACTIONS.CLOSE && !closingReason) ||
+    (context === "user_close" && !closingReason);
 
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ pb: 1 }}>{renderTitle()}</DialogTitle>
-      <DialogContent sx={{ pt: "0 !important" }}>
-        {/* Admin-only Resolve/Close Toggle */}
+  const FormContent = (
+    <>
+      {/* --- FIX: Using Typography for consistent h5 title --- */}
+      <Typography variant="h5" gutterBottom>
+        {renderTitle()}
+      </Typography>
+      <DialogContent sx={{ pt: "8px !important", px: 0 }}>
         {context === DIALOG_CONTEXTS.ADMIN_RESOLVE_CLOSE && (
           <ToggleButtonGroup
             value={action}
@@ -111,8 +110,6 @@ export default function ResolutionDialog({
             <ToggleButton value="close">Close Incident</ToggleButton>
           </ToggleButtonGroup>
         )}
-
-        {/* Closing Reason Dropdown (for Admin or User) */}
         {action === RESOLUTION_ACTIONS.CLOSE && (
           <FormControl fullWidth required sx={{ mb: 2, mt: 1 }} size="small">
             <InputLabel>Reason for Closing</InputLabel>
@@ -132,8 +129,6 @@ export default function ResolutionDialog({
             </Select>
           </FormControl>
         )}
-
-        {/* Final Comment Textfield (for all contexts) */}
         <TextField
           autoFocus
           margin="dense"
@@ -153,8 +148,6 @@ export default function ResolutionDialog({
           spellCheck={isSpellcheckEnabled}
           required
         />
-
-        {/* Rating Component (for Admin Resolve or User Confirmation) */}
         {(action === RESOLUTION_ACTIONS.RESOLVE ||
           context === DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION) && (
           <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
@@ -171,13 +164,11 @@ export default function ResolutionDialog({
           </Box>
         )}
       </DialogContent>
-
-      <DialogActions sx={{ p: "0 24px 16px" }}>
-        <Button onClick={onClose}>Cancel</Button>
-
-        {/* --- DYNAMIC ACTION BUTTONS --- */}
+      <DialogActions sx={{ p: "16px 0 0 0" }}>
+        {!inline && <Button onClick={handleCancel}>Cancel</Button>}
         {context === DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION ? (
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={2} sx={{ flex: 1 }}>
+            {/* --- FIX: Added flex: 1 to both buttons --- */}
             <Button
               onClick={() =>
                 handleConfirm({ action: RESOLUTION_ACTIONS.RE_OPEN, comment })
@@ -185,6 +176,7 @@ export default function ResolutionDialog({
               variant="outlined"
               color="error"
               disabled={!comment.trim()}
+              sx={{ flex: 1 }}
             >
               This is Not Solved (Re-open)
             </Button>
@@ -199,6 +191,7 @@ export default function ResolutionDialog({
               variant="contained"
               color="success"
               disabled={!comment.trim()}
+              sx={{ flex: 1 }}
             >
               Accept & Close Incident
             </Button>
@@ -223,7 +216,17 @@ export default function ResolutionDialog({
           </Button>
         )}
       </DialogActions>
+    </>
+  );
+
+  if (inline) {
+    return FormContent;
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      {/* Replaced DialogTitle with a consistent div wrapper */}
+      <Box sx={{ p: 3 }}>{FormContent}</Box>
     </Dialog>
   );
-  // --- END: NEW DYNAMIC JSX ---
 }

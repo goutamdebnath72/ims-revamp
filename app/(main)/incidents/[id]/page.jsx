@@ -92,7 +92,6 @@ export default function IncidentDetailsPage() {
       user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
     revalidateOnFocus: !(user?.role === "admin" || user?.role === "sys_admin"),
   });
-
   React.useEffect(() => {
     setIsLoading(isSWR_Loading);
   }, [isSWR_Loading, setIsLoading]);
@@ -110,13 +109,11 @@ export default function IncidentDetailsPage() {
   const auditTrailRef = React.useRef(null);
   const [isEtlReferralModalOpen, setEtlReferralModalOpen] =
     React.useState(false);
-
   React.useEffect(() => {
     setTimeout(() => {
       auditTrailRef.current?.scrollToBottom();
     }, 0);
   }, [incidentData?.auditTrail?.length]);
-
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
@@ -193,10 +190,29 @@ export default function IncidentDetailsPage() {
     incident?.incidentType?.name.toLowerCase().includes("sap password") &&
     incident?.status !== INCIDENT_STATUS.NEW &&
     !hasBeenReset;
-  const canUserClose =
-    isRequestor && incident.status === INCIDENT_STATUS.PROCESSED;
+
+  // --- START: FIX ---
+  // Removed the "!isAdmin" check. Now, any user who is the original requestor
+  // will see the confirmation form when the incident is resolved.
   const canUserConfirm =
-    isRequestor && incident.status === INCIDENT_STATUS.RESOLVED && !isAdmin;
+    isRequestor && incident.status === INCIDENT_STATUS.RESOLVED;
+  // --- END: FIX ---
+
+  // The canUserClose logic is now only relevant if canUserConfirm is false.
+  const canUserClose =
+    isRequestor &&
+    !canUserConfirm &&
+    incident.status === INCIDENT_STATUS.PROCESSED;
+
+  const wasReopened = incident.auditTrail.some(
+    (entry) => entry.action === RESOLUTION_ACTIONS.RE_OPEN
+  );
+
+  const isDisabled =
+    isRequestor &&
+    !isAdmin &&
+    (incident.status === INCIDENT_STATUS.NEW ||
+      (incident.status === INCIDENT_STATUS.PROCESSED && wasReopened));
 
   const handlePasswordResetSuccess = () => {
     setIsResetModalOpen(false);
@@ -215,7 +231,6 @@ export default function IncidentDetailsPage() {
     setDialogContext(context);
     setDialogOpen(true);
   };
-
   const handleUpdate = async (updateData) => {
     if (
       !updateData.comment &&
@@ -355,7 +370,6 @@ export default function IncidentDetailsPage() {
       setIsLoading(false);
     }
   };
-
   return (
     <>
       <Paper
@@ -409,10 +423,15 @@ export default function IncidentDetailsPage() {
               {showActionArea && incident.status !== INCIDENT_STATUS.CLOSED && (
                 <Box>
                   {canUserConfirm ? (
-                    <Paper elevation={3} sx={{ p: 3, height: "100%" }}>
-                      <Typography variant="h5" gutterBottom>
-                        Resolution Feedback
-                      </Typography>
+                    <Paper
+                      elevation={3}
+                      sx={{ p: 3, width: "99%", mx: "auto" }}
+                    >
+                      <ResolutionDialog
+                        inline={true}
+                        onConfirm={handleConfirmResolve}
+                        context={DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION}
+                      />
                     </Paper>
                   ) : (
                     <IncidentActionForm
@@ -436,11 +455,7 @@ export default function IncidentDetailsPage() {
                           DIALOG_CONTEXTS.USER_CONFIRM_RESOLUTION
                         )
                       }
-                      isDisabled={
-                        incident.status === INCIDENT_STATUS.NEW &&
-                        isRequestor &&
-                        !isAdmin
-                      }
+                      isDisabled={isDisabled}
                       onOpenTelecomReferralDialog={() =>
                         setTelecomReferralModalOpen(true)
                       }

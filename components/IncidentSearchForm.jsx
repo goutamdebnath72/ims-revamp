@@ -11,7 +11,7 @@ import {
   MenuItem,
   Tooltip,
   IconButton,
-  CircularProgress,
+  // CircularProgress is no longer needed and has been removed.
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -60,7 +60,6 @@ const VendorSearchForm = ({
           size="small"
         >
           <MenuItem value="Any">Any</MenuItem>
-          {/* --- DEFENSIVE CHECK ADDED HERE --- */}
           {Array.isArray(departments) &&
             departments.map((dept) => (
               <MenuItem key={dept.code} value={dept.name}>
@@ -132,11 +131,8 @@ const VendorSearchForm = ({
             disabled={isLoading}
             sx={{ height: "40px" }}
           >
-            {isLoading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Search"
-            )}
+            {/* --- FIX: Removed local spinner --- */}
+            Search
           </Button>
         </Box>
       </Stack>
@@ -258,7 +254,6 @@ function IncidentSearchForm({
               <MenuItem key="any-dept" value="Any">
                 Any
               </MenuItem>
-              {/* --- DEFENSIVE CHECK ADDED HERE --- */}
               {Array.isArray(departments) &&
                 departments.map((dept) => (
                   <MenuItem key={dept.code} value={dept.name}>
@@ -362,11 +357,8 @@ function IncidentSearchForm({
                 disabled={isLoading}
                 sx={{ height: "40px", width: "120px" }}
               >
-                {isLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Search"
-                )}
+                {/* --- FIX: Removed local spinner --- */}
+                Search
               </Button>
             </Box>
           </Stack>
@@ -437,11 +429,8 @@ function IncidentSearchForm({
             disabled={isLoading}
             sx={{ height: "40px" }}
           >
-            {isLoading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Search"
-            )}
+            {/* --- FIX: Removed local spinner --- */}
+            Search
           </Button>
         </Stack>
       );
