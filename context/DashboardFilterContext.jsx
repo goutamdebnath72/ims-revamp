@@ -55,8 +55,8 @@ const getApiEndpointForRole = (role) => {
       return "/api/incidents/telecom-dept";
     case USER_ROLES.ETL:
       return "/api/incidents/etl-dept";
-    case USER_ROLES.NETWORK_VENDOR:
-      return "/api/incidents/network-vendor";
+    case USER_ROLES.NETWORK_AMC:
+      return "/api/incidents/network-amc";
     default:
       return "/api/incidents";
   }

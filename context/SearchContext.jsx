@@ -53,7 +53,7 @@ const createDefaultCriteria = (user) => {
           INCIDENT_STATUS.CLOSED,
         ].join(",");
         break;
-      case USER_ROLES.NETWORK_VENDOR:
+      case USER_ROLES.NETWORK_AMC:
         defaultCriteria.incidentType = INCIDENT_TYPES.NETWORK;
         defaultCriteria.status = [
           INCIDENT_STATUS.PROCESSED,
@@ -62,7 +62,7 @@ const createDefaultCriteria = (user) => {
           INCIDENT_STATUS.CLOSED,
         ].join(",");
         break;
-      case USER_ROLES.BIOMETRIC_VENDOR:
+      case USER_ROLES.BIOMETRIC_AMC:
         defaultCriteria.incidentType = "Biometric";
         defaultCriteria.status = [
           INCIDENT_STATUS.PROCESSED,

@@ -501,7 +501,7 @@ INSERT INTO public.audit_entries VALUES ('cmdppnyr10002yz2m94bw5pp7', '2025-07-1
 Pls contact with ETL for any hardware and OS related issue.', NULL, false, NULL, '20250719121240-DBEF');
 INSERT INTO public.audit_entries VALUES ('cmdppnz770003yz2mh20dhp9z', '2025-07-19 06:41:00', 'GOUTAM DEBNATH', 'Action Taken', 'Call acepted.', NULL, false, NULL, '20250719121107-BEF1');
 INSERT INTO public.audit_entries VALUES ('cmdppnzl60004yz2mdq707i1e', '2025-07-19 06:39:00', 'GOUTAM DEBNATH', 'Action Taken', 'Call accepted.', NULL, false, NULL, '20250719120805-6545');
-INSERT INTO public.audit_entries VALUES ('cmdppnzl60005yz2mfhchgphp', '2025-07-19 06:39:00', 'GOUTAM DEBNATH', 'Action Taken', 'Informed the vendor to attend as soon as possible.', NULL, false, NULL, '20250719120805-6545');
+INSERT INTO public.audit_entries VALUES ('cmdppnzl60005yz2mfhchgphp', '2025-07-19 06:39:00', 'GOUTAM DEBNATH', 'Action Taken', 'Informed the amc to attend as soon as possible.', NULL, false, NULL, '20250719120805-6545');
 INSERT INTO public.audit_entries VALUES ('cmdppnzl60006yz2mzzp1hjza', '2025-07-19 06:39:00', 'GOUTAM DEBNATH', 'Priority Changed', 'Priority changed to "Low".
 ---
 As per SLA.', NULL, false, NULL, '20250719120805-6545');
@@ -518,7 +518,7 @@ INSERT INTO public.audit_entries VALUES ('cmdppo4vv000eyz2mkb76ir8m', '2025-07-1
 INSERT INTO public.audit_entries VALUES ('cmdppo9m6000fyz2m601ydilm', '2025-07-15 12:59:00', 'MOHD ANWAR ULLAH', 'Action Taken', 'Call accepted.', NULL, false, NULL, '20250715182751-1ED5');
 INSERT INTO public.audit_entries VALUES ('cmdppo9m6000gyz2mobxny0wh', '2025-07-15 12:59:00', 'MOHD ANWAR ULLAH', 'Priority Changed', 'Priority changed to "Low".
 ---
-Informed to the vendor.', NULL, false, NULL, '20250715182751-1ED5');
+Informed to the amc.', NULL, false, NULL, '20250715182751-1ED5');
 INSERT INTO public.audit_entries VALUES ('cmdppo9m6000hyz2mm8fsqgc0', '2025-07-15 13:00:00', 'MOHD ANWAR ULLAH', 'Action Taken', 'Engineer attended. Replaced printer head with new.', NULL, false, NULL, '20250715182751-1ED5');
 INSERT INTO public.audit_entries VALUES ('cmdppo9m6000iyz2mm352b1th', '2025-07-15 13:01:00', 'MOHD ANWAR ULLAH', '(Resolved By MOHD ANWAR ULLAH)', 'Problem solved.', 5, false, NULL, '20250715182751-1ED5');
 INSERT INTO public.audit_entries VALUES ('cmdppoc1k000jyz2m5c4h3m3t', '2025-07-14 08:20:00', 'RAKESH OJHA', 'Action Taken', 'issue marked to network group', NULL, false, NULL, '20250714081800-51C3');
@@ -556,7 +556,7 @@ urgent.', NULL, false, NULL, '20250713141000-AAEB');
 INSERT INTO public.audit_entries VALUES ('cmdppoeyx000zyz2mcr4nuh0y', '2025-07-13 13:15:00', 'GOUTAM DEBNATH', 'Action Taken', 'Reset done.', NULL, false, NULL, '20250713141000-AAEB');
 INSERT INTO public.audit_entries VALUES ('cmdppoeyx0010yz2mac2imnsr', '2025-07-13 13:16:00', 'GOUTAM DEBNATH', '(Resolved By GOUTAM DEBNATH)', 'problem solved.', 5, false, NULL, '20250713141000-AAEB');
 INSERT INTO public.audit_entries VALUES ('cmdppoffb0011yz2mzsbmq2v8', '2025-07-12 19:46:00', 'GOUTAM DEBNATH', 'Action Taken', 'Call accepted.', NULL, false, NULL, '20250713011600-41E7');
-INSERT INTO public.audit_entries VALUES ('cmdppoffb0012yz2my2z0f2nh', '2025-07-12 19:47:00', 'GOUTAM DEBNATH', 'Action Taken', 'contacted with vendor person.', NULL, false, NULL, '20250713011600-41E7');
+INSERT INTO public.audit_entries VALUES ('cmdppoffb0012yz2my2z0f2nh', '2025-07-12 19:47:00', 'GOUTAM DEBNATH', 'Action Taken', 'contacted with amc person.', NULL, false, NULL, '20250713011600-41E7');
 INSERT INTO public.audit_entries VALUES ('cmdppoffb0013yz2m9d9ltzif', '2025-07-12 19:47:00', 'GOUTAM DEBNATH', 'Action Taken', 'He informed that will visit today afternoon.', NULL, false, NULL, '20250713011600-41E7');
 INSERT INTO public.audit_entries VALUES ('cmdppoffb0014yz2mz95u3wr8', '2025-07-12 19:48:00', 'GOUTAM DEBNATH', 'Action Taken', 'Mechanics attended and checked all.', NULL, false, NULL, '20250713011600-41E7');
 INSERT INTO public.audit_entries VALUES ('cmdppoffb0015yz2m7obpngf3', '2025-07-12 19:48:00', 'GOUTAM DEBNATH', 'Action Taken', 'Two has compressor problem.', NULL, false, NULL, '20250713011600-41E7');
@@ -593,7 +593,7 @@ INSERT INTO public.audit_entries VALUES ('cmdppohkv001tyz2mnljd1zkb', '2025-07-1
 INSERT INTO public.audit_entries VALUES ('cmdppohkv001uyz2m8xsd540z', '2025-07-12 07:24:00', 'GOUTAM DEBNATH', 'Action Taken', 'Now Internet is opening.', NULL, false, NULL, '20250712125300-03D3');
 INSERT INTO public.audit_entries VALUES ('cmdppohkv001vyz2mce9s49sg', '2025-07-12 07:24:00', 'GOUTAM DEBNATH', '(Resolved By GOUTAM DEBNATH)', 'Problem solved.', 5, false, NULL, '20250712125300-03D3');
 INSERT INTO public.audit_entries VALUES ('cmdppohyu001wyz2m189wxnss', '2025-07-12 07:01:00', 'GOUTAM DEBNATH', 'Action Taken', 'Call accepted.', NULL, false, NULL, '20250712123000-5EA5');
-INSERT INTO public.audit_entries VALUES ('cmdppohyu001xyz2mti0ergds', '2025-07-12 07:01:00', 'GOUTAM DEBNATH', 'Action Taken', 'Reported to the vendor.', NULL, false, NULL, '20250712123000-5EA5');
+INSERT INTO public.audit_entries VALUES ('cmdppohyu001xyz2mti0ergds', '2025-07-12 07:01:00', 'GOUTAM DEBNATH', 'Action Taken', 'Reported to the amc.', NULL, false, NULL, '20250712123000-5EA5');
 INSERT INTO public.audit_entries VALUES ('cmdppohyu001yyz2mpc8n8t2t', '2025-07-12 07:02:00', 'GOUTAM DEBNATH', 'Action Taken', 'Compreesor issue, hence will take time.', NULL, false, NULL, '20250712123000-5EA5');
 INSERT INTO public.audit_entries VALUES ('cmdppohyu001zyz2m5521gjn6', '2025-07-12 07:02:00', 'GOUTAM DEBNATH', 'Action Taken', 'Attended and rectified.', NULL, false, NULL, '20250712123000-5EA5');
 INSERT INTO public.audit_entries VALUES ('cmdppohyu0020yz2mg5bh2e1x', '2025-07-12 07:02:00', 'GOUTAM DEBNATH', '(Resolved By GOUTAM DEBNATH)', 'Problem solved.', 5, false, NULL, '20250712123000-5EA5');

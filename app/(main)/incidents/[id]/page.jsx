@@ -151,21 +151,21 @@ export default function IncidentDetailsPage() {
   const isAssignedTelecomUser =
     user?.department === TEAMS.TELECOM &&
     incident?.assignedTeam === TEAMS.TELECOM;
-  const isNetworkVendor =
-    user?.role === USER_ROLES.NETWORK_VENDOR &&
+  const isNetworkAMC =
+    user?.role === USER_ROLES.NETWORK_AMC &&
     incident.incidentType?.name?.toLowerCase() ===
       INCIDENT_TYPES.NETWORK?.toLowerCase();
-  const isBiometricVendor =
-    user?.role === USER_ROLES.BIOMETRIC_VENDOR &&
+  const isBiometricAMC =
+    user?.role === USER_ROLES.BIOMETRIC_AMC &&
     incident.incidentType?.name?.toLowerCase() === "BIOMETRIC".toLowerCase();
-  const isAssignedVendor =
-    (isNetworkVendor || isBiometricVendor) &&
+  const isAssignedAMC =
+    (isNetworkAMC || isBiometricAMC) &&
     incident.status?.toLowerCase() !== INCIDENT_STATUS.NEW?.toLowerCase();
   const showActionArea =
     isAdmin ||
     isRequestor ||
     isAssignedTelecomUser ||
-    isAssignedVendor ||
+    isAssignedAMC ||
     isTelecomUser ||
     isEtlUser;
   const isResolved =
@@ -463,7 +463,7 @@ export default function IncidentDetailsPage() {
                         setEtlReferralModalOpen(true);
                       }}
                       isAdmin={isAdmin}
-                      isAssignedVendor={isAssignedVendor}
+                      isAssignedAMC={isAssignedAMC}
                       isTelecomUser={isTelecomUser}
                       isEtlUser={isEtlUser}
                     />

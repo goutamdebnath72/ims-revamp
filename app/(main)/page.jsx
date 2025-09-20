@@ -4,8 +4,8 @@ import * as React from "react";
 import { useSession } from "next-auth/react";
 import AdminDashboard from "@/components/AdminDashboard";
 import StandardUserDashboard from "@/components/StandardUserDashboard";
-import NetworkVendorDashboard from "@/components/NetworkVendorDashboard";
-import BiometricVendorDashboard from "@/components/BiometricVendorDashboard";
+import NetworkAMCDashboard from "@/components/NetworkAMCDashboard";
+import BiometricAMCDashboard from "@/components/BiometricAMCDashboard";
 import TelecomDashboard from "@/components/TelecomDashboard"; // <-- 1. IMPORT TELECOM DASHBOARD
 import ETLDashboard from "@/components/ETLDashboard"; // <-- 2. IMPORT ETL DASHBOARD
 import { Box, CircularProgress } from "@mui/material";
@@ -47,14 +47,14 @@ export default function DashboardPage() {
       case USER_ROLES.ADMIN:
       case USER_ROLES.SYS_ADMIN:
         return <AdminDashboard />;
-      case USER_ROLES.NETWORK_VENDOR:
-        return <NetworkVendorDashboard />; // Now separate
+      case USER_ROLES.NETWORK_AMC:
+        return <NetworkAMCDashboard />; // Now separate
       case USER_ROLES.TELECOM_USER:
         return <TelecomDashboard />; // Now separate
       case USER_ROLES.ETL:
         return <ETLDashboard />; // Now separate
-      case USER_ROLES.BIOMETRIC_VENDOR:
-        return <BiometricVendorDashboard />;
+      case USER_ROLES.BIOMETRIC_AMC:
+        return <BiometricAMCDashboard />;
       case USER_ROLES.STANDARD:
       default:
         return <StandardUserDashboard />;

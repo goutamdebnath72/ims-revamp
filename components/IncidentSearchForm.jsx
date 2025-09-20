@@ -23,7 +23,7 @@ const statuses = ["Any", "New", "Processed", "open", "Resolved", "Closed"];
 const priorities = ["Any", "Low", "Medium", "High"];
 const categories = ["Any", "System", "General"];
 
-const VendorSearchForm = ({
+const AMCSearchForm = ({
   incidentType,
   criteria,
   handleChange,
@@ -178,12 +178,12 @@ function IncidentSearchForm({
     event.preventDefault();
     const finalCriteria = { ...criteria };
     if (
-      user?.role === "network_vendor" ||
+      user?.role === "network_amc" ||
       user?.role === "telecom" ||
       user?.role === "etl"
     ) {
       finalCriteria.incidentType = "NETWORK";
-    } else if (user?.role === "biometric_vendor") {
+    } else if (user?.role === "biometric_amc") {
       finalCriteria.incidentType = "BIOMETRIC";
     }
     onSearch(finalCriteria);
@@ -192,20 +192,20 @@ function IncidentSearchForm({
   const renderFormContent = () => {
     const commonProps = { criteria, handleChange, handleDateChange, isLoading };
     if (
-      user?.role === "network_vendor" ||
+      user?.role === "network_amc" ||
       user?.role === "telecom" ||
       user?.role === "etl"
     ) {
       return (
-        <VendorSearchForm
+        <AMCSearchForm
           incidentType="NETWORK"
           {...commonProps}
           departments={departments}
         />
       );
-    } else if (user?.role === "biometric_vendor") {
+    } else if (user?.role === "biometric_amc") {
       return (
-        <VendorSearchForm
+        <AMCSearchForm
           incidentType="BIOMETRIC"
           {...commonProps}
           departments={departments}

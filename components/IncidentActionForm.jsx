@@ -58,7 +58,7 @@ const TELECOM_ETL_TOK = {
   buttonFS: fluidRem(0.55, 0.9),
   buttonLetterSpacing: fluidPx(0.5, 0.8),
 };
-const VENDOR_TOK = {
+const AMC_TOK = {
   formSpacing: fluidPx(10, 20),
   textAreaH: fluidPx(120, 190),
   buttonH: fluidPx(30, 45),
@@ -75,7 +75,7 @@ const getFormDisabledState = ({
   incident,
   isAdmin,
   isRequestor,
-  isAssignedVendor,
+  isAssignedAMC,
   isTelecomUser,
   isEtlUser,
 }) => {
@@ -101,7 +101,7 @@ const getFormDisabledState = ({
     }
   }
   if (
-    isAssignedVendor &&
+    isAssignedAMC &&
     incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
   ) {
     return true;
@@ -124,7 +124,7 @@ const getFormDisabledState = ({
 };
 // --- END: FIX ---
 
-const VendorActionForm = ({
+const AMCActionForm = ({
   onUpdate,
   comment,
   setComment,
@@ -137,7 +137,7 @@ const VendorActionForm = ({
       sx={{
         flexGrow: 1,
         justifyContent: "space-between",
-        gap: VENDOR_TOK.formSpacing,
+        gap: AMC_TOK.formSpacing,
         pt: 3,
         ...(isDisabled && {
           opacity: 0.6,
@@ -147,13 +147,13 @@ const VendorActionForm = ({
       }}
     >
       <TextField
-        id="incident-comment-vendor"
+        id="incident-comment-amc"
         label="Provide a detailed update"
         multiline
         placeholder="Provide your update here..."
         sx={{
           "& .MuiInputBase-multiline": {
-            minHeight: VENDOR_TOK.textAreaH,
+            minHeight: AMC_TOK.textAreaH,
             fontSize: fluidRem(0.9, 1),
           },
           "& .MuiInputBase-root": {
@@ -174,9 +174,9 @@ const VendorActionForm = ({
         disabled={isDisabled || isLoading || !comment.trim()}
         fullWidth
         sx={{
-          height: VENDOR_TOK.buttonH,
-          fontSize: VENDOR_TOK.buttonFS,
-          letterSpacing: VENDOR_TOK.buttonLetterSpacing,
+          height: AMC_TOK.buttonH,
+          fontSize: AMC_TOK.buttonFS,
+          letterSpacing: AMC_TOK.buttonLetterSpacing,
         }}
       >
         {isLoading ? "Submitting..." : "Submit Update"}
@@ -747,7 +747,7 @@ export default function IncidentActionForm({
   onOpenTelecomReferralDialog,
   onOpenEtlReferralDialog,
   isAdmin,
-  isAssignedVendor,
+  isAssignedAMC,
   isTelecomUser,
   isAnimating,
   isEtlUser,
@@ -796,7 +796,7 @@ export default function IncidentActionForm({
     incident,
     isAdmin,
     isRequestor,
-    isAssignedVendor,
+    isAssignedAMC,
     isTelecomUser,
     isEtlUser,
   });
@@ -860,9 +860,9 @@ export default function IncidentActionForm({
         />
       );
     }
-    if (isAssignedVendor) {
+    if (isAssignedAMC) {
       return (
-        <VendorActionForm
+        <AMCActionForm
           {...{
             onUpdate: handleUpdateAndClear,
             comment,

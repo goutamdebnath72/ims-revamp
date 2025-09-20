@@ -18,17 +18,16 @@ import {
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import EventIcon from "@mui/icons-material/Event";
 import ReplayIcon from "@mui/icons-material/Replay";
-import { INCIDENT_STATUS, INCIDENT_PRIORITY } from "@/lib/constants";
 
 // Import the reusable GenericDashboard component
 import GenericDashboard from "@/components/GenericDashboard";
 
-export default function NetworkVendorDashboard() {
-  const dashboardTitle = "Network Incidents Dashboard";
+export default function BiometricAMCDashboard() {
   const { filters, setFilters, resetFilters, incidents } = React.useContext(
     DashboardFilterContext
   );
   const { dateRange, shift } = filters;
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => setAnchorEl(event.currentTarget);
@@ -54,6 +53,7 @@ export default function NetworkVendorDashboard() {
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
+
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
     if (!start || !end) return "All Time";
@@ -74,41 +74,33 @@ export default function NetworkVendorDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  const incidentsToDisplay = incidents || [];
+  // Filter incidents for BIOMETRIC type
+  const biometricIncidents = React.useMemo(() => {
+    if (!incidents) return [];
+    return incidents.filter(
+      (incident) => incident.incidentType?.name === "BIOMETRIC"
+    );
+  }, [incidents]);
 
   // --- START: PREPARE PROPS FOR GENERIC DASHBOARD ---
   const statCards = [
     {
       title: "Assigned (Processed)",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.PROCESSED
-      ).length,
+      value: biometricIncidents.filter((i) => i.status === "Processed").length,
       color: "info",
-      filterStatus: INCIDENT_STATUS.PROCESSED,
-    },
-    {
-      title: "Pending Telecom Action",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION
-      ).length,
-      color: "warning",
-      filterStatus: INCIDENT_STATUS.PENDING_TELECOM_ACTION,
+      filterStatus: "Processed",
     },
     {
       title: "Resolved Incidents",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.RESOLVED
-      ).length,
+      value: biometricIncidents.filter((i) => i.status === "Resolved").length,
       color: "success",
-      filterStatus: INCIDENT_STATUS.RESOLVED,
+      filterStatus: "Resolved",
     },
     {
       title: "Closed",
-      value: incidentsToDisplay.filter(
-        (i) => i.status === INCIDENT_STATUS.CLOSED
-      ).length,
+      value: biometricIncidents.filter((i) => i.status === "Closed").length,
       color: "default",
-      filterStatus: INCIDENT_STATUS.CLOSED,
+      filterStatus: "Closed",
     },
   ];
 
@@ -119,12 +111,6 @@ export default function NetworkVendorDashboard() {
         name: "Processed",
         count:
           statCards.find((c) => c.title === "Assigned (Processed)")?.value || 0,
-      },
-      {
-        name: "Pending",
-        count:
-          statCards.find((c) => c.title === "Pending Telecom Action")?.value ||
-          0,
       },
       {
         name: "Resolved",
@@ -139,33 +125,24 @@ export default function NetworkVendorDashboard() {
     pieChartData: [
       {
         name: "High",
-        value: incidentsToDisplay.filter(
-          (i) =>
-            i.priority === INCIDENT_PRIORITY.HIGH &&
-            (i.status === INCIDENT_STATUS.PROCESSED ||
-              i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
+        value: biometricIncidents.filter(
+          (i) => i.priority === "High" && i.status === "Processed"
         ).length,
       },
       {
         name: "Medium",
-        value: incidentsToDisplay.filter(
-          (i) =>
-            i.priority === INCIDENT_PRIORITY.MEDIUM &&
-            (i.status === INCIDENT_STATUS.PROCESSED ||
-              i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
+        value: biometricIncidents.filter(
+          (i) => i.priority === "Medium" && i.status === "Processed"
         ).length,
       },
       {
         name: "Low",
-        value: incidentsToDisplay.filter(
-          (i) =>
-            i.priority === INCIDENT_PRIORITY.LOW &&
-            (i.status === INCIDENT_STATUS.PROCESSED ||
-              i.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION)
+        value: biometricIncidents.filter(
+          (i) => i.priority === "Low" && i.status === "Processed"
         ).length,
       },
     ].filter((item) => item.value > 0),
-    recentIncidents: incidentsToDisplay,
+    recentIncidents: biometricIncidents,
   };
   // --- END: PREPARE PROPS ---
 
@@ -175,7 +152,7 @@ export default function NetworkVendorDashboard() {
       <Stack direction="row" alignItems="center" spacing={2}>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
-            {dashboardTitle}
+            Biometric Incidents Dashboard
           </Typography>
         </Box>
         <Box
