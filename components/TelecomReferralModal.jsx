@@ -23,6 +23,7 @@ const telecomTasksList = [
   "OFC (Optical Fiber Cable) issue",
   "Media Converter (MC) issue",
   "UTP Cable replacement",
+  "RJ-45 Connector replacement",
   "Modem issue",
   "I/O Box issue",
   "Camera issue",

@@ -82,6 +82,7 @@ const getFormDisabledState = ({
   if (
     isAdmin &&
     (incident.status === INCIDENT_STATUS.PENDING_TELECOM_ACTION ||
+      incident.status === INCIDENT_STATUS.PENDING_ETL ||
       incident.status === INCIDENT_STATUS.RESOLVED ||
       incident.status === INCIDENT_STATUS.CLOSED)
   ) {
@@ -515,7 +516,7 @@ const StandardUserActionForm = ({
             alignItems: "flex-start",
           },
           "& .Mui-disabled::placeholder": {
-            opacity: 1,            
+            opacity: 1,
           },
         }}
         value={comment}

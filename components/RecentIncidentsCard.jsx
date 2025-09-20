@@ -57,7 +57,17 @@ export default function RecentIncidentsCard({ incidents }) {
           gutterBottom
           sx={{ p: 2, pb: 1, flexShrink: 0 }}
         >
-          Recent Activity
+          Recent Activity{" "}
+          <Box
+            component="span"
+            sx={{
+              color: "text.secondary",
+              fontSize: "1.0rem",
+              fontWeight: 500,
+            }}
+          >
+            (Latest 5)
+          </Box>
         </Typography>
         <Divider sx={{ mx: 2 }} />
         <List dense sx={{ px: 2 }}>

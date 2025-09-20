@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useContext } from "react"; // Import useContext
 import { signIn } from "next-auth/react";
 import {
   Box,
@@ -16,6 +16,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import LoginInfoPanel from "@/components/LoginInfoPanel";
 import { useLoading } from "@/context/LoadingContext";
+import { NotificationContext } from "@/context/NotificationContext"; // Import the Notification Context
 import { fluidPx, fluidRem, fluidEm } from "@/utils/fluidScale";
 
 export default function LoginPage() {
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const { isLoading, setIsLoading } = useLoading();
+  const { showNotification } = useContext(NotificationContext); // Use the notification context
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -35,20 +37,33 @@ export default function LoginPage() {
       });
 
       if (result.error) {
-        console.error("Login failed:", result.error);
-        alert("Login failed! Please check your User ID and Password.");
-        setIsLoading(false); // Deactivate loading state only on failure
+        // --- START: FIX ---
+        // Replace alert() with the modern showNotification()
+        showNotification(
+          {
+            title: "Login Failed",
+            message:
+              "The User ID or Password you entered is incorrect. Please try again.",
+          },
+          "error"
+        );
+        // --- END: FIX ---
+        setIsLoading(false);
       } else if (result.ok) {
-        // On success, navigate without deactivating loading state.
-        // The overlay will remain until the new page loads.
         window.location.href = "/";
       }
     } catch (error) {
-      console.error("An unexpected error occurred during login:", error);
-      alert("An unexpected error occurred during login.");
-      setIsLoading(false); // Also deactivate on unexpected errors
+      // Also use the modern notification for unexpected errors
+      showNotification(
+        {
+          title: "Error",
+          message:
+            "An unexpected server error occurred. Please try again later.",
+        },
+        "error"
+      );
+      setIsLoading(false);
     }
-    // The 'finally' block has been removed to prevent premature deactivation.
   };
 
   const LOGIN_CARD_H = "65vh";
