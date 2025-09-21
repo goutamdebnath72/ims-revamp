@@ -45,7 +45,6 @@ export default function RaiseIncidentPage() {
   }
 
   const handleFormSubmit = async (formData) => {
-    //console.log("1. Data leaving the form:", formData);
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/incidents", {

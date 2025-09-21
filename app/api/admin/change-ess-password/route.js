@@ -18,8 +18,6 @@ export async function POST(request) {
   const adminUser = session.user;
 
   try {
-    console.log("API Key being used:", process.env.RESEND_API_KEY);
-
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { adminPassword, targetTicketNo, incidentId } = await request.json();
@@ -149,8 +147,6 @@ export async function POST(request) {
           // If Resend returns an error, log it and throw an error to be caught below
           throw new Error(error.message);
         }
-
-        console.log(`Password reset notification sent to ${recipientEmail}`);
       } else {
         console.log(
           `No valid email found for user ${targetUser.ticketNo}. Skipping notification.`

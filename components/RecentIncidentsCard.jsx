@@ -1,4 +1,4 @@
-// components/NewRecentIncidentsCard.jsx
+// components/RecentIncidentsCard.jsx
 "use client";
 
 import * as React from "react";
@@ -15,6 +15,7 @@ import {
   ListItemButton,
 } from "@mui/material";
 import { DateTime } from "luxon";
+import { fluidRem, fluidPx } from "@/utils/fluidScale";
 
 export default function RecentIncidentsCard({ incidents }) {
   const router = useRouter();
@@ -77,15 +78,14 @@ export default function RecentIncidentsCard({ incidents }) {
               divider={index < recentIncidents.length - 1}
               onClick={() => handleItemClick(incident.id)}
               disabled={isLoading}
-              sx={{ py: 1.5, px: 0 }}
+              sx={{ py: fluidPx(12, 10), px: 0 }}
             >
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
                   width: "100%",
-                  // === THIS IS THE FIX ===
-                  flexWrap: "nowrap", // Prevents the right column from wrapping to a new line
+                  flexWrap: "nowrap",
                 }}
               >
                 <ListItemText
@@ -94,6 +94,32 @@ export default function RecentIncidentsCard({ incidents }) {
                     incident.requestor?.name || "Unknown"
                   }`}
                   sx={{ m: 0 }}
+                  primaryTypographyProps={{
+                    sx: {
+                      fontSize: fluidRem(0.9, 0.85),
+                      "@media (min-width: 1200px) and (max-width: 1600px)": {
+                        fontSize: "0.75rem",
+                        lineHeight: 1.4,
+                      },
+                      "@media (min-width: 1800px)": {
+                        fontSize: "0.85rem",
+                        lineHeight: 1.4,
+                      },
+                    },
+                  }}
+                  secondaryTypographyProps={{
+                    sx: {
+                      fontSize: fluidRem(0.75, 0.7),
+                      "@media (min-width: 1200px) and (max-width: 1600px)": {
+                        fontSize: "0.75rem",
+                        lineHeight: 1.4,
+                      },
+                      "@media (min-width: 1800px)": {
+                        fontSize: "0.80rem",
+                        lineHeight: 1.4,
+                      },
+                    },
+                  }}
                 />
                 <Box
                   sx={{
@@ -111,6 +137,15 @@ export default function RecentIncidentsCard({ incidents }) {
                       color: getPriorityColor(incident.priority),
                       fontWeight: 500,
                       display: { xs: "none", sm: "block" },
+                      fontSize: fluidRem(0.8, 0.75),
+                      "@media (min-width: 1200px) and (max-width: 1600px)": {
+                        fontSize: "0.75rem",
+                        width: "30px",
+                      },
+                      "@media (min-width: 1800px)": {
+                        fontSize: "0.95rem",
+                        lineHeight: 1.4,
+                      },
                     }}
                   >
                     {incident.priority}
@@ -121,6 +156,15 @@ export default function RecentIncidentsCard({ incidents }) {
                     sx={{
                       width: "180px",
                       display: { xs: "none", md: "block" },
+                      fontSize: fluidRem(0.8, 0.75),
+                      "@media (min-width: 1200px) and (max-width: 1600px)": {
+                        fontSize: "0.75rem",
+                        width: "120px",
+                      },
+                      "@media (min-width: 1800px)": {
+                        fontSize: "0.90rem",
+                        lineHeight: 1.4,
+                      },
                     }}
                   >
                     {DateTime.fromISO(incident.reportedOn, {
@@ -136,6 +180,17 @@ export default function RecentIncidentsCard({ incidents }) {
                           incident.status === "New" ? "outlined" : "filled"
                         }
                         size="small"
+                        sx={{
+                          // Media query for the specific screen size range
+                          "@media (min-width: 1200px) and (max-width: 1600px)":
+                            {
+                              // This targets the text inside the chip
+                              "& .MuiChip-label": {
+                                fontSize: "0.75rem", // You can tweak this value
+                                padding: "0 6px", // You can also adjust padding if needed
+                              },
+                            },
+                        }}
                       />
                     </Tooltip>
                   </Box>
@@ -147,7 +202,6 @@ export default function RecentIncidentsCard({ incidents }) {
       </>
     );
   } else {
-    // --- EMPTY VIEW ---
     return (
       <Box
         sx={{

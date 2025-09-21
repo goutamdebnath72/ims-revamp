@@ -6,7 +6,6 @@ import { Divider, Box, Typography } from "@mui/material";
 
 export default function ViewToggle({ selectedView, onChange }) {
   const isGeneral = selectedView === "general";
-
   const systemTooltipContent = (
     <Box sx={{ textAlign: "left", p: 0.5 }}>
       <Typography variant="body2" sx={{ fontWeight: "bold" }}>
@@ -21,24 +20,46 @@ export default function ViewToggle({ selectedView, onChange }) {
     </Box>
   );
 
+  // --- START: REFACTORED FOR RESPONSIVE SIZING ---
+  // A single style object for the buttons to keep them consistent
+  const buttonStyles = {
+    position: "relative",
+    zIndex: 2,
+    cursor: "pointer",
+    // Base (mobile-first) size
+    padding: "6px 22px",
+    fontSize: "16px",
+    // Responsive overrides
+    "@media (min-width: 1200px) and (max-width: 1499px)": {
+      padding: "4px 15px",
+      fontSize: "13px",
+    },
+    "@media (min-width: 1500px) and (max-width: 1599px)": {
+      padding: "5px 17px",
+      fontSize: "14px",
+    },
+    "@media (min-width: 1800px)": {
+      padding: "6px 20px",
+      fontSize: "14px",
+    },
+  };
+
   return (
-    <div
-      style={{
+    <Box
+      sx={{
         position: "relative",
         display: "flex",
         border: "1px solid #ccc",
         borderRadius: "999px",
         overflow: "hidden",
         width: "fit-content",
-        fontSize: "16px",
         fontWeight: 600,
-            boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.15)', // The shadow
-
+        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.15)',
       }}
     >
       {/* Moving pill */}
-      <div
-        style={{
+      <Box
+        sx={{
           position: "absolute",
           top: 0,
           left: isGeneral ? 0 : "50%",
@@ -54,37 +75,30 @@ export default function ViewToggle({ selectedView, onChange }) {
 
       {/* General View */}
       <Tooltip>
-        <div
+        <Box
           onClick={() => onChange("general")}
-          style={{
-            position: "relative",
-            padding: "6px 22px",
-            zIndex: 2,
+          sx={{
+            ...buttonStyles,
             color: isGeneral ? "red" : "#444",
-            cursor: "pointer",
-            borderRight: "none",
           }}
         >
           General View
-        </div>
+        </Box>
       </Tooltip>
 
       {/* System View */}
       <Tooltip title={systemTooltipContent} arrow>
-        <div
+        <Box
           onClick={() => onChange("system")}
-          style={{
-            position: "relative",
-            padding: "6px 22px",
-            zIndex: 2,
+          sx={{
+            ...buttonStyles,
             color: !isGeneral ? "red" : "#444",
-            cursor: "pointer",
-            borderLeft: "none",
           }}
         >
           System View
-        </div>
+        </Box>
       </Tooltip>
-    </div>
+    </Box>
   );
+  // --- END: REFACTORED FOR RESPONSIVE SIZING ---
 }

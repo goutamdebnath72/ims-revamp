@@ -201,7 +201,7 @@ export default function LoginPage() {
                   textAlign: "center",
                   "@media (min-width: 1500px) and (max-width: 1600px)": {
                     fontSize: "1.1rem",
-                    mt: "10px",
+                    mt: "14px",
                   },
                 }}
               >
@@ -217,7 +217,7 @@ export default function LoginPage() {
                   minHeight: 0,
                   pt: TOK.fieldsMt,
                   "@media (min-width: 1500px) and (max-width: 1600px)": {
-                    gap: "22px",
+                    gap: "25px",
                     pt: "30px",
                   },
                 }}
@@ -267,6 +267,15 @@ export default function LoginPage() {
                           aria-label={
                             showPw ? "Hide password" : "Show password"
                           }
+                          sx={{
+                            "@media (min-width: 1200px) and (max-width: 1400px)":
+                              {
+                                // This targets the SVG icon inside the button
+                                "& .MuiSvgIcon-root": {
+                                  fontSize: "22px", // Set the desired size here
+                                },
+                              },
+                          }}
                         >
                           {showPw ? <VisibilityOff /> : <Visibility />}
                         </IconButton>

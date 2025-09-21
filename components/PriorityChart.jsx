@@ -25,6 +25,30 @@ export default function PriorityChart({
   const router = useRouter();
   const hasData = data.some((item) => item.value > 0);
 
+  // --- START: DYNAMIC RADIUS LOGIC ---
+  const [radius, setRadius] = React.useState(100);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      // Set a larger radius for screens 1800px or wider
+      if (window.innerWidth >= 1800) {
+        setRadius(115);
+      } else {
+        setRadius(100);
+      }
+    };
+
+    // Set initial size on component mount
+    handleResize();
+
+    // Add event listener to adjust on window resize
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup listener when component unmounts
+    return () => window.removeEventListener("resize", handleResize);
+  }, []); // Empty dependency array means this effect runs only once on mount
+  // --- END: DYNAMIC RADIUS LOGIC ---
+
   const handlePieClick = (data) => {
     if (data && data.name) {
       const category = userRole === "sys_admin" ? view : "general";
@@ -61,7 +85,7 @@ export default function PriorityChart({
               cx="50%"
               cy="50%"
               labelLine={false}
-              outerRadius={100}
+              outerRadius={radius} // Use the dynamic radius state
               fill="#8884d8"
               dataKey="value"
               nameKey="name"
