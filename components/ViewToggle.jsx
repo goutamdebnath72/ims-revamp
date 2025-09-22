@@ -54,7 +54,7 @@ export default function ViewToggle({ selectedView, onChange }) {
         overflow: "hidden",
         width: "fit-content",
         fontWeight: 600,
-        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.15)',
+        boxShadow: "0px 1px 4px rgba(0, 0, 0, 0.15)",
       }}
     >
       {/* Moving pill */}
@@ -62,7 +62,7 @@ export default function ViewToggle({ selectedView, onChange }) {
         sx={{
           position: "absolute",
           top: 0,
-          left: isGeneral ? 0 : "50%",
+          left: isGeneral ? 0 : "calc(50% + 1px)",
           width: "50%",
           height: "100%",
           backgroundColor: "#ffecec",

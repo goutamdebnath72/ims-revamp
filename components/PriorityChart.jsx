@@ -32,7 +32,7 @@ export default function PriorityChart({
     const handleResize = () => {
       // Set a larger radius for screens 1800px or wider
       if (window.innerWidth >= 1800) {
-        setRadius(115);
+        setRadius(110);
       } else {
         setRadius(100);
       }
