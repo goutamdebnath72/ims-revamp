@@ -225,18 +225,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      noValidatesx={{
-        // We now control horizontal (px) and vertical (py) padding separately
-        px: isShortScreen ? 2 : 4,
-        py: isShortScreen ? 2 : 3, // Reduced from 4 to 3 to save vertical space
-        maxWidth: "800px",
-        // Centering the form for better appearance on wide screens
-        margin: "0 auto",
-      }}
-    >
+    <Box component="form" onSubmit={handleSubmit} noValidate>
       {/* Tweakable vertical spacing for the whole form. Default: 3 */}
       <Stack
         spacing={
