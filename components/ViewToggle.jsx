@@ -62,7 +62,11 @@ export default function ViewToggle({ selectedView, onChange }) {
         sx={{
           position: "absolute",
           top: 0,
-          left: isGeneral ? 0 : "calc(50% + 1px)",
+          left: isGeneral ? 0 : "50%",
+          // Override for screens 1800px and wider
+          "@media (min-width: 1800px)": {
+            left: isGeneral ? 0 : "calc(50% + 1px)",
+          },
           width: "50%",
           height: "100%",
           backgroundColor: "#ffecec",

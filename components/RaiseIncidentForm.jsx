@@ -66,6 +66,11 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   // A general flag for any screen shorter than the default
   const isShortScreen = isSweetSpotScreen || isVeryShortScreen;
   // --- END: RESPONSIVE TWEAKS ---
+  const isMidWideScreen = useMediaQuery(
+    "(min-width: 1500px) and (max-width: 1600px)"
+  );
+
+  const isVeryWideScreen = useMediaQuery("(min-width: 1850px)");
 
   const { data: session } = useSession();
   const user = session?.user;
@@ -220,9 +225,24 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      noValidatesx={{
+        // We now control horizontal (px) and vertical (py) padding separately
+        px: isShortScreen ? 2 : 4,
+        py: isShortScreen ? 2 : 3, // Reduced from 4 to 3 to save vertical space
+        maxWidth: "800px",
+        // Centering the form for better appearance on wide screens
+        margin: "0 auto",
+      }}
+    >
       {/* Tweakable vertical spacing for the whole form. Default: 3 */}
-      <Stack spacing={isShortScreen ? 2 : 3}>
+      <Stack
+        spacing={
+          isShortScreen ? 2 : isVeryWideScreen ? 2.5 : isMidWideScreen ? 2.7 : 3
+        }
+      >
         {isAdmin && (
           <FormControl>
             <FormLabel
@@ -441,7 +461,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             fullWidth
             multiline
             // Tweakable rows. Logic: isVeryShort (<600px) ? 2 : isSweetSpot (600-800px) ? 3 : Default (>800px) ? 5
-            rows={isVeryShortScreen ? 2 : isSweetSpotScreen ? 3 : 5}
+            rows={isVeryShortScreen ? 3 : isSweetSpotScreen ? 4 : 5}
             name="description"
             label="Please provide a detailed description of the issue"
             value={formData.description}
@@ -467,8 +487,8 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
               fontSize: isVeryShortScreen
                 ? "0.9rem"
                 : isSweetSpotScreen
-                ? "1rem"
-                : "1.1rem",
+                  ? "1rem"
+                  : "1.1rem",
               letterSpacing: "1.5px",
             }}
           >
