@@ -1,4 +1,4 @@
-"use client";
+"use in client";
 
 import * as React from "react";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import CountUp from "react-countup";
+import { DashboardFilterContext } from "@/context/DashboardFilterContext"; // MODIFICATION: Import context
 
 // Import all possible chart/card components
 import StatusChart from "./StatusChart";
@@ -19,7 +20,6 @@ import PriorityChart from "./PriorityChart";
 import RecentIncidentsCard from "./RecentIncidentsCard";
 import TeamAvailabilityCard from "./TeamAvailabilityCard";
 
-// Scrollbar style copied from AdminDashboard for consistency
 const scrollableOnHoverStyles = {
   flexGrow: 1,
   overflowY: "auto",
@@ -44,9 +44,9 @@ const scrollableOnHoverStyles = {
   },
 };
 
-// Reusable StatCard component, unchanged
 function StatCard({ title, value, color, onClick }) {
   const getNumberVariant = (val) => (val.toString().length > 4 ? "h4" : "h3");
+
   return (
     <Card elevation={3} sx={{ height: "100%" }}>
       <CardActionArea onClick={onClick} sx={{ height: "100%" }}>
@@ -78,9 +78,35 @@ function StatCard({ title, value, color, onClick }) {
 export default function GenericDashboard({
   statCards = [],
   chartLayoutConfig,
+  currentView, // MODIFICATION: Accept the currentView prop
 }) {
   const router = useRouter();
-  const constructCardUrl = (status) => `/search?status=${status}`;
+  // MODIFICATION: Access the global filters from context
+  const { filters } = React.useContext(DashboardFilterContext);
+
+  // MODIFICATION: Upgraded function to build a complete and correct URL
+  const constructCardUrl = (status) => {
+    const params = new URLSearchParams();
+    params.append("status", status);
+
+    // FIX: Use the prop to add the category filter
+    if (currentView) {
+      params.append("category", currentView);
+    }
+
+    // Add other filters from context for consistency
+    if (filters.shift && filters.shift !== "All") {
+      params.append("shift", filters.shift);
+    }
+    if (filters.dateRange?.start) {
+      params.append("startDate", filters.dateRange.start.toISO());
+    }
+    if (filters.dateRange?.end) {
+      params.append("endDate", filters.dateRange.end.toISO());
+    }
+
+    return `/search?${params.toString()}`;
+  };
 
   const getChartComponent = (chartName) => {
     switch (chartName) {
@@ -126,7 +152,6 @@ export default function GenericDashboard({
 
   return (
     <Stack spacing={2}>
-      {/* --- FIX: Conditionally render the stat card section --- */}
       {statCards && statCards.length > 0 && (
         <Stack direction="row" spacing={2}>
           {statCards.map((card) => (
@@ -142,9 +167,8 @@ export default function GenericDashboard({
         </Stack>
       )}
 
-      {/* Section 2: Chart Layouts */}
+      {/* Chart Layouts section remains unchanged */}
       <Grid container>
-        {/* Layout: 2x2 */}
         {chartLayoutConfig?.layout === "2x2" && (
           <>
             <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
@@ -167,7 +191,6 @@ export default function GenericDashboard({
           </>
         )}
 
-        {/* Layout: 2 over 1 */}
         {chartLayoutConfig?.layout === "2_over_1" && (
           <>
             <Grid item xs={12} md={6} sx={{ pr: { md: 1 } }}>
@@ -187,7 +210,6 @@ export default function GenericDashboard({
           </>
         )}
 
-        {/* Layout: 1 Full Width */}
         {chartLayoutConfig?.layout === "1_full" && (
           <Grid item xs={12}>
             {renderChartCard("RA card")}

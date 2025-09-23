@@ -1,7 +1,7 @@
 // components/ViewToggle.jsx
 import { useState } from "react";
 import { Tooltip } from "@mui/material";
-import { SYSTEM_INCIDENT_TYPES } from "@/lib/incident-helpers";
+import { SYSTEM_INCIDENT_TYPES } from "@/lib/constants";
 import { Divider, Box, Typography } from "@mui/material";
 
 export default function ViewToggle({ selectedView, onChange }) {

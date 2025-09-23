@@ -476,6 +476,7 @@ export default function AdminDashboard() {
         <GenericDashboard
           statCards={systemViewStatCards}
           chartLayoutConfig={systemViewChartConfig}
+          currentView={category}
         />
       )}
       {/* --- END: DASHBOARD CONTENT RENOVATION --- */}
