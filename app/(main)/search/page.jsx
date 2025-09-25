@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useContext, useEffect } from "react"; // 1. Import useEffect
+import React, { useContext, useEffect } from "react";
 import { SearchContext } from "@/context/SearchContext";
-import { useLoading } from "@/context/LoadingContext"; // 2. Import our global loading hook
-import { Box, Typography, Paper, Stack, IconButton } from "@mui/material";
+import { useLoading } from "@/context/LoadingContext";
+import {
+  Box,
+  Typography,
+  Paper,
+  Stack,
+  IconButton,
+  useMediaQuery,
+} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AddIcon from "@mui/icons-material/Add";
@@ -17,6 +24,8 @@ import { useRouter } from "next/navigation";
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function SearchPage() {
+  const needsHeightAdjustment = useMediaQuery("(min-height: 700px)");
+
   const {
     criteria,
     hasSearched,
@@ -107,7 +116,9 @@ export default function SearchPage() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 112px)",
+        height: needsHeightAdjustment
+          ? "calc(100vh - 128px)"
+          : "calc(100vh - 112px)",
       }}
     >
       <Paper elevation={2} sx={{ p: 2, bgcolor: "background.default" }}>

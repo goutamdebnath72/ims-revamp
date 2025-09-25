@@ -6,9 +6,11 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
-import useSWR from "swr";
-import { useSearchParams, useRouter } from "next/navigation";
+import useSWR, { mutate } from "swr";
+// MODIFICATION 1: Import usePathname
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import {
@@ -34,53 +36,13 @@ const createDefaultCriteria = (user) => {
     department: "Any",
     dateRange: { start: null, end: null },
   };
-
-  if (user) {
-    switch (user.role) {
-      case USER_ROLES.TELECOM_USER:
-        defaultCriteria.incidentType = INCIDENT_TYPES.NETWORK;
-        defaultCriteria.status = [
-          INCIDENT_STATUS.PENDING_TELECOM_ACTION,
-          INCIDENT_STATUS.RESOLVED,
-          INCIDENT_STATUS.CLOSED,
-        ].join(",");
-        break;
-      case USER_ROLES.ETL:
-        defaultCriteria.incidentType = INCIDENT_TYPES.PC_PERIPHERALS;
-        defaultCriteria.status = [
-          INCIDENT_STATUS.PENDING_ETL,
-          INCIDENT_STATUS.RESOLVED,
-          INCIDENT_STATUS.CLOSED,
-        ].join(",");
-        break;
-      case USER_ROLES.NETWORK_AMC:
-        defaultCriteria.incidentType = INCIDENT_TYPES.NETWORK;
-        defaultCriteria.status = [
-          INCIDENT_STATUS.PROCESSED,
-          INCIDENT_STATUS.PENDING_TELECOM_ACTION,
-          INCIDENT_STATUS.RESOLVED,
-          INCIDENT_STATUS.CLOSED,
-        ].join(",");
-        break;
-      case USER_ROLES.BIOMETRIC_AMC:
-        defaultCriteria.incidentType = "Biometric";
-        defaultCriteria.status = [
-          INCIDENT_STATUS.PROCESSED,
-          INCIDENT_STATUS.RESOLVED,
-          INCIDENT_STATUS.CLOSED,
-        ].join(",");
-        break;
-      default:
-        break;
-    }
-  }
-
   return defaultCriteria;
 };
 
 export function SearchProvider({ children }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname(); // MODIFICATION 2: Get the current page's pathname
   const { data: session } = useSession();
   const user = session?.user;
 
@@ -88,6 +50,7 @@ export function SearchProvider({ children }) {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [criteria, setCriteria] = useState(createDefaultCriteria(user));
   const [hasSearched, setHasSearched] = useState(false);
+  const lastSWRKeyRef = useRef(null);
 
   const apiParams = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -95,17 +58,21 @@ export function SearchProvider({ children }) {
     return params.toString();
   }, [searchParams, pageSize]);
 
-  const { data, error, isLoading } = useSWR(
-    hasSearched ? `/api/incidents?${apiParams}` : null,
-    fetcher,
-    {
-      refreshInterval:
-        user?.role === "admin" || user?.role === "sys_admin" ? 15000 : 0,
-      revalidateOnFocus: !(
-        user?.role === "admin" || user?.role === "sys_admin"
-      ),
+  const swrKey = hasSearched ? `/api/incidents?${apiParams}` : null;
+  const { data, error, isLoading } = useSWR(swrKey, fetcher, {
+    refreshInterval:
+      hasSearched && (user?.role === "admin" || user?.role === "sys_admin")
+        ? 15000
+        : 0,
+    revalidateOnFocus:
+      hasSearched && !(user?.role === "admin" || user?.role === "sys_admin"),
+  });
+
+  useEffect(() => {
+    if (swrKey) {
+      lastSWRKeyRef.current = swrKey;
     }
-  );
+  }, [swrKey]);
 
   const handleSearch = (newCriteria) => {
     const params = new URLSearchParams();
@@ -132,39 +99,47 @@ export function SearchProvider({ children }) {
   );
 
   const resetSearch = useCallback(() => {
-    setCriteria(createDefaultCriteria(user));
     setHasSearched(false);
+    setCriteria(createDefaultCriteria(user));
     setPage(1);
-  }, [user]);
+    router.push("/search", { scroll: false });
+    if (lastSWRKeyRef.current) {
+      mutate(lastSWRKeyRef.current, undefined, { revalidate: false });
+    }
+  }, [user, router]);
 
   useEffect(() => {
-    const urlParams = Object.fromEntries(searchParams.entries());
-    if (Object.keys(urlParams).length > 0) {
-      setCriteria({
-        incidentId: urlParams.incidentId || "",
-        requestor: urlParams.requestor || "",
-        status: urlParams.status || "Any",
-        priority: urlParams.priority || "Any",
-        incidentType: urlParams.incidentType || "Any",
-        category: urlParams.category || "Any",
-        shift: urlParams.shift || "Any",
-        department: urlParams.department || "Any",
-        dateRange: {
-          start: urlParams.startDate
-            ? DateTime.fromISO(urlParams.startDate)
-            : null,
-          end: urlParams.endDate ? DateTime.fromISO(urlParams.endDate) : null,
-        },
-      });
-      setPage(urlParams.page ? parseInt(urlParams.page, 10) : 1);
-      setPageSize(
-        urlParams.limit ? parseInt(urlParams.limit, 10) : DEFAULT_PAGE_SIZE
-      );
-      setHasSearched(true);
-    } else {
-      resetSearch();
+    // MODIFICATION 3: Wrap the entire useEffect logic in an if-statement.
+    // This ensures it only runs on the search page.
+    if (pathname === "/search") {
+      const urlParams = Object.fromEntries(searchParams.entries());
+      if (Object.keys(urlParams).length > 0) {
+        setCriteria({
+          incidentId: urlParams.incidentId || "",
+          requestor: urlParams.requestor || "",
+          status: urlParams.status || "Any",
+          priority: urlParams.priority || "Any",
+          incidentType: urlParams.incidentType || "Any",
+          category: urlParams.category || "Any",
+          shift: urlParams.shift || "Any",
+          department: urlParams.department || "Any",
+          dateRange: {
+            start: urlParams.startDate
+              ? DateTime.fromISO(urlParams.startDate)
+              : null,
+            end: urlParams.endDate ? DateTime.fromISO(urlParams.endDate) : null,
+          },
+        });
+        setPage(urlParams.page ? parseInt(urlParams.page, 10) : 1);
+        setPageSize(
+          urlParams.limit ? parseInt(urlParams.limit, 10) : DEFAULT_PAGE_SIZE
+        );
+        setHasSearched(true);
+      } else {
+        resetSearch();
+      }
     }
-  }, [searchParams, resetSearch]);
+  }, [pathname, searchParams, resetSearch]); // Added pathname to dependency array
 
   const value = useMemo(
     () => ({
@@ -196,6 +171,7 @@ export function SearchProvider({ children }) {
       pageSize,
     ]
   );
+
   return (
     <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
   );
