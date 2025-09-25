@@ -14,7 +14,7 @@ import {
   Paper,
   Stack,
   Typography,
-  useMediaQuery, // MODIFIED: Imported the useMediaQuery hook
+  useMediaQuery,
 } from "@mui/material";
 import RaiseIncidentForm from "@/components/RaiseIncidentForm";
 import useSound from "@/hooks/useSound";
@@ -31,7 +31,6 @@ export default function RaiseIncidentPage() {
   const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);
   const { setIsLoading } = useLoading();
 
-  // MODIFIED: Added the same media query hook to control page-level elements
   const isSweetSpotScreen = useMediaQuery(
     "(min-height: 600px) and (max-height: 800px)"
   );
@@ -106,20 +105,25 @@ export default function RaiseIncidentPage() {
   };
 
   return (
-    // MODIFIED: The Stack's spacing is now responsive to reduce the gap between the title and the form.
-    // A negative margin-top is also added to reduce space above the title.
     <Stack
       spacing={isSweetSpotScreen ? 2 : 4}
       sx={{ mt: isSweetSpotScreen ? -1.5 : 0 }}
     >
       <Typography
         variant="h4"
-        // MODIFIED: The font size of the title is now smaller on the target screen height.
         sx={{ fontSize: isSweetSpotScreen ? "1.75rem" : "2.125rem" }}
       >
         Raise a New Incident
       </Typography>
-      <Paper elevation={2} sx={{ p: 4, position: "relative" }}>
+      <Paper
+        elevation={2}
+        sx={{
+          px: 4,
+          pt: 4,
+          pb: isSweetSpotScreen ? 2.5 : 4,
+          position: "relative",
+        }}
+      >
         {submittedIncidentId ? (
           <Stack spacing={3} alignItems="center">
             <Alert severity="success" variant="filled" sx={{ width: "100%" }}>

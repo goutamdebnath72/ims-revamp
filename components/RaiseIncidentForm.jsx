@@ -105,8 +105,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     ?.toLowerCase()
     .includes("sap password");
 
-  // All your React.useEffect, validation, and handler functions remain unchanged...
-  // ... (Skipping identical code for brevity)
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
@@ -229,7 +227,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
       component="form"
       onSubmit={handleSubmit}
       noValidate
-      // MODIFIED: Added conditional vertical margin to shorten the form's height by 12px.
       sx={{ my: isSweetSpotScreen ? -1.5 : 0 }}
     >
       <Stack
@@ -246,7 +243,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         }
       >
         {isAdmin && (
-          <FormControl>
+          <FormControl sx={{ mt: isSweetSpotScreen ? "3px" : 0 }}>
             <FormLabel
               sx={{ mb: 1, fontSize: "0.9rem", color: "text.secondary" }}
             >
@@ -462,8 +459,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             required
             fullWidth
             multiline
-            // Tweakable rows.
-            // MODIFIED: Increased rows back to 4 as requested for the sweet spot screen height.
             rows={isVeryShortScreen ? 2 : isSweetSpotScreen ? 4 : 5}
             name="description"
             label="Please provide a detailed description of the issue"
@@ -475,7 +470,12 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             size={isShortScreen ? "small" : "medium"}
           />
         </InfoTooltip>
-        <Box sx={{ position: "relative" }}>
+        <Box
+          sx={{
+            position: "relative",
+            pb: isSweetSpotScreen ? 1.2 : 0,
+          }}
+        >
           <Button
             variant="contained"
             size={isShortScreen ? "medium" : "large"}
@@ -483,10 +483,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             disabled={isSubmitting}
             fullWidth
             sx={{
-              // Tweakable padding.
-              // MODIFIED: Further reduced vertical padding to balance the taller text area.
               py: isVeryShortScreen ? 1 : isSweetSpotScreen ? 0.6 : 1.5,
-              // Tweakable font size.
               fontSize: isVeryShortScreen
                 ? "0.9rem"
                 : isSweetSpotScreen
