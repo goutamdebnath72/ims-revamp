@@ -1,3 +1,5 @@
+// components/GenericDashboard.jsx
+
 "use in client";
 
 import * as React from "react";
@@ -12,7 +14,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import CountUp from "react-countup";
-import { DashboardFilterContext } from "@/context/DashboardFilterContext"; // MODIFICATION: Import context
+import { DashboardFilterContext } from "@/context/DashboardFilterContext";
 
 // Import all possible chart/card components
 import StatusChart from "./StatusChart";
@@ -78,23 +80,22 @@ function StatCard({ title, value, color, onClick }) {
 export default function GenericDashboard({
   statCards = [],
   chartLayoutConfig,
-  currentView, // MODIFICATION: Accept the currentView prop
+  currentView,
+  // ✅ MODIFICATION: Accept new props to pass down
+  userRole,
+  incidentTypeFilter,
 }) {
   const router = useRouter();
-  // MODIFICATION: Access the global filters from context
   const { filters } = React.useContext(DashboardFilterContext);
 
-  // MODIFICATION: Upgraded function to build a complete and correct URL
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
 
-    // FIX: Use the prop to add the category filter
     if (currentView) {
       params.append("category", currentView);
     }
 
-    // Add other filters from context for consistency
     if (filters.shift && filters.shift !== "All") {
       params.append("shift", filters.shift);
     }
@@ -113,7 +114,17 @@ export default function GenericDashboard({
       case "Bar Chart":
         return <StatusChart data={chartLayoutConfig.barChartData} />;
       case "Pie Chart":
-        return <PriorityChart data={chartLayoutConfig.pieChartData} />;
+        // ✅ MODIFICATION: Pass all required props to PriorityChart
+        return (
+          <PriorityChart
+            data={chartLayoutConfig.pieChartData}
+            dateRange={filters.dateRange}
+            view={currentView}
+            shift={filters.shift}
+            userRole={userRole}
+            incidentTypeFilter={incidentTypeFilter}
+          />
+        );
       case "RA card":
         return (
           <RecentIncidentsCard incidents={chartLayoutConfig.recentIncidents} />
@@ -167,7 +178,6 @@ export default function GenericDashboard({
         </Stack>
       )}
 
-      {/* Chart Layouts section remains unchanged */}
       <Grid container>
         {chartLayoutConfig?.layout === "2x2" && (
           <>

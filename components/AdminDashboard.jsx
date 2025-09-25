@@ -1,3 +1,5 @@
+// components/AdminDashboard.jsx
+
 "use client";
 
 import * as React from "react";
@@ -29,10 +31,7 @@ import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
 import { INCIDENT_STATUS } from "@/lib/constants";
 
-// --- START: MODIFICATION ---
-// Import the GenericDashboard to handle layout rendering
 import GenericDashboard from "@/components/GenericDashboard";
-// --- END: MODIFICATION ---
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
@@ -41,11 +40,12 @@ export default function AdminDashboard() {
   const { filters, setFilters, resetFilters, incidents } = React.useContext(
     DashboardFilterContext
   );
-  const { dateRange, shift, category } = filters;
+  // ✅ MODIFICATION: Destructure incidentTypeFilter from context
+  const { dateRange, shift, category, incidentTypeFilter } = filters;
+
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
-  // All filter handlers and data formatters are preserved
   const handleShiftChange = (event, newShift) => {
     if (newShift !== null) {
       setFilters((prev) => ({ ...prev, shift: newShift }));
@@ -53,6 +53,7 @@ export default function AdminDashboard() {
   };
   const handleClick = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);
+
   const setPresetRange = (rangeName) => {
     const now = DateTime.local().setZone("Asia/Kolkata");
     let newDateRange;
@@ -68,6 +69,7 @@ export default function AdminDashboard() {
     setFilters((prev) => ({ ...prev, dateRange: newDateRange }));
     handleClose();
   };
+
   const formatDateRange = (currentDateRange) => {
     const { start, end } = currentDateRange;
     if (!start || !end) return "All Time";
@@ -88,7 +90,6 @@ export default function AdminDashboard() {
     return `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yy")}`;
   };
 
-  // All data calculation logic is preserved
   const incidentsToDisplay = incidents || [];
   const newIncidents = incidentsToDisplay.filter(
     (i) => i.status === INCIDENT_STATUS.NEW
@@ -114,9 +115,6 @@ export default function AdminDashboard() {
     pendingTelecomIncidents +
     pendingEtlIncidents;
 
-  // --- START: PREPARE PROPS FOR GENERIC DASHBOARD ---
-
-  // Props for the System View
   const systemViewStatCards = [
     {
       title: "New Incidents",
@@ -191,19 +189,16 @@ export default function AdminDashboard() {
     recentIncidents: incidentsToDisplay,
   };
 
-  // Props for the General View (note: only charts are generic)
   const generalViewChartConfig = {
     layout: "2x2",
-    barChartData: systemViewChartConfig.barChartData, // Same data
-    pieChartData: systemViewChartConfig.pieChartData, // Same data
+    barChartData: systemViewChartConfig.barChartData,
+    pieChartData: systemViewChartConfig.pieChartData,
     recentIncidents: incidentsToDisplay,
-    // TeamAvailability is handled by a special case in GenericDashboard
   };
-  // --- END: PREPARE PROPS ---
 
-  // Helper functions for rendering are preserved as they are used by the non-generic part
   const getNumberVariant = (value) =>
     value.toString().length > 4 ? "h4" : "h3";
+
   const constructCardUrl = (status) => {
     const params = new URLSearchParams();
     params.append("status", status);
@@ -214,14 +209,12 @@ export default function AdminDashboard() {
     return `/search?${params.toString()}`;
   };
 
-  // Logic to switch between views is preserved
   const showTeamAvailability =
     user?.role === "admin" ||
     (user?.role === "sys_admin" && category === "general");
 
   return (
     <Stack spacing={2}>
-      {/* --- Filter Bar and Menu are entirely preserved --- */}
       <Stack direction="row" alignItems="center" spacing={2}>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h4" component="h1" sx={{ flexShrink: 0 }}>
@@ -331,11 +324,9 @@ export default function AdminDashboard() {
         </Box>
       </Menu>
 
-      {/* --- START: DASHBOARD CONTENT RENOVATION --- */}
       {showTeamAvailability ? (
         // --- GENERAL VIEW ---
         <Stack spacing={2}>
-          {/* 1. The custom two-row stat card layout is PRESERVED */}
           <Stack direction="row" spacing={2}>
             {[
               {
@@ -467,19 +458,24 @@ export default function AdminDashboard() {
             ))}
           </Stack>
 
-          {/* 2. The chart grid is REPLACED by GenericDashboard */}
-          <GenericDashboard chartLayoutConfig={generalViewChartConfig} />
+          {/* ✅ MODIFICATION: Pass new props to GenericDashboard */}
+          <GenericDashboard
+            chartLayoutConfig={generalViewChartConfig}
+            userRole={user?.role}
+            incidentTypeFilter={incidentTypeFilter}
+          />
         </Stack>
       ) : (
         // --- SYSTEM VIEW ---
-        // The entire layout is REPLACED by GenericDashboard
+        // ✅ MODIFICATION: Pass new props to GenericDashboard
         <GenericDashboard
           statCards={systemViewStatCards}
           chartLayoutConfig={systemViewChartConfig}
           currentView={category}
+          userRole={user?.role}
+          incidentTypeFilter={incidentTypeFilter}
         />
       )}
-      {/* --- END: DASHBOARD CONTENT RENOVATION --- */}
     </Stack>
   );
 }
