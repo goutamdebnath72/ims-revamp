@@ -69,7 +69,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const isMidWideScreen = useMediaQuery(
     "(min-width: 1500px) and (max-width: 1600px)"
   );
-
   const isVeryWideScreen = useMediaQuery("(min-width: 1850px)");
 
   const { data: session } = useSession();
@@ -82,7 +81,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   const [foundUser, setFoundUser] = React.useState(null);
   const [lookupError, setLookupError] = React.useState("");
   const [isLookingUp, setIsLookingUp] = React.useState(false);
-
   const [formData, setFormData] = React.useState({
     incidentType: "",
     affectedTicketNo: "",
@@ -103,7 +101,6 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     "/api/departments",
     fetcher
   );
-
   const isSapIncidentType = formData.incidentType
     ?.toLowerCase()
     .includes("sap password");
@@ -173,6 +170,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
     const error = validateField(name, value);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     const isString = typeof value === "string";
@@ -185,6 +183,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     let newErrors = {};
@@ -205,6 +204,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         newErrors[key] = error;
       }
     });
+
     if (isAdmin && raiseFor === "other") {
       const affectedUserError = validateField(
         "affectedTicketNoInput",
@@ -229,7 +229,16 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
       {/* Tweakable vertical spacing for the whole form. Default: 3 */}
       <Stack
         spacing={
-          isShortScreen ? 2 : isVeryWideScreen ? 2.5 : isMidWideScreen ? 2.7 : 3
+          // MODIFIED: Reduced spacing for the "sweet spot" to make the form more compact.
+          isVeryShortScreen
+            ? 1.5
+            : isSweetSpotScreen
+              ? 1.8
+              : isVeryWideScreen
+                ? 2.5
+                : isMidWideScreen
+                  ? 2.7
+                  : 3
         }
       >
         {isAdmin && (
@@ -449,8 +458,9 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             required
             fullWidth
             multiline
-            // Tweakable rows. Logic: isVeryShort (<600px) ? 2 : isSweetSpot (600-800px) ? 3 : Default (>800px) ? 5
-            rows={isVeryShortScreen ? 3 : isSweetSpotScreen ? 4 : 5}
+            // Tweakable rows.
+            // MODIFIED: Reduced rows from 4 to 3 for the sweet spot screen height.
+            rows={isVeryShortScreen ? 2 : isSweetSpotScreen ? 3 : 5}
             name="description"
             label="Please provide a detailed description of the issue"
             value={formData.description}
@@ -464,15 +474,16 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         <Box sx={{ position: "relative" }}>
           <Button
             variant="contained"
-            // Tweakable size. Logic: isShort (<800px) ? "medium" : "large"
+            // Tweakable size.
             size={isShortScreen ? "medium" : "large"}
             type="submit"
             disabled={isSubmitting}
             fullWidth
             sx={{
-              // Tweakable padding. Logic: isVeryShort (<600px) ? 1 : isSweetSpot (600-800px) ? 1.2 : Default (>800px) ? 1.5
-              py: isVeryShortScreen ? 1 : isSweetSpotScreen ? 1.2 : 1.5,
-              // Tweakable font size. Logic: isVeryShort (<600px) ? '0.9rem' : isSweetSpot (600-800px) ? '1rem' : Default (>800px) ? '1.1rem'
+              // Tweakable padding.
+              // MODIFIED: Reduced vertical padding from 1.2 to 1 for the sweet spot.
+              py: isVeryShortScreen ? 1 : isSweetSpotScreen ? 1 : 1.5,
+              // Tweakable font size.
               fontSize: isVeryShortScreen
                 ? "0.9rem"
                 : isSweetSpotScreen
