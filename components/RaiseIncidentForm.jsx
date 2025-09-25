@@ -225,11 +225,15 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
-      {/* Tweakable vertical spacing for the whole form. Default: 3 */}
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      noValidate
+      // MODIFIED: Added conditional vertical margin to shorten the form's height by 12px.
+      sx={{ my: isSweetSpotScreen ? -1.5 : 0 }}
+    >
       <Stack
         spacing={
-          // MODIFIED: Reduced spacing for the "sweet spot" to make the form more compact.
           isVeryShortScreen
             ? 1.5
             : isSweetSpotScreen
@@ -459,8 +463,8 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
             fullWidth
             multiline
             // Tweakable rows.
-            // MODIFIED: Reduced rows from 4 to 3 for the sweet spot screen height.
-            rows={isVeryShortScreen ? 2 : isSweetSpotScreen ? 3 : 5}
+            // MODIFIED: Increased rows back to 4 as requested for the sweet spot screen height.
+            rows={isVeryShortScreen ? 2 : isSweetSpotScreen ? 4 : 5}
             name="description"
             label="Please provide a detailed description of the issue"
             value={formData.description}
@@ -474,15 +478,14 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         <Box sx={{ position: "relative" }}>
           <Button
             variant="contained"
-            // Tweakable size.
             size={isShortScreen ? "medium" : "large"}
             type="submit"
             disabled={isSubmitting}
             fullWidth
             sx={{
               // Tweakable padding.
-              // MODIFIED: Reduced vertical padding from 1.2 to 1 for the sweet spot.
-              py: isVeryShortScreen ? 1 : isSweetSpotScreen ? 1 : 1.5,
+              // MODIFIED: Further reduced vertical padding to balance the taller text area.
+              py: isVeryShortScreen ? 1 : isSweetSpotScreen ? 0.6 : 1.5,
               // Tweakable font size.
               fontSize: isVeryShortScreen
                 ? "0.9rem"

@@ -14,6 +14,7 @@ import {
   Paper,
   Stack,
   Typography,
+  useMediaQuery, // MODIFIED: Imported the useMediaQuery hook
 } from "@mui/material";
 import RaiseIncidentForm from "@/components/RaiseIncidentForm";
 import useSound from "@/hooks/useSound";
@@ -30,11 +31,14 @@ export default function RaiseIncidentPage() {
   const [submittedIncidentId, setSubmittedIncidentId] = React.useState(null);
   const { setIsLoading } = useLoading();
 
-  // --- ADD THIS HOOK TO PREPARE THE SOUND ---
+  // MODIFIED: Added the same media query hook to control page-level elements
+  const isSweetSpotScreen = useMediaQuery(
+    "(min-height: 600px) and (max-height: 800px)"
+  );
+
   const playNotificationSound = useSound("/notification.mp3");
 
   const user = session?.user;
-
   if (status === "loading") return null;
   if (!user) {
     return (
@@ -52,19 +56,16 @@ export default function RaiseIncidentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       if (!response.ok) {
         throw new Error("Server responded with an error");
       }
 
       const newIncident = await response.json();
       setSubmittedIncidentId(newIncident.id);
-
       if (refetchIncidents) {
         refetchIncidents();
       }
 
-      // Determine the success message based on the incident type
       const successMessage =
         formData.incidentType?.toLowerCase() === "ess password"
           ? `Incident #${newIncident.id} raised. The user will be notified via email upon password reset.`
@@ -75,14 +76,12 @@ export default function RaiseIncidentPage() {
         "success"
       );
 
-      // --- ADD THIS LOGIC TO PLAY THE SOUND FOR ADMINS/SYS_ADMINS ---
       if (isSystemIncident(newIncident) && user?.role === "sys_admin") {
         playNotificationSound();
       }
       if (!isSystemIncident(newIncident) && user?.role === "admin") {
         playNotificationSound();
       }
-      // --- END OF NEW LOGIC ---
     } catch (error) {
       showNotification(
         {
@@ -107,8 +106,19 @@ export default function RaiseIncidentPage() {
   };
 
   return (
-    <Stack spacing={4}>
-      <Typography variant="h4">Raise a New Incident</Typography>
+    // MODIFIED: The Stack's spacing is now responsive to reduce the gap between the title and the form.
+    // A negative margin-top is also added to reduce space above the title.
+    <Stack
+      spacing={isSweetSpotScreen ? 2 : 4}
+      sx={{ mt: isSweetSpotScreen ? -1.5 : 0 }}
+    >
+      <Typography
+        variant="h4"
+        // MODIFIED: The font size of the title is now smaller on the target screen height.
+        sx={{ fontSize: isSweetSpotScreen ? "1.75rem" : "2.125rem" }}
+      >
+        Raise a New Incident
+      </Typography>
       <Paper elevation={2} sx={{ p: 4, position: "relative" }}>
         {submittedIncidentId ? (
           <Stack spacing={3} alignItems="center">
