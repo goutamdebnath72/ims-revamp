@@ -234,7 +234,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
           isVeryShortScreen
             ? 1.5
             : isSweetSpotScreen
-              ? 1.8
+              ? 2.2
               : isVeryWideScreen
                 ? 2.5
                 : isMidWideScreen
@@ -243,7 +243,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         }
       >
         {isAdmin && (
-          <FormControl sx={{ mt: isSweetSpotScreen ? "3px" : 0 }}>
+          <FormControl sx={{ mt: isSweetSpotScreen ? "5px" : 0 }}>
             <FormLabel
               sx={{ mb: 1, fontSize: "0.9rem", color: "text.secondary" }}
             >
@@ -473,7 +473,7 @@ export default function RaiseIncidentForm({ onSubmit, isSubmitting }) {
         <Box
           sx={{
             position: "relative",
-            pb: isSweetSpotScreen ? 1.2 : 0,
+            pb: isSweetSpotScreen ? 1.5 : 0,
           }}
         >
           <Button

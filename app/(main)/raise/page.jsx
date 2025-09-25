@@ -106,8 +106,8 @@ export default function RaiseIncidentPage() {
 
   return (
     <Stack
-      spacing={isSweetSpotScreen ? 2 : 4}
-      sx={{ mt: isSweetSpotScreen ? -1.5 : 0 }}
+      spacing={isSweetSpotScreen ? 3 : 4}
+      sx={{ mt: isSweetSpotScreen ? -1.2 : 0 }}
     >
       <Typography
         variant="h4"
