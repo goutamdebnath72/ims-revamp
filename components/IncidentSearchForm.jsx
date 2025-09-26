@@ -18,9 +18,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
-const statuses = ["Any", "New", "Processed", "open", "Resolved", "Closed"];
-const priorities = ["Any", "Low", "Medium", "High"];
-const categories = ["Any", "System", "General"];
+// Arrays for user-facing display (Title Case)
+const statuses = ["any", "New", "Processed", "Open", "Resolved", "Closed"];
+const priorities = ["any", "Low", "Medium", "High"];
+const categories = ["any", "System", "General"];
 
 const AMCSearchForm = ({
   incidentType,
@@ -86,7 +87,7 @@ const AMCSearchForm = ({
           size="small"
         >
           {statuses.map((option) => (
-            <MenuItem key={option} value={option}>
+            <MenuItem key={option} value={option.toLowerCase()}>
               {option}
             </MenuItem>
           ))}
@@ -166,19 +167,18 @@ function IncidentSearchForm({
         isSystemIncident({ incidentType: type.name })
       );
     } else if (user?.role === "sys_admin") {
-      // ✅ Standardized comparison to use Title Case "System"
-      if (criteria.category === "System") {
+      if (criteria.category?.toLowerCase() === "system") {
         types = types.filter((type) =>
           isSystemIncident({ incidentType: type.name })
         );
-      } else if (criteria.category === "General") {
+      } else if (criteria.category?.toLowerCase() === "general") {
         types = types.filter(
           (type) => !isSystemIncident({ incidentType: type.name })
         );
       }
     }
 
-    return [{ name: "Any" }, ...types];
+    return [{ name: "any" }, ...types];
   }, [user, incidentTypes, criteria.category, isSystemViewLocked]);
 
   const handleChange = (event) => {
@@ -191,17 +191,17 @@ function IncidentSearchForm({
     const newCriteria = { ...criteria, [name]: value };
 
     if (name === "category") {
-      newCriteria.incidentType = "Any";
+      newCriteria.incidentType = "any";
     }
 
     if (name === "incidentType") {
-      if (value === "Any" || !value) {
+      if (value.toLowerCase() === "any" || !value) {
         if (!isSystemViewLocked) {
-          newCriteria.category = "Any";
+          newCriteria.category = "any";
         }
       } else {
         const isSystem = isSystemIncident({ incidentType: value });
-        newCriteria.category = isSystem ? "System" : "General";
+        newCriteria.category = isSystem ? "system" : "general";
       }
     }
 
@@ -312,7 +312,7 @@ function IncidentSearchForm({
               size="small"
             >
               {filteredIncidentTypes.map((option) => (
-                <MenuItem key={option.name} value={option.name}>
+                <MenuItem key={option.name} value={option.name.toLowerCase()}>
                   {option.name}
                 </MenuItem>
               ))}
@@ -329,7 +329,7 @@ function IncidentSearchForm({
               size="small"
             >
               {statuses.map((option) => (
-                <MenuItem key={option} value={option}>
+                <MenuItem key={option} value={option.toLowerCase()}>
                   {option}
                 </MenuItem>
               ))}
@@ -344,7 +344,7 @@ function IncidentSearchForm({
               size="small"
             >
               {priorities.map((option) => (
-                <MenuItem key={option} value={option}>
+                <MenuItem key={option} value={option.toLowerCase()}>
                   {option}
                 </MenuItem>
               ))}
@@ -360,11 +360,12 @@ function IncidentSearchForm({
                 size="small"
                 disabled={
                   isSystemViewLocked ||
-                  (criteria.incidentType && criteria.incidentType !== "Any")
+                  (criteria.incidentType &&
+                    criteria.incidentType.toLowerCase() !== "any")
                 }
               >
                 {categories.map((option) => (
-                  <MenuItem key={option} value={option}>
+                  <MenuItem key={option} value={option.toLowerCase()}>
                     {option}
                   </MenuItem>
                 ))}
@@ -430,7 +431,7 @@ function IncidentSearchForm({
             size="small"
           >
             {filteredIncidentTypes.map((option) => (
-              <MenuItem key={option.name} value={option.name}>
+              <MenuItem key={option.name} value={option.name.toLowerCase()}>
                 {option.name}
               </MenuItem>
             ))}
@@ -445,7 +446,7 @@ function IncidentSearchForm({
             size="small"
           >
             {statuses.map((option) => (
-              <MenuItem key={option} value={option}>
+              <MenuItem key={option} value={option.toLowerCase()}>
                 {option}
               </MenuItem>
             ))}
@@ -460,7 +461,7 @@ function IncidentSearchForm({
             size="small"
           >
             {priorities.map((option) => (
-              <MenuItem key={option} value={option}>
+              <MenuItem key={option} value={option.toLowerCase()}>
                 {option}
               </MenuItem>
             ))}

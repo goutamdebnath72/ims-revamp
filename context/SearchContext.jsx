@@ -22,16 +22,17 @@ import {
 export const SearchContext = createContext();
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
+// ✅ Standardized to lowercase for the canonical state
 const createDefaultCriteria = (user) => {
   const defaultCriteria = {
     incidentId: "",
     requestor: "",
-    status: "Any",
-    priority: "Any",
-    incidentType: "Any",
-    category: "Any",
-    shift: "Any",
-    department: "Any",
+    status: "any",
+    priority: "any",
+    incidentType: "any",
+    category: "any",
+    shift: "any",
+    department: "any",
     dateRange: { start: null, end: null },
   };
   return defaultCriteria;
@@ -80,7 +81,8 @@ export function SearchProvider({ children }) {
       if (key === "dateRange") {
         if (value.start) params.append("startDate", value.start.toISO());
         if (value.end) params.append("endDate", value.end.toISO());
-      } else if (value && value !== "Any") {
+      } else if (value && value.toLowerCase() !== "any") {
+        // Use toLowerCase() for comparison
         params.append(key, value);
       }
     });
@@ -111,23 +113,17 @@ export function SearchProvider({ children }) {
       const urlParams = Object.fromEntries(searchParams.entries());
 
       if (Object.keys(urlParams).length > 0) {
-        // ✅ FINAL FIX: Standardize the value to "System" (Title Case)
-        const urlCategory = urlParams.category;
-        const normalizedCategory =
-          urlCategory?.toLowerCase() === "system"
-            ? "System"
-            : urlCategory || "Any";
-
+        // ✅ All incoming values are normalized to lowercase for state consistency
         const newCriteria = {
           ...createDefaultCriteria(user),
           incidentId: urlParams.incidentId || "",
           requestor: urlParams.requestor || "",
-          status: urlParams.status || "Any",
-          priority: urlParams.priority || "Any",
-          incidentType: urlParams.incidentType || "Any",
-          category: normalizedCategory, // Use the normalized value here
-          shift: urlParams.shift || "Any",
-          department: urlParams.department || "Any",
+          status: urlParams.status?.toLowerCase() || "any",
+          priority: urlParams.priority?.toLowerCase() || "any",
+          incidentType: urlParams.incidentType?.toLowerCase() || "any",
+          category: urlParams.category?.toLowerCase() || "any",
+          shift: urlParams.shift?.toLowerCase() || "any",
+          department: urlParams.department || "any", // Department names have their own casing
           dateRange: {
             start: urlParams.startDate
               ? DateTime.fromISO(urlParams.startDate)
