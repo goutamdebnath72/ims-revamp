@@ -8,7 +8,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import useSWR, { mutate } from "swr";
+import useSWR, { mutate } from "swr"; // ✅ Ensure 'mutate' is imported
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
@@ -77,6 +77,7 @@ export function SearchProvider({ children }) {
     const params = new URLSearchParams();
     params.append("page", "1");
     params.append("limit", pageSize.toString());
+
     Object.entries(newCriteria).forEach(([key, value]) => {
       if (key === "dateRange") {
         if (value.start) params.append("startDate", value.start.toISO());
@@ -108,6 +109,14 @@ export function SearchProvider({ children }) {
     }
   }, [user, router]);
 
+  // ✅ ADDED THIS REFRESH FUNCTION
+  const refreshSearch = useCallback(() => {
+    if (lastSWRKeyRef.current) {
+      // Manually trigger a revalidation (fetch) of the current data
+      mutate(lastSWRKeyRef.current);
+    }
+  }, []); // No dependencies needed, it uses the ref's current value
+
   useEffect(() => {
     if (pathname === "/search") {
       const urlParams = Object.fromEntries(searchParams.entries());
@@ -131,7 +140,6 @@ export function SearchProvider({ children }) {
             end: urlParams.endDate ? DateTime.fromISO(urlParams.endDate) : null,
           },
         };
-
         setCriteria(newCriteria);
         setPage(urlParams.page ? parseInt(urlParams.page, 10) : 1);
         setPageSize(
@@ -159,6 +167,7 @@ export function SearchProvider({ children }) {
       resetSearch,
       pageSize,
       setPageSize,
+      refreshSearch, // ✅ EXPORT THE NEW FUNCTION
     }),
     [
       criteria,
@@ -172,6 +181,7 @@ export function SearchProvider({ children }) {
       handlePageChange,
       resetSearch,
       pageSize,
+      refreshSearch, // ✅ ADDED TO DEPENDENCY ARRAY
     ]
   );
 

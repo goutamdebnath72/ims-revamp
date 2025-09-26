@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+// ✅ Import useSearchParams to read URL query parameters
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SettingsContext } from "@/context/SettingsContext";
-import { useLoading } from "@/context/LoadingContext"; // This hook now points to our new context
+import { useLoading } from "@/context/LoadingContext";
 import { getCurrentShift } from "@/lib/date-helpers";
 import InfoTooltip from "./InfoTooltip";
 import {
@@ -27,16 +28,15 @@ import {
   Stack,
   Chip,
   Container,
-  // CircularProgress is no longer needed here
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-// ... other imports remain the same
 import SearchIcon from "@mui/icons-material/Search";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SpellcheckIcon from "@mui/icons-material/Spellcheck";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useSession, signOut } from "next-auth/react";
+// ✅ Import SearchContext to access our new functions
 import { SearchContext } from "@/context/SearchContext";
 
 const spellCheckTooltipText = (
@@ -123,13 +123,14 @@ const allMenuItems = [
 export default function AppLayout({ children }) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { resetSearch } = React.useContext(SearchContext);
   const pathname = usePathname();
+  // ✅ Get searchParams to construct the full current URL
+  const searchParams = useSearchParams();
+  // ✅ Get resetSearch AND refreshSearch from the context
+  const { resetSearch, refreshSearch } = React.useContext(SearchContext);
   const isIncidentDetailsPage = pathname.startsWith("/incidents/");
   const user = session?.user;
-  // We now get isLoading and setIsLoading from our upgraded context
   const { isLoading, setIsLoading } = useLoading();
-
   const logout = () => signOut({ callbackUrl: "/login" });
   const { isSpellcheckEnabled, toggleSpellcheck } =
     React.useContext(SettingsContext);
@@ -143,16 +144,28 @@ export default function AppLayout({ children }) {
     logout();
   };
 
+  // ✅ REPLACED with new, smarter link handling logic
   const handleLinkClick = (href) => {
-    if (pathname !== href) {
-      setIsLoading(true); // Use the new global loader
+    // Special handling for the main "Search & Archive" link to clear filters.
+    if (href === "/search") {
+      resetSearch(); // This function also handles the navigation to /search
+      return;
     }
-    if (href === "/search" && pathname === "/search") {
-      resetSearch();
+
+    // For all other links, compare the full target URL with the current URL.
+    const currentUrl = `${pathname}?${searchParams.toString()}`;
+    const targetUrl = href;
+
+    if (currentUrl === targetUrl) {
+      // If we are already on the page, just refresh the data.
+      refreshSearch();
     } else {
+      // If it's a new page, show the loader and navigate.
+      setIsLoading(true);
       router.push(href);
     }
   };
+
   const visibleMenuItems = allMenuItems.filter((item) =>
     item.roles.includes(user?.role)
   );
@@ -168,6 +181,7 @@ export default function AppLayout({ children }) {
 
     return () => clearInterval(intervalId);
   }, [currentShift]);
+
   React.useEffect(() => {
     const logoutTimer = setInterval(() => {
       if (user?.role === "admin" && user?.loginShift) {
@@ -180,6 +194,7 @@ export default function AppLayout({ children }) {
 
     return () => clearInterval(logoutTimer);
   }, [user, logout]);
+
   if (status === "loading") {
     return null;
   }
@@ -348,7 +363,6 @@ export default function AppLayout({ children }) {
         >
           {children}
         </Container>
-        {/* The old, segmented overlay has been removed from here. */}
       </Box>
     </Box>
   );
