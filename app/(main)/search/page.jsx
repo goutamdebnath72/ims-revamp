@@ -1,8 +1,10 @@
+// app/search/page.jsx
+
 "use client";
 
 import React, { useContext, useEffect } from "react";
 import { SearchContext } from "@/context/SearchContext";
-import { useLoading } from "@/context/LoadingContext";
+import { useLoading } from "@/context/LoadingContext"; // Import global loading context
 import {
   Box,
   Typography,
@@ -25,7 +27,6 @@ const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function SearchPage() {
   const needsHeightAdjustment = useMediaQuery("(min-height: 700px)");
-
   const {
     criteria,
     hasSearched,
@@ -40,14 +41,14 @@ export default function SearchPage() {
     setPageSize,
   } = useContext(SearchContext);
 
-  const { setIsLoading } = useLoading(); // 3. Get the global setIsLoading function
+  const { setIsLoading } = useLoading(); // Get the global setIsLoading function
   const router = useRouter();
   const { data: incidentTypesData } = useSWR("/api/incident-types", fetcher);
   const { data: departmentsData } = useSWR("/api/departments", fetcher);
   const incidentTypes = incidentTypesData || [];
   const departments = departmentsData || [];
 
-  // 4. This effect syncs the local search loading state with our global overlay
+  // ✅ 1. RESTORED: This effect syncs the local search loading state with your global overlay.
   useEffect(() => {
     setIsLoading(isLoading);
   }, [isLoading, setIsLoading]);
@@ -84,29 +85,19 @@ export default function SearchPage() {
   const formatFilterText = () => {
     const parts = [];
     const { dateRange, shift } = criteria;
-
     if (dateRange?.start && dateRange?.end) {
       const start = DateTime.fromISO(dateRange.start);
       const end = DateTime.fromISO(dateRange.end);
       const now = DateTime.local().setZone("Asia/Kolkata");
-
-      if (start.hasSame(now, "day")) {
-        parts.push("Today");
-      } else if (start.toISODate() === end.toISODate()) {
+      if (start.hasSame(now, "day")) parts.push("Today");
+      else if (start.toISODate() === end.toISODate())
         parts.push(start.toFormat("d MMM, yyyy"));
-      } else {
+      else
         parts.push(
           `${start.toFormat("d MMM")} - ${end.toFormat("d MMM, yyyy")}`
         );
-      }
-    } else {
-      parts.push("All Time");
-    }
-
-    if (shift && shift !== "Any") {
-      parts.push(`Shift: ${shift}`);
-    }
-
+    } else parts.push("All Time");
+    if (shift && shift !== "Any") parts.push(`Shift: ${shift}`);
     return parts.join("  |  ");
   };
 
@@ -134,14 +125,13 @@ export default function SearchPage() {
           departments={departments}
         />
       </Paper>
-
       <Paper
         elevation={2}
         sx={{
           p: 2,
           display: "flex",
           flexDirection: "column",
-          ...(!hasSearched && { flexGrow: 1 }),
+          flexGrow: 1,
         }}
       >
         {hasSearched ? (
@@ -158,78 +148,90 @@ export default function SearchPage() {
                 ({formatFilterText()})
               </Typography>
             </Box>
-            <Box sx={{ flexGrow: 1, display: "flex" }}>
-              <IncidentDataGrid
-                rows={incidentData?.incidents || []}
-                // 5. We no longer pass the local loading prop here.
-                // The global overlay handles the loading state for the whole page.
-                loading={false}
-                hideFooter={true}
-                autoHeight
-              />
-            </Box>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                pt: 2,
-              }}
-            >
-              {incidentData?.incidents && (
-                <Typography variant="body2">
-                  Showing{" "}
-                  <strong>
-                    {(incidentData.currentPage - 1) * pageSize + 1}–
-                    {(incidentData.currentPage - 1) * pageSize +
-                      incidentData.incidents.length}
-                  </strong>{" "}
-                  of <strong>{incidentData.totalIncidents}</strong>
-                </Typography>
-              )}
 
-              <Stack direction="row" alignItems="center">
-                <IconButton
-                  onClick={handleDecrementPageSize}
-                  disabled={pageSize <= 10}
-                  size="small"
-                >
-                  <RemoveIcon />
-                </IconButton>
-                <Box sx={{ px: 2, minWidth: "80px", textAlign: "center" }}>
-                  <Typography variant="body2">{pageSize} per page</Typography>
+            {/* ✅ 2. FINAL SOLUTION: Display "Loading..." text or the grid ✅ */}
+            {isLoading ? (
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Typography variant="h6" color="text.secondary">
+                  Loading...
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                <Box sx={{ flexGrow: 1, display: "flex", minHeight: "400px" }}>
+                  <IncidentDataGrid rows={incidentData?.incidents || []} />
                 </Box>
-                <IconButton
-                  onClick={handleIncrementPageSize}
-                  disabled={pageSize >= 50}
-                  size="small"
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    pt: 2,
+                  }}
                 >
-                  <AddIcon />
-                </IconButton>
-              </Stack>
-
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="body2">
-                  Page {incidentData?.currentPage || 0} of{" "}
-                  {incidentData?.totalPages || 0}
-                </Typography>
-                <IconButton
-                  onClick={() => handlePageChange(page - 1)}
-                  disabled={!incidentData || incidentData.currentPage <= 1}
-                >
-                  <ArrowBackIcon />
-                </IconButton>
-                <IconButton
-                  onClick={() => handlePageChange(page + 1)}
-                  disabled={
-                    !incidentData ||
-                    incidentData.currentPage >= incidentData.totalPages
-                  }
-                >
-                  <ArrowForwardIcon />
-                </IconButton>
-              </Stack>
-            </Box>
+                  {incidentData?.incidents && (
+                    <Typography variant="body2">
+                      Showing{" "}
+                      <strong>
+                        {(incidentData.currentPage - 1) * pageSize + 1}–
+                        {(incidentData.currentPage - 1) * pageSize +
+                          incidentData.incidents.length}
+                      </strong>{" "}
+                      of <strong>{incidentData.totalIncidents}</strong>
+                    </Typography>
+                  )}
+                  <Stack direction="row" alignItems="center">
+                    <IconButton
+                      onClick={handleDecrementPageSize}
+                      disabled={pageSize <= 10}
+                      size="small"
+                    >
+                      <RemoveIcon />
+                    </IconButton>
+                    <Box sx={{ px: 2, minWidth: "80px", textAlign: "center" }}>
+                      <Typography variant="body2">
+                        {pageSize} per page
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      onClick={handleIncrementPageSize}
+                      disabled={pageSize >= 50}
+                      size="small"
+                    >
+                      <AddIcon />
+                    </IconButton>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body2">
+                      Page {incidentData?.currentPage || 0} of{" "}
+                      {incidentData?.totalPages || 0}
+                    </Typography>
+                    <IconButton
+                      onClick={() => handlePageChange(page - 1)}
+                      disabled={!incidentData || incidentData.currentPage <= 1}
+                    >
+                      <ArrowBackIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handlePageChange(page + 1)}
+                      disabled={
+                        !incidentData ||
+                        incidentData.currentPage >= incidentData.totalPages
+                      }
+                    >
+                      <ArrowForwardIcon />
+                    </IconButton>
+                  </Stack>
+                </Box>
+              </>
+            )}
           </>
         ) : (
           <Box

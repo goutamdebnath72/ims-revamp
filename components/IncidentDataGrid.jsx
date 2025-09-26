@@ -1,3 +1,5 @@
+// components/IncidentDataGrid.jsx
+
 "use client";
 
 import React, { memo } from "react";
@@ -8,6 +10,7 @@ import { Chip, Tooltip } from "@mui/material";
 import { DateTime } from "luxon";
 import { useLoading } from "@/context/LoadingContext";
 
+// ... (columns array is unchanged)
 const columns = [
   { field: "id", headerName: "Incident No.", flex: 1.5, minWidth: 200 },
   {
@@ -87,13 +90,15 @@ const columns = [
   },
 ];
 
-// Note: The 'loading' prop has been removed from the function signature
-function IncidentDataGrid({ rows }) {
+function IncidentDataGrid({ rows, loading }) {
+  // ✅ DEBUGGING STEP: Check the value of the loading prop
+  console.log("IncidentDataGrid loading prop:", loading);
+
   const router = useRouter();
-  const { isLoading, setIsLoading } = useLoading();
+  const { setIsLoading } = useLoading();
 
   const handleRowClick = (params) => {
-    setIsLoading(true); // This triggers the full-page global overlay
+    setIsLoading(true);
     const incidentId = params.row.id;
     router.push(`/incidents/${incidentId}`);
   };
@@ -103,18 +108,17 @@ function IncidentDataGrid({ rows }) {
       <DataGrid
         rows={rows.filter((row) => row && row.id)}
         columns={columns}
-        // === THE FIX IS HERE ===
-        // The 'loading' prop is removed to disable the local spinner.
-        // The opacity now correctly reads from the global isLoading state.
+        loading={loading}
         onRowClick={handleRowClick}
         hideFooter={true}
         stickyHeader
-        autoHeight
         sx={{
           "& .MuiDataGrid-row:hover": {
             cursor: "pointer",
           },
-          opacity: isLoading ? 0.5 : 1,
+          "& .MuiDataGrid-loadingOverlay": {
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+          },
         }}
         initialState={{
           pagination: {
