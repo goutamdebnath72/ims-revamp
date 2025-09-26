@@ -11,7 +11,6 @@ import {
   MenuItem,
   Tooltip,
   IconButton,
-  // CircularProgress is no longer needed and has been removed.
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -131,7 +130,6 @@ const AMCSearchForm = ({
             disabled={isLoading}
             sx={{ height: "40px" }}
           >
-            {/* --- FIX: Removed local spinner --- */}
             Search
           </Button>
         </Box>
@@ -147,24 +145,67 @@ function IncidentSearchForm({
   isLoading,
   incidentTypes = [],
   departments = [],
+  isSystemViewLocked = false,
 }) {
   const { data: session } = useSession();
   const user = session?.user;
 
   const filteredIncidentTypes = React.useMemo(() => {
     if (!incidentTypes) return [{ name: "Any" }];
-    let typesToFilter = incidentTypes;
+
+    let types = [...incidentTypes];
+
     if (user?.role === "admin") {
-      typesToFilter = incidentTypes.filter(
+      types = types.filter(
         (type) => !isSystemIncident({ incidentType: type.name })
       );
     }
-    return [{ name: "Any" }, ...(typesToFilter || [])];
-  }, [user, incidentTypes]);
+
+    if (isSystemViewLocked) {
+      types = types.filter((type) =>
+        isSystemIncident({ incidentType: type.name })
+      );
+    } else if (user?.role === "sys_admin") {
+      // ✅ Standardized comparison to use Title Case "System"
+      if (criteria.category === "System") {
+        types = types.filter((type) =>
+          isSystemIncident({ incidentType: type.name })
+        );
+      } else if (criteria.category === "General") {
+        types = types.filter(
+          (type) => !isSystemIncident({ incidentType: type.name })
+        );
+      }
+    }
+
+    return [{ name: "Any" }, ...types];
+  }, [user, incidentTypes, criteria.category, isSystemViewLocked]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    onCriteriaChange({ ...criteria, [name]: value });
+
+    if (name === "category" && isSystemViewLocked) {
+      return;
+    }
+
+    const newCriteria = { ...criteria, [name]: value };
+
+    if (name === "category") {
+      newCriteria.incidentType = "Any";
+    }
+
+    if (name === "incidentType") {
+      if (value === "Any" || !value) {
+        if (!isSystemViewLocked) {
+          newCriteria.category = "Any";
+        }
+      } else {
+        const isSystem = isSystemIncident({ incidentType: value });
+        newCriteria.category = isSystem ? "System" : "General";
+      }
+    }
+
+    onCriteriaChange(newCriteria);
   };
 
   const handleDateChange = (field, newValue) => {
@@ -317,6 +358,10 @@ function IncidentSearchForm({
                 value={criteria.category}
                 onChange={handleChange}
                 size="small"
+                disabled={
+                  isSystemViewLocked ||
+                  (criteria.incidentType && criteria.incidentType !== "Any")
+                }
               >
                 {categories.map((option) => (
                   <MenuItem key={option} value={option}>
@@ -357,7 +402,6 @@ function IncidentSearchForm({
                 disabled={isLoading}
                 sx={{ height: "40px", width: "120px" }}
               >
-                {/* --- FIX: Removed local spinner --- */}
                 Search
               </Button>
             </Box>
@@ -429,7 +473,6 @@ function IncidentSearchForm({
             disabled={isLoading}
             sx={{ height: "40px" }}
           >
-            {/* --- FIX: Removed local spinner --- */}
             Search
           </Button>
         </Stack>

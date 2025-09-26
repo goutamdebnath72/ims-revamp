@@ -9,7 +9,6 @@ import React, {
   useRef,
 } from "react";
 import useSWR, { mutate } from "swr";
-// MODIFICATION 1: Import usePathname
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { DateTime } from "luxon";
@@ -21,7 +20,6 @@ import {
 } from "@/lib/constants";
 
 export const SearchContext = createContext();
-
 const fetcher = (url) => fetch(url).then((res) => res.json());
 
 const createDefaultCriteria = (user) => {
@@ -42,7 +40,7 @@ const createDefaultCriteria = (user) => {
 export function SearchProvider({ children }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const pathname = usePathname(); // MODIFICATION 2: Get the current page's pathname
+  const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user;
 
@@ -109,18 +107,25 @@ export function SearchProvider({ children }) {
   }, [user, router]);
 
   useEffect(() => {
-    // MODIFICATION 3: Wrap the entire useEffect logic in an if-statement.
-    // This ensures it only runs on the search page.
     if (pathname === "/search") {
       const urlParams = Object.fromEntries(searchParams.entries());
+
       if (Object.keys(urlParams).length > 0) {
-        setCriteria({
+        // ✅ FINAL FIX: Standardize the value to "System" (Title Case)
+        const urlCategory = urlParams.category;
+        const normalizedCategory =
+          urlCategory?.toLowerCase() === "system"
+            ? "System"
+            : urlCategory || "Any";
+
+        const newCriteria = {
+          ...createDefaultCriteria(user),
           incidentId: urlParams.incidentId || "",
           requestor: urlParams.requestor || "",
           status: urlParams.status || "Any",
           priority: urlParams.priority || "Any",
           incidentType: urlParams.incidentType || "Any",
-          category: urlParams.category || "Any",
+          category: normalizedCategory, // Use the normalized value here
           shift: urlParams.shift || "Any",
           department: urlParams.department || "Any",
           dateRange: {
@@ -129,7 +134,9 @@ export function SearchProvider({ children }) {
               : null,
             end: urlParams.endDate ? DateTime.fromISO(urlParams.endDate) : null,
           },
-        });
+        };
+
+        setCriteria(newCriteria);
         setPage(urlParams.page ? parseInt(urlParams.page, 10) : 1);
         setPageSize(
           urlParams.limit ? parseInt(urlParams.limit, 10) : DEFAULT_PAGE_SIZE
@@ -139,7 +146,7 @@ export function SearchProvider({ children }) {
         resetSearch();
       }
     }
-  }, [pathname, searchParams, resetSearch]); // Added pathname to dependency array
+  }, [pathname, searchParams, resetSearch, user]);
 
   const value = useMemo(
     () => ({

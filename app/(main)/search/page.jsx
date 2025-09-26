@@ -1,10 +1,12 @@
-// app/search/page.jsx
+// app/(main)/search/page.jsx
 
 "use client";
 
 import React, { useContext, useEffect } from "react";
+// ✅ 1. Import useSearchParams to read the URL
+import { useSearchParams } from "next/navigation";
 import { SearchContext } from "@/context/SearchContext";
-import { useLoading } from "@/context/LoadingContext"; // Import global loading context
+import { useLoading } from "@/context/LoadingContext";
 import {
   Box,
   Typography,
@@ -27,12 +29,17 @@ const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
 export default function SearchPage() {
   const needsHeightAdjustment = useMediaQuery("(min-height: 700px)");
+  // ✅ 2. Call useSearchParams and calculate the locked state
+  const searchParams = useSearchParams();
+  const isSystemViewLocked =
+    searchParams.get("category")?.toLowerCase() === "system";
+
   const {
     criteria,
     hasSearched,
     page,
     incidentData,
-    isLoading, // This is the local loading state from SearchContext
+    isLoading,
     handleSearch,
     handlePageChange,
     setCriteria,
@@ -40,15 +47,19 @@ export default function SearchPage() {
     pageSize,
     setPageSize,
   } = useContext(SearchContext);
-
-  const { setIsLoading } = useLoading(); // Get the global setIsLoading function
+  const { setIsLoading } = useLoading();
   const router = useRouter();
-  const { data: incidentTypesData } = useSWR("/api/incident-types", fetcher);
-  const { data: departmentsData } = useSWR("/api/departments", fetcher);
+
+  const { data: incidentTypesData } = useSWR("/api/incident-types", fetcher, {
+    revalidateOnFocus: false,
+  });
+  const { data: departmentsData } = useSWR("/api/departments", fetcher, {
+    revalidateOnFocus: false,
+  });
+
   const incidentTypes = incidentTypesData || [];
   const departments = departmentsData || [];
 
-  // ✅ 1. RESTORED: This effect syncs the local search loading state with your global overlay.
   useEffect(() => {
     setIsLoading(isLoading);
   }, [isLoading, setIsLoading]);
@@ -123,6 +134,8 @@ export default function SearchPage() {
           isLoading={isLoading}
           incidentTypes={incidentTypes}
           departments={departments}
+          // ✅ 3. Pass the prop to the search form
+          isSystemViewLocked={isSystemViewLocked}
         />
       </Paper>
       <Paper
@@ -149,7 +162,6 @@ export default function SearchPage() {
               </Typography>
             </Box>
 
-            {/* ✅ 2. FINAL SOLUTION: Display "Loading..." text or the grid ✅ */}
             {isLoading ? (
               <Box
                 sx={{
